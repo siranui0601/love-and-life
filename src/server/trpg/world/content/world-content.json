@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-ec2c41296f3c",
+  "revision": "world-10d-940b5356c6a8",
   "time": {
     "days": 10,
     "scale": 60,
@@ -19260,13 +19260,7 @@
       "scheduleSource": "朝:広場/昼:畑道/夕:家の手伝い/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "フィンは冒険家志望の少年として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC001",
           "kind": "secret",
           "text": "大人は外の危険を大げさに言うと思う/王都冒険者から聞いた抜け道",
           "disclosure": {
@@ -19307,13 +19301,7 @@
       "scheduleSource": "朝:自宅/昼:村長宅で相談/夕:自宅前/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ミラはフィンの母として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC002",
           "kind": "secret",
           "text": "プレイヤーが来た日に事件が起きたため少し疑う/フィンの地図を知る",
           "disclosure": {
@@ -19354,13 +19342,7 @@
       "scheduleSource": "朝:村長宅/昼:広場や畑巡回/夕:会合/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ガロ村長は田園の村の村長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC003",
           "kind": "secret",
           "text": "交易都市商人は必要悪と思う/借金証文の一部を隠す",
           "disclosure": {
@@ -19401,13 +19383,7 @@
       "scheduleSource": "朝:畑/昼:畑か井戸端/夕:自宅/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "エダはプレイヤーを拾う農婦として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC004",
           "kind": "secret",
           "text": "王都の事情は遠い話と思う/召喚直後の様子を知る",
           "disclosure": {
@@ -19448,13 +19424,7 @@
       "scheduleSource": "朝:穀倉点検/昼:穀倉管理/夕:村長宅/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "トーマは共同穀倉管理人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC005",
           "kind": "secret",
           "text": "自分の管理ミスかもしれない/前夜の見慣れない足跡",
           "disclosure": {
@@ -19495,13 +19465,7 @@
       "scheduleSource": "朝:潜伏/昼:村外で様子見/夕:移動準備/夜:空き家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ダルクは穀物商に雇われた放火犯として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC006",
           "kind": "secret",
           "text": "穀物商は自分を守ると思う/支払い場所を知る",
           "disclosure": {
@@ -19542,13 +19506,7 @@
       "scheduleSource": "朝:商館帳簿/昼:港や市場/夕:密談/夜:高級宿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "バーゼルは穀物商として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC007",
           "kind": "secret",
           "text": "貧村は商人が管理すべき/放火支払い帳簿を隠す",
           "disclosure": {
@@ -19589,13 +19547,7 @@
       "scheduleSource": "朝:街道移動/昼:滞在先で商売/夕:宿場へ/夜:宿屋",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "リオナは行商人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC008",
           "kind": "secret",
           "text": "黒嶺の話は怖い噂として誇張/裏商人の名前を知る",
           "disclosure": {
@@ -19636,13 +19588,7 @@
       "scheduleSource": "朝:領主館政務/昼:謁見/夕:報告/夜:療養室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オルヴェン領主は交易都市の現領主として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC009",
           "kind": "secret",
           "text": "王都に頼りすぎると都市が飲まれる/次期領主派を疑う",
           "disclosure": {
@@ -19683,13 +19629,7 @@
       "scheduleSource": "朝:領主館根回し/昼:商人会合/夕:港で密談/夜:自邸",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "セドリックは次期領主候補として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC010",
           "kind": "secret",
           "text": "民衆は強い統治を望む/毒殺指示と外国契約草案",
           "disclosure": {
@@ -19730,13 +19670,7 @@
       "scheduleSource": "朝:診療所/昼:領主館診察/夕:薬房/夜:診療所奥",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "マリエル医師は領主付き医師として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC011",
           "kind": "secret",
           "text": "魔王領産薬草は危険だが有効かも/自然病ではないと気づく",
           "disclosure": {
@@ -19777,13 +19711,7 @@
       "scheduleSource": "朝:使用人区/昼:領主館雑務/夕:裏路地連絡/夜:使用人部屋",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ニコラスは毒を盛った使用人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC012",
           "kind": "secret",
           "text": "逆らえば妹が死ぬと思う/毒の経路を知る",
           "disclosure": {
@@ -19824,13 +19752,7 @@
       "scheduleSource": "朝:港で積荷確認/昼:詰所/夕:酒場会合/夜:長屋",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "グレンは港湾労働者代表として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC013",
           "kind": "secret",
           "text": "商人全員が敵だと思い込みがち/武器持込若手を知る",
           "disclosure": {
@@ -19871,13 +19793,7 @@
       "scheduleSource": "朝:会館決裁/昼:港巡回/夕:領主館交渉/夜:会館奥",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ベリルは商人ギルド長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC014",
           "kind": "secret",
           "text": "労働者不満は一時的と思う/外国契約にギルド一部関与",
           "disclosure": {
@@ -19918,13 +19834,7 @@
       "scheduleSource": "朝:船内準備/昼:港で商談/夕:船長室報告/夜:船内",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "アルバレスは外国船団の使者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC015",
           "kind": "secret",
           "text": "王国は内紛で割れると思う/本国の狙いは港湾権以上",
           "disclosure": {
@@ -19965,13 +19875,7 @@
       "scheduleSource": "朝:政務/昼:謁見/夕:軍議/夜:私室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "アルセリオ王は王国国王として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC016",
           "kind": "secret",
           "text": "召喚失敗が神殿異常の原因だと思う/召喚記録を持つ",
           "disclosure": {
@@ -20012,13 +19916,7 @@
       "scheduleSource": "朝:魔術塔研究/昼:王城会議/夕:儀式準備/夜:研究室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "セラフィムは宮廷魔術師長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC017",
           "kind": "secret",
           "text": "巨神兵は召喚失敗の連鎖と考えがち/召喚体生存に気づきかける",
           "disclosure": {
@@ -20059,13 +19957,7 @@
       "scheduleSource": "朝:下層で情報収集/昼:隠れ家/夕:王城周辺監視/夜:潜伏",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ライラは第二召喚阻止派の中心人物として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC018",
           "kind": "secret",
           "text": "王国は召喚を悪用すると思う/プレイヤーを召喚体と疑う",
           "disclosure": {
@@ -20106,13 +19998,7 @@
       "scheduleSource": "朝:私邸根回し/昼:王城政治工作/夕:サロン/夜:私邸",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "レオナルド公は王位を狙う貴族派首魁として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC019",
           "kind": "secret",
           "text": "民衆は強い貴族に従うべき/暗殺資金と裏契約",
           "disclosure": {
@@ -20153,13 +20039,7 @@
       "scheduleSource": "朝:潜伏/昼:標的調査/夕:準備/夜:行動開始",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "レンは暗殺者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC020",
           "kind": "secret",
           "text": "王も貴族も同じだと思う/依頼主に違和感",
           "disclosure": {
@@ -20200,13 +20080,7 @@
       "scheduleSource": "朝:孤児院朝食/昼:世話/夕:役所や寄付先/夜:孤児院",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "マティルダは孤児院長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC021",
           "kind": "secret",
           "text": "貴族街は孤児を見ない/孤児が暗殺関係者を目撃",
           "disclosure": {
@@ -20247,13 +20121,7 @@
       "scheduleSource": "朝:孤児院掃除/昼:孤児院や路地/夕:食事/夜:孤児院",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ノアは孤児院の男の子として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC022",
           "kind": "secret",
           "text": "大人は約束を破ると思う/暗殺者の使いを見た",
           "disclosure": {
@@ -20294,13 +20162,7 @@
       "scheduleSource": "朝:商会会議/昼:役所交渉/夕:契約整理/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "イザークは孤児院跡地を狙う商人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC023",
           "kind": "secret",
           "text": "孤児院は非効率な土地利用/レオナルド公と裏契約",
           "disclosure": {
@@ -20341,13 +20203,7 @@
       "scheduleSource": "朝:門点検/昼:下層巡回/夕:詰所報告/夜:詰所",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ヴィクトルは王都衛兵隊長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC024",
           "kind": "secret",
           "text": "下層の不満は危険だが理解/命令が貴族に歪められている",
           "disclosure": {
@@ -20388,13 +20244,7 @@
       "scheduleSource": "朝:下層で噂集め/昼:路地取引/夕:酒場裏/夜:隠れ家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "キリはスラム情報屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC025",
           "kind": "secret",
           "text": "善人は長生きしない/貴族派と商人の繋がりを知る",
           "disclosure": {
@@ -20435,13 +20285,7 @@
       "scheduleSource": "朝:亜人街相談/昼:下層支援/夕:集会所/夜:亜人街",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "サミラは亜人街代表として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC026",
           "kind": "secret",
           "text": "王国兵は守らないと思う/黒嶺への古い連絡路を知る",
           "disclosure": {
@@ -20482,13 +20326,7 @@
       "scheduleSource": "朝:隠れ里雑用/昼:森辺/夕:友人と密談/夜:自室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "リュシアは家出エルフとして、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC027",
           "kind": "secret",
           "text": "人間の町は自由で優しいと思う/隠れ里の抜け道を知る",
           "disclosure": {
@@ -20529,13 +20367,7 @@
       "scheduleSource": "朝:世界樹前/昼:評議会/夕:結界点検/夜:長老庵",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "アルウェン長老はエルフ長老として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC028",
           "kind": "secret",
           "text": "人間は世界樹を守らない/世界樹倒壊で巨神兵封印が解けると知る",
           "disclosure": {
@@ -20576,13 +20408,7 @@
       "scheduleSource": "朝:森巡回/昼:外縁偵察/夕:隠れ里報告/夜:野営",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "セリエはエルフ斥候として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC029",
           "kind": "secret",
           "text": "人間は足跡を読めない/川の巨大な影を見ている",
           "disclosure": {
@@ -20623,13 +20449,7 @@
       "scheduleSource": "朝:世界樹世話/昼:精霊域で祈り/夕:結界点検/夜:世界樹近く",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "エリナは世界樹の巫女として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC030",
           "kind": "secret",
           "text": "人間の言葉では森の痛みが伝わらない/封印連動を感覚的に知る",
           "disclosure": {
@@ -20670,13 +20490,7 @@
       "scheduleSource": "朝:水汲み/昼:若者の作業場/夕:友人の家/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ティアはリュシアの友人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC031",
           "kind": "secret",
           "text": "外の世界は怖いが少し羨ましい/リュシアの憧れを知る",
           "disclosure": {
@@ -20717,13 +20531,7 @@
       "scheduleSource": "朝:森外縁移動/昼:獲物探し/夕:酒場取引/夜:安宿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ダミアンは悪徳冒険者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC032",
           "kind": "secret",
           "text": "エルフは世間知らずで商品価値が高い/受け渡し場所を知る",
           "disclosure": {
@@ -20764,13 +20572,7 @@
       "scheduleSource": "朝:犯罪都市市場/昼:裏市交渉/夕:帳簿/夜:邸宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "カルヴァンは人身売買業者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC033",
           "kind": "secret",
           "text": "王国混乱は商機/王都貴族に買い手がいる",
           "disclosure": {
@@ -20811,13 +20613,7 @@
       "scheduleSource": "常時:川底で吸収。移動開始後は世界樹方面へ",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "キングスライムは森の魔力を吸う巨大魔物として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC034",
           "kind": "secret",
           "text": "誤解なし/魔力だまりに引き寄せられた理由は不明",
           "disclosure": {
@@ -20858,13 +20654,7 @@
       "scheduleSource": "朝:工房/昼:工房か坑道点検/夕:酒場/夜:工房奥",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ブロルンはドワーフの名工として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC035",
           "kind": "secret",
           "text": "若い職人は功を焦りすぎる/神殿装置に似た部品を見た",
           "disclosure": {
@@ -20905,13 +20695,7 @@
       "scheduleSource": "朝:坑道指揮/昼:深部採掘/夕:組合会合/夜:酒場",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "グラドは採掘強行派の親方として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC036",
           "kind": "secret",
           "text": "安全重視派は腰抜け/支柱危険報告を握り潰した",
           "disclosure": {
@@ -20952,13 +20736,7 @@
       "scheduleSource": "朝:工房設計/昼:坑道計測/夕:試作/夜:工房で徹夜",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ミーナは安全重視派の技師として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC037",
           "kind": "secret",
           "text": "年長者は経験則に頼りすぎる/古代機械片を解析済み",
           "disclosure": {
@@ -20999,13 +20777,7 @@
       "scheduleSource": "朝:洞窟門/昼:洞窟門/夕:詰所記録/夜:酒場か詰所",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ボルゴはドワーフ門番として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC038",
           "kind": "secret",
           "text": "地上人は騒ぎを持ち込む/黒嶺地下道の噂を知る",
           "disclosure": {
@@ -21046,13 +20818,7 @@
       "scheduleSource": "朝:司令部/昼:城壁視察/夕:軍議/夜:司令室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ロザリンド司令官は北陵要塞司令官として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC039",
           "kind": "secret",
           "text": "黒嶺は敵だが全事件の犯人とは限らない/マグナスを疑う",
           "disclosure": {
@@ -21093,13 +20859,7 @@
       "scheduleSource": "朝:兵舎訓練/昼:廃街道視察/夕:密会/夜:兵舎",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "マグナスは北陵要塞の強硬派将校として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC040",
           "kind": "secret",
           "text": "黒嶺との和平は弱さ/犯罪都市武器商との取引記録",
           "disclosure": {
@@ -21140,13 +20900,7 @@
       "scheduleSource": "朝:兵舎清掃/昼:訓練/夕:見張り/夜:兵舎",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "カイは偽装襲撃に使われる若兵として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC041",
           "kind": "secret",
           "text": "命令違反は家族に迷惑/偽装装備の出所を見た",
           "disclosure": {
@@ -21187,13 +20941,7 @@
       "scheduleSource": "朝:偵察/昼:廃街道調査/夕:要塞報告/夜:野営",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ユーリ斥候は国境斥候として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC042",
           "kind": "secret",
           "text": "上官は見たいものだけ見る/黒嶺側に水を止めた痕跡なし",
           "disclosure": {
@@ -21234,13 +20982,7 @@
       "scheduleSource": "朝:評議場/昼:市場で民の声/夕:評議会/夜:自邸",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ザイードは黒嶺連合領の穏健派代表として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC043",
           "kind": "secret",
           "text": "王国にも話せる者がいる/侵攻派の動きを把握",
           "disclosure": {
@@ -21281,13 +21023,7 @@
       "scheduleSource": "朝:軍営訓練/昼:森境界視察/夕:軍議/夜:軍営",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ガルムは黒嶺侵攻派の指導者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC044",
           "kind": "secret",
           "text": "和平は時間稼ぎだと思う/侵攻は先制防衛として計画",
           "disclosure": {
@@ -21328,13 +21064,7 @@
       "scheduleSource": "朝:水路点検/昼:川辺調査/夕:報告/夜:水中住居",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ニーヴは水棲種族の案内人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC045",
           "kind": "secret",
           "text": "地上の者は水を見ていない/黒嶺が水を止めていない証拠",
           "disclosure": {
@@ -21375,13 +21105,7 @@
       "scheduleSource": "朝:潜伏先整理/昼:下層接触/夕:連絡/夜:潜伏",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オルカ密使は黒嶺の密使として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC046",
           "kind": "secret",
           "text": "王都に長くいれば正体が暴かれる/召喚阻止派を知る",
           "disclosure": {
@@ -21422,13 +21146,7 @@
       "scheduleSource": "朝:市場手伝い/昼:亡命者区相談/夕:酒場/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "エドガーは王国から逃げた亡命者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC047",
           "kind": "secret",
           "text": "王国は変われないかもしれない/貴族が差別利用した記憶",
           "disclosure": {
@@ -21469,13 +21187,7 @@
       "scheduleSource": "朝:倉庫検品/昼:市場商談/夕:港積込/夜:邸宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ヴァロは犯罪都市の武器商人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC048",
           "kind": "secret",
           "text": "平和は在庫を腐らせる/全勢力への帳簿を持つ",
           "disclosure": {
@@ -21516,13 +21228,7 @@
       "scheduleSource": "朝:情報街/昼:港や酒場/夕:屋根上連絡/夜:隠れ家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "モズは情報屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC049",
           "kind": "secret",
           "text": "善意だけの奴は情報料を払わない/黒嶺密使の潜伏を知る可能性",
           "disclosure": {
@@ -21563,13 +21269,7 @@
       "scheduleSource": "朝:工房で版木調整/昼:取引/夕:偽造/夜:工房奥",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "シギは偽造身分屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC050",
           "kind": "secret",
           "text": "役人は紙しか見ない/黒嶺通行証様式を知る",
           "disclosure": {
@@ -21610,13 +21310,7 @@
       "scheduleSource": "朝:仲介所契約整理/昼:使者接触/夕:暗号通信/夜:隠れ家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "クロウは暗殺仲介人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC051",
           "kind": "secret",
           "text": "依頼主を売る仲介人は長生きしない/レオナルド公支払い経路",
           "disclosure": {
@@ -21657,13 +21351,7 @@
       "scheduleSource": "朝:港で荷役確認/昼:船上/夕:港酒場/夜:船室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "セレス船長は荷運び船長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC052",
           "kind": "secret",
           "text": "犯罪都市の荷は中身を知らない方が安全/危険な積荷に気づく",
           "disclosure": {
@@ -21704,13 +21392,7 @@
       "scheduleSource": "朝:管理棟記録/昼:神殿巡回/夕:報告書整理/夜:管理棟",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ファルコは古代神殿管理者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC053",
           "kind": "secret",
           "text": "騒ぎにすれば辺境の村が終わる/消失者の共通回廊を記録",
           "disclosure": {
@@ -21751,13 +21433,7 @@
       "scheduleSource": "朝:宿で朝食/昼:宿屋営業/夕:参道で客引き/夜:宿帳整理",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "サナは巡礼宿の女将として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC054",
           "kind": "secret",
           "text": "神殿の呪いかもと半信半疑/客が同じ夢を見たと聞く",
           "disclosure": {
@@ -21798,13 +21474,7 @@
       "scheduleSource": "朝:参道/昼:神殿巡礼/夕:宿へ戻る予定/夜:封印区画",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "エイダ巡礼者は失踪する巡礼者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC055",
           "kind": "secret",
           "text": "自分は神に試されている/封印区画の機械音と文字を見た",
           "disclosure": {
@@ -21845,13 +21515,7 @@
       "scheduleSource": "朝:隠れ家資料整理/昼:下層連絡/夕:古代文字解読/夜:隠れ家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ルカ元研究員は古代神殿の元研究員として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC056",
           "kind": "secret",
           "text": "王国は研究を止めない/召喚失敗と巨神兵は別原因と推測",
           "disclosure": {
@@ -21892,13 +21556,7 @@
       "scheduleSource": "常時:封印中。起動後は神殿周辺から王都方面へ",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "機械巨神兵は古代兵器として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC057",
           "kind": "secret",
           "text": "召喚災害ではない/古代文明の記録を内蔵",
           "disclosure": {
@@ -21939,13 +21597,7 @@
       "scheduleSource": "朝:麦穂亭で朝食準備/昼:食堂/夕:宿帳/夜:客席で噂話",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ローナは麦穂亭の女将として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC058",
           "kind": "secret",
           "text": "外の旅人は金払いで判断しがち/村人の本音が集まる",
           "disclosure": {
@@ -21986,13 +21638,7 @@
       "scheduleSource": "朝:仕込み/昼:販売/夕:井戸端/夜:店奥",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "パオロはパン屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC059",
           "kind": "secret",
           "text": "穀倉火災は自分にも責任があると思い込む/値上げに罪悪感",
           "disclosure": {
@@ -22033,13 +21679,7 @@
       "scheduleSource": "朝:罠確認/昼:森外縁/夕:獲物処理/夜:小屋",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ジルは猟師として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC060",
           "kind": "secret",
           "text": "王都兵は森を知らない/川辺の異様な粘液を見た",
           "disclosure": {
@@ -22080,13 +21720,7 @@
       "scheduleSource": "朝:薬草干し/昼:井戸端/夕:薬湯作り/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ネネ婆は薬草婆さんとして、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC061",
           "kind": "secret",
           "text": "昔の言い伝えを迷信として扱われる/世界樹の古い民話を知る",
           "disclosure": {
@@ -22127,13 +21761,7 @@
       "scheduleSource": "朝:広場/昼:畑道/夕:パン屋前/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "コビーはフィンの友達として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC062",
           "kind": "secret",
           "text": "怒られるのが怖くて黙る/フィンの行き先を聞いている",
           "disclosure": {
@@ -22174,13 +21802,7 @@
       "scheduleSource": "朝:馬小屋/昼:牧草地/夕:餌やり/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ハクトは牧場主として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC063",
           "kind": "secret",
           "text": "冒険者に馬を貸すのは嫌う/森道に詳しい古馬がいる",
           "disclosure": {
@@ -22221,13 +21843,7 @@
       "scheduleSource": "朝:客の送り出し/昼:宿掃除/夕:受付/夜:酒場席",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ミランは安宿主人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC064",
           "kind": "secret",
           "text": "厄介事を避けたい/兵士と暗殺者の出入りを見た",
           "disclosure": {
@@ -22268,13 +21884,7 @@
       "scheduleSource": "朝:在庫確認/昼:販売/夕:仕入れ交渉/夜:店奥",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "カッシアは武器屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC065",
           "kind": "secret",
           "text": "安い武器は危険と考える/犯罪都市製の刻印を見分ける",
           "disclosure": {
@@ -22315,13 +21925,7 @@
       "scheduleSource": "朝:薬棚整理/昼:販売/夕:調合/夜:帳簿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ユノは薬屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC066",
           "kind": "secret",
           "text": "黒嶺薬草を恐れない/宮廷医師が買い占めた記録",
           "disclosure": {
@@ -22362,13 +21966,7 @@
       "scheduleSource": "朝:役所窓口/昼:書庫/夕:貴族街報告/夜:役所残業",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ラシュは土地担当官として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC067",
           "kind": "secret",
           "text": "書類が正しければ結果も正しいと思う/孤児院寄付契約の原本の所在を知る",
           "disclosure": {
@@ -22409,13 +22007,7 @@
       "scheduleSource": "朝:取材/昼:瓦版販売/夕:編集/夜:酒場取材",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ペトラは瓦版屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC068",
           "kind": "secret",
           "text": "強い見出しが真実より先に売れる/貴族派から金を受けることがある",
           "disclosure": {
@@ -22456,13 +22048,7 @@
       "scheduleSource": "朝:馬の手入れ/昼:客対応/夕:料金交渉/夜:厩舎",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "バルトは馬商人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC069",
           "kind": "secret",
           "text": "戦争は馬の値段を上げると思う/軍が買い占める前触れを知る",
           "disclosure": {
@@ -22503,13 +22089,7 @@
       "scheduleSource": "朝:仕入れ/昼:販売/夕:値札変更/夜:片付け",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オリムは市場商人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC070",
           "kind": "secret",
           "text": "高い物には理由があると言う/仕入れ元の変化を知る",
           "disclosure": {
@@ -22550,13 +22130,7 @@
       "scheduleSource": "朝:寝台/昼:窓辺/夕:食堂/夜:寝台",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "アベルは病弱な孤児として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC071",
           "kind": "secret",
           "text": "自分は足手まといだと思う/退去先では生きられない不安",
           "disclosure": {
@@ -22597,13 +22171,7 @@
       "scheduleSource": "朝:掃除/昼:ノアと路地/夕:食堂/夜:孤児院",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ルミは亜人混血の孤児として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC072",
           "kind": "secret",
           "text": "自分の耳を隠せば普通になれると思う/亜人街に親族の噂",
           "disclosure": {
@@ -22644,13 +22212,7 @@
       "scheduleSource": "朝:宿の食事/昼:酒場仕込み/夕:客対応/夜:船員の噂集め",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "マウラは港酒場女将として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC073",
           "kind": "secret",
           "text": "船員の大げさ話を半分信じる/密輸船の常連を知る",
           "disclosure": {
@@ -22691,13 +22253,7 @@
       "scheduleSource": "朝:魚市場/昼:市場売り歩き/夕:港で片付け/夜:家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "トトは魚売りとして、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC074",
           "kind": "secret",
           "text": "内陸人は魚の価値を知らない/外国船が買い占めている",
           "disclosure": {
@@ -22738,13 +22294,7 @@
       "scheduleSource": "朝:書類確認/昼:港検査/夕:税関記録/夜:帰宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "エルネストは税関役人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC075",
           "kind": "secret",
           "text": "少額の賄賂は必要経費と思う/怪しい積荷番号を知る",
           "disclosure": {
@@ -22785,13 +22335,7 @@
       "scheduleSource": "朝:鍵確認/昼:荷札整理/夕:倉庫巡回/夜:港酒場",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "サイモンは倉庫番として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC076",
           "kind": "secret",
           "text": "中身を見ない方が長生きと思う/武器箱の隠し印を見た",
           "disclosure": {
@@ -22832,13 +22376,7 @@
       "scheduleSource": "朝:薬草選別/昼:販売/夕:仕入れ交渉/夜:調合",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ルーシーは薬草商として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC077",
           "kind": "secret",
           "text": "黒嶺薬草への偏見に怒る/薬草の産地偽装を見抜く",
           "disclosure": {
@@ -22879,13 +22417,7 @@
       "scheduleSource": "朝:馬市/昼:荷馬車契約/夕:飼葉確認/夜:帳簿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ガスパルは馬市商として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC078",
           "kind": "secret",
           "text": "王都の馬商を都会価格と笑う/港荷馬の相場を知る",
           "disclosure": {
@@ -22926,13 +22458,7 @@
       "scheduleSource": "朝:船具確認/昼:修理/夕:港の点検/夜:工房",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オーリンは船大工として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC079",
           "kind": "secret",
           "text": "外国船の構造に興味がある/軍船向け改造を見抜く",
           "disclosure": {
@@ -22973,13 +22499,7 @@
       "scheduleSource": "朝:店の片付け/昼:仕込み/夕:客対応/夜:情報売買",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ヴェラは裏酒場店主として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC080",
           "kind": "secret",
           "text": "善人はここで迷子になると思う/常連の裏名簿を持つ",
           "disclosure": {
@@ -23020,13 +22540,7 @@
       "scheduleSource": "朝:闇港/昼:倉庫/夕:船便/夜:裏酒場",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ラチカは運び屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC081",
           "kind": "secret",
           "text": "荷の中身を知らない方がいいと思う/人の声がする箱を運んだ",
           "disclosure": {
@@ -23067,13 +22581,7 @@
       "scheduleSource": "朝:在庫確認/昼:荷札整理/夕:鍵管理/夜:倉庫裏",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ゴードは密輸倉庫番として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC082",
           "kind": "secret",
           "text": "金を払う相手が正義/二重帳簿を隠す",
           "disclosure": {
@@ -23114,13 +22622,7 @@
       "scheduleSource": "朝:馬の確認/昼:客対応/夕:偽造証整理/夜:裏厩舎",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ジェリコは裏馬商として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC083",
           "kind": "secret",
           "text": "盗まれた馬も乗れば同じと思う/王都軍馬の流出元を知る",
           "disclosure": {
@@ -23161,13 +22663,7 @@
       "scheduleSource": "朝:門番/昼:市場巡回/夕:帳簿確認/夜:休憩所",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ベスは奴隷市場の見張りとして、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC084",
           "kind": "secret",
           "text": "商品と客を分けて考える/逃がしたい子を一人知っている",
           "disclosure": {
@@ -23208,13 +22704,7 @@
       "scheduleSource": "朝:仕込み/昼:客対応/夕:酒場本番/夜:酔客整理",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ガンツは洞窟酒場主人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC085",
           "kind": "secret",
           "text": "地上人の酒は薄いと思う/強行派と安全派の本音を聞く",
           "disclosure": {
@@ -23255,13 +22745,7 @@
       "scheduleSource": "朝:採掘準備/昼:坑道/夕:酒場/夜:宿舎",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "リッカは若い坑夫として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC086",
           "kind": "secret",
           "text": "危険を恐れるのは恥と思う/支柱の軋みを聞いた",
           "disclosure": {
@@ -23302,13 +22786,7 @@
       "scheduleSource": "朝:検品/昼:市場販売/夕:帳簿/夜:酒場",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オモは鉱石商として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC087",
           "kind": "secret",
           "text": "地上商人は値切りすぎる/深部鉱石の異常な輝きを知る",
           "disclosure": {
@@ -23349,13 +22827,7 @@
       "scheduleSource": "朝:餌やり/昼:貸出/夕:返却確認/夜:獣舎",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ドナは荷駄係として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC088",
           "kind": "secret",
           "text": "馬は洞窟で役に立たないと思う/黒嶺地下道に向く獣を知る",
           "disclosure": {
@@ -23396,13 +22868,7 @@
       "scheduleSource": "朝:包帯確認/昼:工房補助/夕:怪我人診療/夜:記録",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ペルナは救護係兼技術助手として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC089",
           "kind": "secret",
           "text": "坑夫は痛みを隠すと思う/名工の持病を知る",
           "disclosure": {
@@ -23443,13 +22909,7 @@
       "scheduleSource": "朝:在庫確認/昼:補給配分/夕:報告/夜:倉庫施錠",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ヘンリクは要塞補給係として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC090",
           "kind": "secret",
           "text": "戦争は倉庫から始まる/武器の出所差異を記録",
           "disclosure": {
@@ -23490,13 +22950,7 @@
       "scheduleSource": "朝:診察/昼:薬品整理/夕:兵舎巡回/夜:軍医室",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "マルタは軍医として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC091",
           "kind": "secret",
           "text": "強硬論者ほど痛みに弱い/偽装襲撃の傷が不自然と分かる",
           "disclosure": {
@@ -23537,13 +22991,7 @@
       "scheduleSource": "朝:北門/昼:検問/夕:交代報告/夜:詰所",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オスカーは門番として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC092",
           "kind": "secret",
           "text": "黒嶺から来る者は全員怪しいと思う/偽装通行証の特徴を知る",
           "disclosure": {
@@ -23584,13 +23032,7 @@
       "scheduleSource": "朝:馬の世話/昼:騎乗準備/夕:厩舎掃除/夜:見回り",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ディノは軍馬係として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC093",
           "kind": "secret",
           "text": "馬は人より嘘をつかない/マグナスの夜間出発を見た",
           "disclosure": {
@@ -23631,13 +23073,7 @@
       "scheduleSource": "朝:兵舎/昼:訓練補助/夕:城壁/夜:食堂",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ハイドは古参兵として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC094",
           "kind": "secret",
           "text": "黒嶺にも家族がいるかもしれないと思う/過去の停戦理由を覚えている",
           "disclosure": {
@@ -23678,13 +23114,7 @@
       "scheduleSource": "朝:開店/昼:客引き/夕:在庫整理/夜:巡礼宿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "モニカは土産物屋として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC095",
           "kind": "secret",
           "text": "客が消えると村も消えると思う/失踪者が買った同じ護符を覚える",
           "disclosure": {
@@ -23725,13 +23155,7 @@
       "scheduleSource": "朝:案内所/昼:回廊案内/夕:管理棟報告/夜:辺境宿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "イライアは神殿案内人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC096",
           "kind": "secret",
           "text": "古代装置を神の奇跡と呼ぶ/同じ回廊で人が消えると知る",
           "disclosure": {
@@ -23772,13 +23196,7 @@
       "scheduleSource": "朝:正門/昼:巡回/夕:管理棟/夜:正門交代",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ケイナは神殿警備兵として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC097",
           "kind": "secret",
           "text": "失踪は盗賊の仕業かもと思う/管理棟の隠蔽を薄々知る",
           "disclosure": {
@@ -23819,13 +23237,7 @@
       "scheduleSource": "朝:参道口集合/昼:神殿巡礼/夕:宿へ戻る/夜:巡礼宿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ラミルは巡礼団長として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC098",
           "kind": "secret",
           "text": "神殿は人を試す場所と思う/失踪者の最後の列順を知る",
           "disclosure": {
@@ -23866,13 +23278,7 @@
       "scheduleSource": "朝:馬屋/昼:馬繋ぎ場/夕:餌やり/夜:馬屋",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ヨハンは馬屋番として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC099",
           "kind": "secret",
           "text": "馬は怯えた場所を覚える/失踪者の馬が回廊前で暴れた",
           "disclosure": {
@@ -23913,13 +23319,7 @@
       "scheduleSource": "朝:小祠/昼:神殿正門/夕:宿/夜:祈り",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ダフネは失踪者の姉として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC100",
           "kind": "secret",
           "text": "王都は庶民の失踪を隠すと思う/妹の日記を持つ",
           "disclosure": {
@@ -23960,13 +23360,7 @@
       "scheduleSource": "朝:住居区/昼:薬草作業/夕:評議所前/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ナーウェはリュシアの親として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC101",
           "kind": "secret",
           "text": "外の世界は娘を壊すと思う/リュシアが外へ憧れた理由を知る",
           "disclosure": {
@@ -24007,13 +23401,7 @@
       "scheduleSource": "朝:結界石点検/昼:森の境界確認/夕:世界樹報告/夜:結界石",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "メルキアは結界管理者として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC102",
           "kind": "secret",
           "text": "人間に結界理論を教えるべきでない/森で迷う仕組みを知る",
           "disclosure": {
@@ -24054,13 +23442,7 @@
       "scheduleSource": "朝:薬草園/昼:精霊域/夕:調合/夜:祈り",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "シルフィはエルフ薬草師として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC103",
           "kind": "secret",
           "text": "人間は薬草を商品としか見ないと思う/世界樹の痛みを薬草で感じる",
           "disclosure": {
@@ -24101,13 +23483,7 @@
       "scheduleSource": "朝:弓兵訓練/昼:森境界/夕:報告/夜:木立見張り",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "フェンは里の弓兵として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC104",
           "kind": "secret",
           "text": "人間は音を立てすぎる/黒嶺側の足音も聞き分ける",
           "disclosure": {
@@ -24148,13 +23524,7 @@
       "scheduleSource": "朝:宿の食事/昼:部屋割り/夕:客対応/夜:宿の帳簿",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "マルヴァは黒嶺共同宿の主として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC105",
           "kind": "secret",
           "text": "人間客は騒動を運ぶと思う/王都から逃げた者の証言を聞く",
           "disclosure": {
@@ -24195,13 +23565,7 @@
       "scheduleSource": "朝:市場準備/昼:商売/夕:仕入れ/夜:共同宿で情報交換",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ヤクサは黒嶺市場商人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC106",
           "kind": "secret",
           "text": "王国人は黒嶺品の価値を知らない/王都の差別で相場が上がる",
           "disclosure": {
@@ -24242,13 +23606,7 @@
       "scheduleSource": "朝:外門/昼:審査/夕:評議場報告/夜:門詰所",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "イルグは入国審査役として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC107",
           "kind": "secret",
           "text": "王国書類は信用できない/本物の紹介印を見分ける",
           "disclosure": {
@@ -24289,13 +23647,7 @@
       "scheduleSource": "朝:評議場/昼:飛行伝令/夕:軍営報告/夜:高所の巣",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ケーツは翼人の伝令として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC108",
           "kind": "secret",
           "text": "地上の政治は遅すぎると思う/穏健派と侵攻派双方の命令を聞く",
           "disclosure": {
@@ -24336,13 +23688,7 @@
       "scheduleSource": "朝:市場の手伝い/昼:遊び/夕:共同宿/夜:家族の家",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ミトは角人の子どもとして、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC109",
           "kind": "secret",
           "text": "王国人を絵本の悪者だと思う/人間の飴が好き",
           "disclosure": {
@@ -24383,13 +23729,7 @@
       "scheduleSource": "朝:市場で買い物/昼:縫い仕事/夕:共同宿手伝い/夜:自宅",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "ラシャは獣人の母親として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC110",
           "kind": "secret",
           "text": "王国兵は子どもも見逃さないと思う/王国に親戚がいる",
           "disclosure": {
@@ -24430,13 +23770,7 @@
       "scheduleSource": "朝:修理屋開店/昼:畑・広場へ納品/夕:修理屋/夜:自宅。火災・狼被害時は緊急修理を優先",
       "knowledge": [
         {
-          "kind": "background",
-          "text": "オルグは農具修理職人として、この土地で暮らしている。",
-          "disclosure": {
-            "visibility": "public"
-          }
-        },
-        {
+          "id": "private-background:NPC111",
           "kind": "secret",
           "text": "王都製品は過剰品質と思う/古い農具を護身具へ転用する知恵がある",
           "disclosure": {

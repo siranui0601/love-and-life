@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createServer} from 'node:http';
 import express from 'express';
-import {createWorld, advanceWorld, applyCommand} from '../../src/shared/trpg-world/simulation.js';
+import {createWorld, advanceWorld, applyCommand, projectWorld} from '../../src/shared/trpg-world/simulation.js';
+import {secureArea} from './validation/action-domain.mjs';
+import {optionsFromView} from './validation/replay.mjs';
 import {canOccupy, findPath, moveBody, distance, hasLineOfSight} from '../../src/shared/trpg-world/navigation.js';
 import {MOVEMENT, priceOf} from '../../src/shared/trpg-world/progression.js';
 import {PersistentWorldService} from '../../src/server/trpg/world/service.js';
@@ -20,7 +22,23 @@ class Journey {
   constructor(seed = 4) { this.state = createWorld(content, {seed}); this.commands = 0; this.travelModes = new Set(); }
   get player() { return this.state.player; }
   get region() { return regionById.get(this.player.region); }
-  command(command) { this.commands++; return applyCommand(this.state, content, command); }
+  view() { return projectWorld(this.state, content); }
+  options() { return optionsFromView(this.view()); }
+  advance(seconds) { advanceWorld(this.state, content, seconds); }
+  select(option) { return this.command(option.command); }
+  command(command) {
+    this.commands++;
+    try { return applyCommand(this.state, content, command); }
+    catch (error) {
+      if (error.code !== 'DANGER_NEARBY') throw error;
+      // A journey can no longer skip a live encounter by starting macro travel.
+      // React to the refusal with the same offered attacks/guard/healing as a player.
+      const result = secureArea(this);
+      assert(!result.error, `Cannot safely continue the journey: ${JSON.stringify(result)}`);
+      this.commands++;
+      return applyCommand(this.state, content, command);
+    }
+  }
   object(id) {
     const object = this.region.objects.find(candidate => candidate.id === id);
     assert(object, `${id} must be a real local facility in ${this.region.id}`);

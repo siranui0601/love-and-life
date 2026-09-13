@@ -24,6 +24,7 @@ export function prepare(run,requirements,{maxDecisions=24}={}) {
  const goals=[requirements];let decisions=0;
  while(goals.length&&decisions<maxDecisions) {
   const goal=goals.at(-1),view=run.view(),p=view.player;
+  if(view.monsters.some(m=>m.activity==='attack'||distance(m.position,p.position)<12)){const fight=secureArea(run);decisions++;if(fight.error)return fight;continue;}
   const item=Object.entries(goal.items||{}).find(([id,n])=>(p.inventory[id]||0)<n),skill=(goal.skills||[]).find(id=>!p.skills.includes(id));
   if(!item&&!skill&&p.gold>=(goal.gold||0)&&p.sp>=(goal.sp||0)){goals.pop();continue;}
   if(p.sp<(goal.sp||0))return {error:'FIRST_MISSING_AFFORDANCE',reason:'技能点を得る成長行動が必要',decisions};
@@ -40,6 +41,7 @@ export function prepare(run,requirements,{maxDecisions=24}={}) {
   const lacking=Object.entries(needed.items||{}).some(([id,n])=>(p.inventory[id]||0)<n)||(needed.skills||[]).some(id=>!p.skills.includes(id))||p.gold<(needed.gold||0)||p.sp<(needed.sp||0);
   if(lacking){if(goals.some(g=>JSON.stringify(g)===JSON.stringify(needed)))return {error:'CYCLIC_PREPARATION_REQUIREMENTS',decisions};goals.push(needed);continue;}
   const arrived=performAt(run,choice.service,null);if(arrived.error)return arrived;
+  const at=run.view();if(at.monsters.some(m=>m.activity==='attack'||distance(m.position,at.player.position)<12)){const fight=secureArea(run);decisions++;if(fight.error)return fight;continue;}
   const refresh=run.options().find(o=>o.command.targetId===choice.service.id&&o.command.type==='interact'&&o.command.action==='inspect');
   if(refresh){const result=run.select(refresh,'店頭で変わった条件を確かめ、準備を組み直す');decisions++;if(result.error)return result;continue;}
   const result=performAt(run,choice.service,type,parameter,'調べて知った入手先で、旅支度を進める');decisions++;if(result.error)return result;

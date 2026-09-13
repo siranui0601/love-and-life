@@ -21,14 +21,16 @@ async function speakNearby() {
  return false;
 }
 function liveCycle() {
+ must(secureArea(r));
  const inn=r.view().region.objects.find(o=>o.kind==='inn'),market=r.view().region.objects.find(o=>o.kind==='shop');
  if(!r.view().services.some(s=>s.id===market.id))visit(market,'interact',{action:'inspect'},'食料と仕事を店頭で確かめる');
  else if(!natural)visit(market,null,{},'知っている仕事場へ歩く');
- let job=r.options().find(o=>o.command.type==='work');
+ must(secureArea(r));let job=r.options().find(o=>o.command.type==='work');
  if(!job)for(const place of r.view().region.objects.filter(o=>['job','board','trainer'].includes(o.kind))) {
-  visit(place,null,{},'生活費を稼げる仕事を現地で探す');job=r.options().find(o=>o.command.type==='work');if(job)break;
+  visit(place,null,{},'生活費を稼げる仕事を現地で探す');must(secureArea(r));job=r.options().find(o=>o.command.type==='work');if(job)break;
  }
  if(!job)throw new Error('FIRST_MISSING_AFFORDANCE: local paid work');must(r.select(job,'仕事で食費と宿代を稼ぐ'));
+ must(secureArea(r));
  must(prepare(r,{items:{supplies:1},gold:8}));
  const condition=r.view();if(natural&&condition.player.hunger<40&&condition.player.fatigue<55&&condition.time%86400<22*3600)return;
  visit(inn,null,{},'食事や休息が必要になったため、宿へ戻る');

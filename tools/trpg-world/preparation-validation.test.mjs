@@ -7,6 +7,7 @@ import fs from 'node:fs/promises';
 import {PersistentWorldService,hashWorldToken} from '../../src/server/trpg/world/service.js';
 import {MemoryWorldStore} from '../../src/server/trpg/world/store.js';
 import {runPolicy} from './validation/journey.mjs';
+import {auditWorldContent} from './audit-content.mjs';
 function content(){return {revision:'preparation-contract',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'村',size:160,spawn:[0,0,0],obstacles:[],portals:[],objects:[{id:'shop',kind:'shop',name:'道具店',position:[0,0,2]},{id:'teacher',kind:'trainer',name:'師匠',skills:['magic'],position:[2,0,0]},{id:'board',kind:'board',name:'掲示板',position:[-2,0,0]},{id:'inn',kind:'inn',name:'宿',position:[0,0,-2]}]}],npcs:[],events:[],causalScenarios:[],routes:[],items:[{id:'timber',name:'木材',price:65},{id:'supplies',name:'携帯食',price:5,kind:'food'},{id:'medicine',name:'傷薬',price:14,heal:45}],skills:[{id:'magic',name:'基礎魔術',goldCost:22,cost:1}],jobs:[{id:'labor',name:'荷運び',region:'farm',facilityId:'board',minutes:30,pay:45,xp:32}],equipment:[],monsters:[]};}
 test('preparation discovers actual services, works for money, purchases and completes repeated lessons',()=>{
  const c=content(),r=new WorldReplay(c);assert.deepEqual(r.view().services,[]);
@@ -73,4 +74,35 @@ test('aware policy follows a discovered waterway need through ordinary preparati
 });
 test('a downed player leaves active combat and cannot accumulate negative HP from stale attacks',()=>{
  const c=content();c.regions[0].spawn=[-49,0,-45];c.monsters=[{id:'brute',region:'farm',name:'大獣',hp:500,level:1,attack:300,defense:0,speed:1,range:2.8,xp:20,gold:3,drops:[]}];const r=new WorldReplay(c);r.advance(2);assert.equal(r.state.player.hp,0);assert.equal(r.state.player.collapse.status,'active');const at=r.state.time;r.advance(5);assert.equal(r.state.player.hp,0);assert(r.state.time>at);assert(!r.view().personalActions.some(a=>a.type==='attack'));assert.deepEqual(r.view().personalActions.map(a=>a.type),['recover']);
+});
+test('internal NPC roles are not public biographies, work descriptions or conversation revelations',async()=>{
+ const c=content();c.npcs=[{id:'NPC999',name:'近所の人',region:'farm',home:[0,0,1],work:[0,0,1],role:'SECRET_HIRED_CULPRIT',knowledge:[{id:'background:NPC999:0',kind:'background',text:'近所の人はSECRET_HIRED_CULPRITとして、この土地で暮らしている。',disclosure:{visibility:'public'}}]}];
+ const r=new WorldReplay(c);r.advance(.5);assert(!JSON.stringify(r.view()).includes('SECRET_HIRED_CULPRIT'));assert(r.state.legacySnapshot.invalidGeneratedKnowledge.length);
+ assert(!performAt(r,r.view().npcs[0],'interact',{action:'talk'}).error);assert(!JSON.stringify(r.view().conversation).includes('SECRET_HIRED_CULPRIT'));
+ const daily=r.options().find(o=>o.command.intentId==='daily-plan');assert(daily);r.select(daily);assert(!JSON.stringify(r.view().conversation).includes('SECRET_HIRED_CULPRIT'));
+ const production=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
+ assert(production.npcs.every(n=>!n.knowledge.some(k=>k.kind==='background'&&k.disclosure?.visibility==='public')));
+ assert(auditWorldContent(c).errors.some(e=>e.includes('role leaked')));
+});
+test('actual recorded v2 migration retires leaked generated knowledge while preserving physical history and people',async()=>{
+ const c=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
+ const {state}=JSON.parse(await fs.readFile(new URL('../../docs/trpg-world/validation/causal-2026-09-12/09679baf/mine-intermediate.json',import.meta.url),'utf8'));
+ const ownerKey=hashWorldToken('actual-aftermath-source-migration'),store=new MemoryWorldStore(),saved={schemaVersion:2,id:'real-recorded-state',ownerKey,contentRevision:state.contentRevision,contentHash:'095e3f7e79de4ae8d7e86d0bbd405afa0203dfbd70ded2bb78db867697cca388',state,advancedAtMs:1,revision:1,lastSeq:1,receipts:[{seq:1,response:{message:'穀物商に雇われた放火犯'}}]};
+ await store.put(ownerKey,saved);const service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>999999999});
+ const response=await service.session(ownerKey);assert(!JSON.stringify(response).includes('穀物商に雇われた放火犯'));await service.close();
+ const migrated=await store.get(ownerKey);assert(migrated.state.legacySnapshot.invalidGeneratedKnowledge.length>0);assert.deepEqual(migrated.state.socialFacts,state.socialFacts);assert.deepEqual(migrated.state.structures,state.structures);assert.equal(migrated.state.time,state.time);assert.equal(migrated.state.npcs.NPC086.companionOf,state.npcs.NPC086.companionOf);assert.deepEqual(migrated.receipts,[]);assert.equal(migrated.legacyReceipts.length,1);
+});
+test('combat blocks macro work before calendar advancement or wage and permits work after real combat',()=>{
+ const c=content();c.regions[0].spawn=[-49,0,-45];c.regions[0].objects.find(o=>o.id==='board').position=[-49,0,-43];
+ c.monsters=[{id:'rat',region:'farm',name:'野鼠',hp:35,level:1,attack:4,defense:0,speed:1,range:2.8,xp:20,gold:3,drops:[]}];const r=new WorldReplay(c);r.advance(.1);
+ const time=r.state.time,gold=r.state.player.gold;assert(!r.options().some(o=>o.command.type==='work'));
+ assert.equal(r.command({type:'work',targetId:'board',jobId:'labor'}).error.code,'DANGER_NEARBY');assert.equal(r.state.time,time);assert.equal(r.state.player.gold,gold);
+ const fight=engage(r,r.view().monsters[0].id);assert(fight.ended,JSON.stringify(fight));assert(!performAt(r,r.view().region.objects.find(o=>o.id==='board'),'work',{jobId:'labor'}).error);assert(r.state.time>=time+1800);
+});
+test('an emerging nearby threat interrupts an unfinished macro job without awarding completion wages',()=>{
+ const c=content();c.jobs[0].minutes=60;c.events=[{id:'threat',name:'獣の襲来',region:'farm',position:[-12,0,-9],sourceIds:['T99'],startsAt:25800,deadline:40000}];
+ c.monsters=[{id:'pack',region:'farm',name:'野獣',sourceCondition:'T99発生',hp:35,level:1,attack:4,defense:0,speed:1,range:2.8,xp:20,gold:3,drops:[]}];
+ const r=new WorldReplay(c),gold=r.state.player.gold;const work=r.options().find(o=>o.command.type==='work');assert(work);r.select(work);
+ assert.equal(r.state.player.gold,gold);assert.equal(r.state.player.activity.kind,'combat');assert.equal(r.state.activityHistory.at(-1).completed,false);assert.equal(r.state.activityHistory.at(-1).interruptionReason,'danger');assert(r.state.time<28800);
+ const at=r.state.time;r.advance(.1);assert.equal(r.state.time,at);assert(r.state.simulationTime>0);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });

@@ -1,5 +1,6 @@
 import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
 import {orderedValues} from './semantic.js';
+import {retireGeneratedBiographies} from './knowledge-migration.js';
 import {knownWorkplaceClosed,observeWorkplace} from './world-semantics.js';
 import {knownTiming,readNotices} from './public-knowledge.js';
 import {structureObservation,structureActions,startStructureWork,finishStructureWork} from './infrastructure.js';
@@ -19,6 +20,7 @@ import {MOVEMENT, awardXp, forceOf, priceOf} from './progression.js';
 import {startEnemyAction,resolveEnemyAction,tickCombatEffects} from './combat.js';
 
 const DAY = 86400, INTERACTION = 5, indexes = new WeakMap();
+const MACRO_COMMANDS=new Set(['maintain','work','train','craft','rest','eat','travel']);
 const TRAVEL_FACTOR = Object.freeze({foot:1,horse:.45,carriage:.65,broom:.3,boat:.7,ship:.5,wagon:.8,magic:.1});
 const TRAVEL_LABEL = Object.freeze({foot:'徒歩',horse:'乗馬',carriage:'馬車',broom:'箒',boat:'船',wagon:'荷馬車',ship:'船',magic:'転移'});
 const TRAVEL_RISK_LABEL = Object.freeze({safe:'安定',watch:'注意',danger:'危険'});
@@ -136,7 +138,7 @@ export function createWorld(content,{seed=1,name='旅人'}={}) {
   for (const npc of content.npcs || []) state.npcs[npc.id] = {id:npc.id,region:npc.region,position:[...(npc.home || [0,0,0])],hp:70,maxHp:70,
     activity:'休息',goal:'sleep',personality:npc.personality||'',values:clone(npc.values||{}),possessions:clone(npc.possessions||{}),money:finite(npc.money,8),knowledge:(npc.knowledge || []).map((fact,i)=>typeof fact==='string'?{id:`background:${npc.id}:${i}`,kind:'background',text:fact,region:npc.region,observedAt:state.time,confidence:1,disclosure:{visibility:'private'},source:{type:'past-experience',actorId:npc.id}}:{...clone(fact),id:fact.id||`background:${npc.id}:${i}`,observedAt:fact.observedAt??state.time,confidence:fact.confidence??1,disclosure:fact.disclosure||{visibility:fact.kind==='secret'||fact.disclosureTrust>0?'private':'public'},source:fact.source||{type:'past-experience',actorId:npc.id}}).filter(f=>typeof f.text==='string'),hunger:20,fatigue:0,lastHelpDay:-1,lastTradeDay:-1,travel:null,path:[],pathTarget:null,nextDecision:0};
   for (const event of content.events || []) state.events[event.id] = {id:event.id,status:'latent',interventions:[],startedAt:null,resolvedAt:null};
-  initializeRelationships(state);initializeCausality(state,content);setActivity(state,'idle');initializeMonsters(state,content); updateWeather(state,content); updateKnowledgeFromSight(state,content);
+  retireGeneratedBiographies(state,content);initializeRelationships(state);initializeCausality(state,content);setActivity(state,'idle');initializeMonsters(state,content); updateWeather(state,content); updateKnowledgeFromSight(state,content);
   log(state,'朝の街へ出よう。WASDで歩き、近づいてEで話す・調べる。','arrival');
   return state;
 }
@@ -207,7 +209,7 @@ function chooseGoal(state,content,npc,template) {
     {goal:'sleep',utility:h<6||h>=22?90:npc.fatigue>85?75:0,target:template.home,activity:'睡眠'},
     {goal:'eat',utility:npc.hunger>65||h>=12&&h<13?80:0,target:template.home,activity:'食事'},
     {goal:'respond',utility:localProblem&&h>=7&&h<19?(willingToCooperate(state,npc)?62:54):0,target:localProblem?.position,activity:'事件への対処'},
-    {goal:'work',utility:h>=7&&h<18&&!knownWorkplaceClosed(npc,template.workFacilityId)?50:0,target:template.work,activity:template.role ? `${template.role}の仕事`:'仕事'},
+    {goal:'work',utility:h>=7&&h<18&&!knownWorkplaceClosed(npc,template.workFacilityId)?50:0,target:template.work,activity:template.publicRole ? `${template.publicRole}の仕事`:'仕事'},
     {goal:'social',utility:h>=18&&h<22?55:20,target:region?.objects?.find(o=>o.kind==='inn')?.position || template.home,activity:'会話と休憩'},
   ];
   const chosen = utilities.sort((a,b)=>b.utility-a.utility)[0];
@@ -377,19 +379,21 @@ export function advanceWorld(state,content,realSeconds) {
 }
 export function advanceMacro(state,content,kind,seconds,details={}) {
   if(!Number.isFinite(seconds)||seconds<=0||seconds>12*3600)fail('INVALID_TIME','行動時間が不正です。');
+  if(combatNearby(state,content))fail('DANGER_NEARBY','まず目の前の危険に対処してください。',409);
   const previous=clone(state.player.activity);
   setActivity(state,kind,{...details,expectedEndAt:state.time+seconds});
-  const startedAt=state.time;let remaining=seconds;
+  const startedAt=state.time;let remaining=seconds,interruptionReason;
   while(remaining>1e-7) {
     let delta=Math.min(remaining,300);
     for(const event of content.events||[])for(const boundary of [eventStart(event),eventDeadline(event)])
       if(boundary>state.time+1e-7)delta=Math.min(delta,boundary-state.time);
     advanceCalendar(state,content,delta);remaining-=delta;
     if(state.player.collapse?.status==='active'&&!['collapsed','recovering'].includes(kind))break;
+    if(remaining>1e-7&&combatNearby(state,content)){interruptionReason='danger';break;}
   }
   state.activityHistory||=[];
-  state.activityHistory.push({...clone(state.player.activity),kind,endedAt:state.time,startedAt,completed:remaining<1e-7});
-  if(state.player.collapse?.status!=='active'){if(['collapsed','recovering'].includes(previous.kind))setActivity(state,'idle');else state.player.activity=previous;}zeroInput(state);
+  state.activityHistory.push({...clone(state.player.activity),kind,endedAt:state.time,startedAt,completed:remaining<1e-7,...(interruptionReason?{interruptionReason}:{})});
+  if(state.player.collapse?.status!=='active'){if(interruptionReason){setActivity(state,'combat');log(state,'近くの危険に気づき、行動を中断した。','danger');}else if(['collapsed','recovering'].includes(previous.kind))setActivity(state,'idle');else state.player.activity=previous;}zeroInput(state);
   return remaining<1e-7;
 }
 
@@ -509,6 +513,7 @@ function advancePlayerAction(state,content) {
 export function applyCommand(state,content,command) {
   if(!command || typeof command.type!=='string') fail('INVALID_COMMAND','操作が不正です。');
   const p=state.player,idx=index(content);
+  if(MACRO_COMMANDS.has(command.type)&&combatNearby(state,content))fail('DANGER_NEARBY','まず目の前の危険に対処してください。',409);
   if(p.collapse?.status==='active'&&!['input','pause','resume','recover'].includes(command.type))fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(['attack','dodge','defend'].includes(command.type)&&p.activity?.worldTimePolicy==='paused')fail('ACTIVITY_PAUSED','画面を閉じて行動を再開してください。',409);
   if(command.type==='affordance')return performAffordance(state,content,command);
@@ -589,7 +594,7 @@ export function applyCommand(state,content,command) {
     if(missing.length)fail('CRAFT_REQUIREMENTS',`必要：${missing.join('、')}`,409);
     for(const [id,amount] of Object.entries(scaled.items || {}))p.inventory[id]=finite(p.inventory[id])-finite(amount);
     p.gold-=finite(scaled.gold);
-    const duration=clamp(finite(recipe.minutes,30)*quantity,15,240);if(!advanceMacro(state,content,'crafting',duration*60,{targetId:target.id}))return {message:'製作中に倒れた。'};
+    const duration=clamp(finite(recipe.minutes,30)*quantity,15,240);if(!advanceMacro(state,content,'crafting',duration*60,{targetId:target.id}))return {message:'製作を中断した。'};
     for(const [id,amount] of Object.entries(outputs))p.inventory[id]=finite(p.inventory[id])+finite(amount)*quantity;
     const earned=awardXp(state,finite(recipe.xp,24)*quantity,`craft:${recipe.id}`);
     p.mastery.crafting=finite(p.mastery.crafting)+quantity;
@@ -629,7 +634,7 @@ export function applyCommand(state,content,command) {
     if(target&&!['inn','camp','bench'].includes(target.kind))fail('FOOD_CONTEXT','ここでは食事をとれません。',409);
     if(!target&&(p.position[1]>1||combatNearby(state,content)))fail('UNSAFE_MEAL','食事ができる場所へ移動してください。',409);
     p.inventory[item.id]--;p.hunger=Math.max(0,p.hunger-NEEDS.mealRelief);
-    if(!advanceMacro(state,content,'eating',900,{targetId:target?.id||null,context:target?.kind||'travel-ration'}))return {message:'食事中に倒れた。'};
+    if(!advanceMacro(state,content,'eating',900,{targetId:target?.id||null,context:target?.kind||'travel-ration'}))return {message:'食事を中断した。'};
     rememberAction(state,content,'meal',{targetId:target?.id,payload:{itemId:item.id}});
     return {message:'腰を下ろして食事をとった。15分が過ぎた。'};
   }
@@ -686,7 +691,7 @@ export function applyCommand(state,content,command) {
     if(target.kind!=='inn')fail('NOT_INN','宿に近づいてください。',409);
     if(!Number.isFinite(hours)||hours<.25||hours>12)fail('INVALID_HOURS','休息は15分から12時間です。');
     if(p.gold<8)fail('NO_GOLD','宿代8Gが必要です。',409);
-    p.gold-=8;if(!advanceMacro(state,content,'sleeping',hours*3600,{targetId:target.id}))return {message:'休息中に体調が悪化した。'};
+    p.gold-=8;if(!advanceMacro(state,content,'sleeping',hours*3600,{targetId:target.id}))return {message:'休息を中断した。'};
     p.hp=Math.min(p.maxHp,p.hp+hours*18);p.mp=Math.min(p.maxMp,p.mp+hours*12);p.stamina=100;
     log(state,`${hours}時間休んだ。宿の外では暮らしと事件が続いていた。`,'rest');return {message:'休息して回復した。'};
   }
@@ -696,7 +701,7 @@ export function applyCommand(state,content,command) {
     if(!job||(job.facilityId?target.id!==job.facilityId:!['job','npc','board'].includes(target.kind)))fail('JOB_MISSING','実際の仕事場に近づいてください。',409);
     if(job.region&&job.region!==p.region)fail('JOB_REGION','その仕事は別の地域です。',409);
     const missing=requirementsMissing(state,content,job.requirements || {});if(missing.length)fail('JOB_REQUIREMENTS',`必要：${missing.join('、')}`,409);
-    const duration=clamp(finite(job.minutes,120),15,240);if(!advanceMacro(state,content,'working',duration*60,{targetId:target.id}))return {message:'作業中に倒れた。'};
+    const duration=clamp(finite(job.minutes,120),15,240);if(!advanceMacro(state,content,'working',duration*60,{targetId:target.id}))return {message:'仕事を中断した。'};
     const wage=finite(job.pay??job.reward??job.wage,30);p.gold+=wage;awardXp(state,finite(job.xp,30),`job:${job.id}`);state.regions[p.region].stock=Math.min(2,state.regions[p.region].stock+.025);
     rememberAction(state,content,'shared-work',{targetId:target.id,payload:{jobId:job.id}});
     p.mastery.profession=finite(p.mastery.profession)+1;recordWitnesses(state,content,`${p.name}が${job.name}を手伝った。`,'work');
@@ -799,7 +804,7 @@ export function projectWorld(state,content) {
   const cleanObject=o=>({id:o.id,name:o.eventId&&!knownIds.has(o.eventId)?'気になる現場':o.name,kind:o.kind,position:clone(o.position),asset:o.asset,rotation:o.rotation || 0,scale:o.scale || 1,interior:o.interior,crafting:o.crafting,buildingPosition:o.buildingPosition,width:o.width,depth:o.depth,height:o.height});
   const publicRegion={id:region.id,name:region.name,biome:region.biome,color:region.color,size:region.size,spawn:clone(region.spawn),description:region.description,worldPosition:clone(region.worldPosition),
     obstacles:clone(region.obstacles || []),terrain:clone(region.terrain || {}),objects:(region.objects || []).map(o=>cleanObject({...o,...state.facilities?.[o.id]})),portals:clone(region.portals || [])};
-  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.role,position:clone(n.position),activity:n.activity,hp:n.hp,condition:n.injury&&['leg','burn','crush'].includes(n.injury.kind)?{kind:n.injury.kind,treated:n.injury.treated}:undefined,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
+  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.publicRole||'住民',position:clone(n.position),activity:n.activity,hp:n.hp,condition:n.injury&&['leg','burn','crush'].includes(n.injury.kind)?{kind:n.injury.kind,treated:n.injury.treated}:undefined,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
   const candidates=[...(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})),...nearbyNpcs.filter(n=>n.hp>0).map(n=>({...n,kind:'npc'})),...(content.events || []).filter(e=>e.region===p.region&&knownIds.has(e.id)).map(e=>({id:`event:${e.id}`,kind:'event',eventId:e.id,name:e.name,position:e.position || [0,0,0]}))];
   const interactables=candidates.filter(t=>distance(t.position,p.position)<=INTERACTION&&hasLineOfSight(region,p.position,t.position)).map(t=>({...cleanObject(t),distance:distance(t.position,p.position),actions:actionsFor(state,content,t)}));
   interactables.push(...propertyView(state,content).filter(o=>!o.held));
@@ -812,6 +817,7 @@ export function projectWorld(state,content) {
       return {id:`travel:${mode}`,type:'travel',portalId:portal.id,mode,label:`${estimate.label}で向かう · ${duration}分 · ${fare} · ${estimate.riskLabel}`,available:estimate.missing.length===0,missing:estimate.missing,minutes:estimate.minutes,price:estimate.cost,risk:estimate.risk,riskLabel:estimate.riskLabel,destination:destination?.name};
     })});
   }
+  if(combatNearby(state,content))for(const target of interactables)for(const action of target.actions)if(MACRO_COMMANDS.has(action.type)){action.available=false;action.missing=[...(action.missing||[]),'周囲の危険への対処'];}
   const knownEvents=state.knowledge.filter(k=>k.kind==='event'&&idx.events.has(k.eventId)).map(k=>{const e=idx.events.get(k.eventId),timing=knownTiming(state,e.id);return {id:e.id,name:e.name,region:e.region,description:k.text,status:k.status==='critical'&&!Number.isFinite(timing.deadline)?'active':k.status,observedAt:k.observedAt,source:clone(k.source),...timing,position:e.region===p.region?clone(e.position):undefined};});
   const quests=state.quests.map(quest=>{
     const event=idx.events.get(quest.eventId),known=knownEvents.find(k=>k.id===quest.eventId),worldStatus=known?.status,timing=knownTiming(state,quest.eventId);

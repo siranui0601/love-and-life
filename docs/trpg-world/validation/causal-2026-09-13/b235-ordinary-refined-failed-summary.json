@@ -1,0 +1,76 @@
+{
+  "kind": "ordinary",
+  "lifePolicy": "public hunger/fatigue/night, paid labor and at most one contact per person per day",
+  "routine": [
+    {
+      "action": "eat",
+      "at": 64579.74487930292,
+      "hunger": 40.51028379130378,
+      "fatigue": 21.87763604405717
+    }
+  ],
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": "{\"error\":\"survival-collapse\",\"position\":[-34.35127844040615,0,31.270255688081228]}",
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 794,
+    "simulationAdvances": 362,
+    "movementInputs": 382,
+    "meaningfulPlayerDecisions": 49,
+    "travelSegments": 21,
+    "investigations": 1,
+    "conversationTurns": 12,
+    "preparationActions": 9,
+    "combatActions": 0,
+    "otherDecisions": 6
+  },
+  "day": 1,
+  "clock": "22:01",
+  "hp": 0,
+  "replayEqual": true,
+  "intermediateRestartEqual": null,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 35,
+      "milestones": [],
+      "operating": true,
+      "water": 60
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": true,
+      "integrity": 100,
+      "milestones": [],
+      "operating": true,
+      "water": 0
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "latent"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "latent"
+    },
+    "harbor": {
+      "status": "latent"
+    },
+    "lost-road": {
+      "status": "active"
+    },
+    "resonance": {
+      "status": "latent"
+    },
+    "roots": {
+      "status": "latent"
+    }
+  },
+  "runName": "ordinary-refined"
+}

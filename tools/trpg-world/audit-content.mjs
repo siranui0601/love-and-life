@@ -22,6 +22,7 @@ export function auditWorldContent(content) {
     }
   }
   for(const npc of content.npcs||[]) {
+    if((npc.knowledge||[]).some(k=>k.kind==='background'&&k.disclosure?.visibility==='public'&&k.text===`${npc.name}は${npc.role}として、この土地で暮らしている。`))errors.push(`${npc.id}: authored role leaked into generated public biography`);
     const region=(content.regions||[]).find(r=>r.id===npc.region);
     if(!region){errors.push(`${npc.id}: unknown region`);continue;}
     for(const key of ['home','work'])if(!npc[key]||!canOccupy(region,npc[key]))errors.push(`${npc.id}: blocked ${key}`);
