@@ -4,6 +4,7 @@ import {damageStructure,advanceAftermath} from './aftermath.js';
 import {conditionHolds,consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
+import {initializeProcesses,advanceProcesses} from './processes.js';
 
 // Authored scenario bindings. Components below know roles and resources, not T numbers.
 export const DEFAULT_CAUSAL_SCENARIOS=[
@@ -19,6 +20,7 @@ export const DEFAULT_CAUSAL_SCENARIOS=[
 export function causalDefinitions(content) {return content.causalScenarios||DEFAULT_CAUSAL_SCENARIOS.filter(s=>content.events.some(e=>e.id===s.eventId));}
 export function initializeCausality(state,content) {
   initializeStructures(state,content);
+  initializeProcesses(state,content);
   state.facilities||={};state.causalObjects||={};
   for(const event of content.events||[]) {
     const current=state.events[event.id];if(!current)continue;
@@ -105,6 +107,7 @@ export function advanceCausality(state,content,seconds) {
       if(causal.treeIntegrity<=0)failCausality(state,content,event);
     }
   }
+  advanceProcesses(state,content,seconds);
   advanceAftermath(state,content,seconds);
 }
 export function failCausality(state,content,event) {

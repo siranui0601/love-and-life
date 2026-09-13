@@ -55,6 +55,18 @@ export function auditWorldContent(content) {
       for(const field of Object.keys(action.effects||{}))if(!['integrity','water','operating','blocked','fire','fuel'].includes(field))errors.push(`${structure.id}: nonphysical effect ${field}`);
     }
   }
+  const processIds=new Set();
+  for(const process of content.processes||[]) {
+    if(processIds.has(process.id))errors.push(process.id+': duplicate process');processIds.add(process.id);
+    if(!['device','patient','supply','inquiry'].includes(process.kind))errors.push(process.id+': unknown process kind');
+    const event=(content.events||[]).find(e=>e.id===process.eventId);
+    if(!event?.sourceIds.includes(process.sourceId))errors.push(process.id+': unbound source component');
+    if(!ids.regions.has(process.region)||!objects.has(process.targetId)&&!ids.npcs.has(process.targetId))errors.push(process.id+': inaccessible process target');
+    if(process.kind==='patient'&&!ids.npcs.has(process.actorId))errors.push(process.id+': missing actual patient');
+    if(process.kind==='inquiry'&&(!process.documents?.length||!process.reviewers?.length))errors.push(process.id+': no documents or responsible inhabitants');
+    for(const doc of process.documents||[])if(!objects.has(doc.targetId))errors.push(process.id+': inaccessible original '+doc.id);
+    for(const id of Object.keys(process.required||{}))if(id!=='gold'&&!ids.items.has(id))errors.push(process.id+': unavailable resource '+id);
+  }
   for(const scenario of content.causalScenarios||[]) {
     if(!ids.events.has(scenario.eventId))errors.push(`${scenario.eventId}: dangling causal binding`);
     for(const id of scenario.structures||[])if(!structures.has(id))errors.push(`${scenario.eventId}: unknown structure ${id}`);

@@ -1,3 +1,4 @@
+import {processActions,inspectProcesses,startProcessWork,finishProcessWork} from './processes.js';
 import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
 import {orderedValues} from './semantic.js';
 import {retireGeneratedBiographies} from './knowledge-migration.js';
@@ -20,7 +21,7 @@ import {MOVEMENT, awardXp, forceOf, priceOf} from './progression.js';
 import {startEnemyAction,resolveEnemyAction,tickCombatEffects} from './combat.js';
 
 const DAY = 86400, INTERACTION = 5, indexes = new WeakMap();
-const MACRO_COMMANDS=new Set(['maintain','work','train','craft','rest','eat','travel']);
+const MACRO_COMMANDS=new Set(['maintain','work','train','craft','rest','eat','travel','process']);
 const TRAVEL_FACTOR = Object.freeze({foot:1,horse:.45,carriage:.65,broom:.3,boat:.7,ship:.5,wagon:.8,magic:.1});
 const TRAVEL_LABEL = Object.freeze({foot:'徒歩',horse:'乗馬',carriage:'馬車',broom:'箒',boat:'船',wagon:'荷馬車',ship:'船',magic:'転移'});
 const TRAVEL_RISK_LABEL = Object.freeze({safe:'安定',watch:'注意',danger:'危険'});
@@ -46,7 +47,7 @@ function log(state,text,kind='action',eventId=null) {
 }
 function factFor(event,current,state,source,content) {
   const structure=(content.structures||[]).find(s=>s.hazardEventId===event.id),physical=structure&&structureObservation(state,content,structure.targetId);
-  return {id:`event:${event.id}`,kind:'event',eventId:event.id,text:physical?.text||event.description || event.name,region:event.region,
+  return {id:`event:${event.id}`,kind:'event',eventId:event.id,text:physical?.text||event.localObservation||event.description || event.name,region:event.region,
     status:current.status,observedAt:state.time,source,confidence:source.type==='heard'?.7:1};
 }
 function learnEvent(state,content,eventId,source,actor=state.player) {
@@ -513,10 +514,11 @@ function advancePlayerAction(state,content) {
 export function applyCommand(state,content,command) {
   if(!command || typeof command.type!=='string') fail('INVALID_COMMAND','操作が不正です。');
   const p=state.player,idx=index(content);
-  if(MACRO_COMMANDS.has(command.type)&&combatNearby(state,content))fail('DANGER_NEARBY','まず目の前の危険に対処してください。',409);
+  if(MACRO_COMMANDS.has(command.type)&&!String(command.action||'').endsWith('/inspect')&&combatNearby(state,content))fail('DANGER_NEARBY','まず目の前の危険に対処してください。',409);
   if(p.collapse?.status==='active'&&!['input','pause','resume','recover'].includes(command.type))fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(['attack','dodge','defend'].includes(command.type)&&p.activity?.worldTimePolicy==='paused')fail('ACTIVITY_PAUSED','画面を閉じて行動を再開してください。',409);
   if(command.type==='affordance')return performAffordance(state,content,command);
+  if(command.type==='process') {const target=targetAt(state,content,command.targetId),work=startProcessWork(state,content,target,command.action);if(work.inspection){setActivity(state,'inspecting',{targetId:target.id});return {message:work.inspection};}if(!advanceMacro(state,content,'crafting',work.op.minutes*60,{targetId:target.id,operation:command.action}))return {message:'現場の作業を中断した。'};finishProcessWork(state,content,work);advanceCausality(state,content,0);setActivity(state,'inspecting',{targetId:target.id});return {message:inspectProcesses(state,content,target)};}
   if(command.type==='causal') {const target=targetAt(state,content,command.targetId);const result=applyCausalAction(state,content,target,command.action);advanceCausality(state,content,0);if(target.kind!=='npc'){p.inspections||={};p.inspections[target.id]={...p.inspections[target.id],at:state.time,work:causalActions(state,content,target)};}setActivity(state,'inspecting',{targetId:target.id});return result;}
   if(command.type==='converse')return converse(state,content,command);
   if(command.type==='resume') {if(p.collapse?.status==='active')return {message:null};if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');return {message:null};}
@@ -554,14 +556,14 @@ export function applyCommand(state,content,command) {
     if(action==='review'){setActivity(state,'inspecting',{targetId:target.id});return {message:state.player.inspections?.[target.id]?.text||target.description||`${target.name}を眺めた。`};}
     if(action!=='inspect') fail('INVALID_ACTION','この操作は使えません。');
     setActivity(state,'inspecting',{targetId:target.id});
-    readNotices(state,target);
+    readNotices(state,target);const processText=inspectProcesses(state,content,target);
     if(target.eventId) learnEvent(state,content,target.eventId,{type:'read',region:p.region});
     if(target.evidenceId) learnEvidence(state,target.evidenceId,{type:'examined',targetId:target.id,region:p.region},target.description || `${target.name}を調べ、手がかりを得た。`);
     if(target.kind==='board') {
       // Notices are authored only for local events after their public signal.
       for(const event of content.events || []) if(event.region===p.region&&state.time>=eventStart(event)) learnEvent(state,content,event.id,{type:'read',targetId:target.id,region:p.region});
     }
-    p.inspections||={};p.inspections[target.id]={at:state.time,text:target.description||`${target.name}を調べた。`,work:causalActions(state,content,target),...structureObservation(state,content,target.id)};
+    p.inspections||={};p.inspections[target.id]={at:state.time,text:processText||target.description||`${target.name}を調べた。`,work:causalActions(state,content,target),...structureObservation(state,content,target.id)};
     if(['shop','stable','trainer','inn','board','job','workshop'].includes(target.kind)) {
       p.knownServices||={};p.knownServices[target.id]={id:target.id,name:target.name,region:p.region,position:clone(target.position),observedAt:state.time,source:{type:'examined',targetId:target.id},offers:actionsFor(state,content,target).filter(a=>['buy','work','train','rest','craft'].includes(a.type)).map(a=>clone(a))};
     }
@@ -768,7 +770,7 @@ function actionsFor(state,content,target) {
       actions.push({id:`accept:${event.id}`,type:'accept',eventId:event.id,label:`依頼を受ける：${event.name}`});
   }
   actions.push(...affordances(state,content,target.id));
-  actions.push(...causalActions(state,content,target));
+  actions.push(...causalActions(state,content,target),...processActions(state,content,target));
   actions.push(...structureActions(state,content,target.id));
   const remembered=p.knownServices?.[target.id],review=actions.find(a=>a.id==='review');
   const offerMeaning=offers=>JSON.stringify(offers.filter(a=>['buy','work','train','rest','craft'].includes(a.type)).map(a=>({id:a.id,type:a.type,price:a.price,requirements:a.requirements})).sort((a,b)=>a.id.localeCompare(b.id,'en')));
@@ -804,7 +806,7 @@ export function projectWorld(state,content) {
   const cleanObject=o=>({id:o.id,name:o.eventId&&!knownIds.has(o.eventId)?'気になる現場':o.name,kind:o.kind,position:clone(o.position),asset:o.asset,rotation:o.rotation || 0,scale:o.scale || 1,interior:o.interior,crafting:o.crafting,buildingPosition:o.buildingPosition,width:o.width,depth:o.depth,height:o.height});
   const publicRegion={id:region.id,name:region.name,biome:region.biome,color:region.color,size:region.size,spawn:clone(region.spawn),description:region.description,worldPosition:clone(region.worldPosition),
     obstacles:clone(region.obstacles || []),terrain:clone(region.terrain || {}),objects:(region.objects || []).map(o=>cleanObject({...o,...state.facilities?.[o.id]})),portals:clone(region.portals || [])};
-  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.publicRole||'住民',position:clone(n.position),activity:n.activity,hp:n.hp,condition:n.hp>0&&n.injury&&['leg','burn','crush'].includes(n.injury.kind)?{kind:n.injury.kind,treated:n.injury.treated}:undefined,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
+  const nearbyNpcs=values(state.npcs).filter(n=>n.region===p.region&&!n.travel&&!n.entrapment&&distance(n.position,p.position)<90&&hasLineOfSight(region,p.position,n.position)).map(n=>({id:n.id,name:idx.npcs.get(n.id)?.name,role:idx.npcs.get(n.id)?.publicRole||'住民',position:clone(n.position),activity:n.activity,hp:n.hp,condition:n.hp>0&&n.injury&&['leg','burn','crush','poison'].includes(n.injury.kind)?{kind:n.injury.kind,treated:n.injury.treated}:undefined,heading:n.path?.length?Math.atan2(n.path[0][0]-n.position[0],n.path[0][2]-n.position[2]):0}));
   const candidates=[...(region.objects || []).map(o=>({...o,...state.facilities?.[o.id]})),...nearbyNpcs.filter(n=>n.hp>0).map(n=>({...n,kind:'npc'})),...(content.events || []).filter(e=>e.region===p.region&&knownIds.has(e.id)).map(e=>({id:`event:${e.id}`,kind:'event',eventId:e.id,name:e.name,position:e.position || [0,0,0]}))];
   const interactables=candidates.filter(t=>distance(t.position,p.position)<=INTERACTION&&hasLineOfSight(region,p.position,t.position)).map(t=>({...cleanObject(t),distance:distance(t.position,p.position),actions:actionsFor(state,content,t)}));
   interactables.push(...propertyView(state,content).filter(o=>!o.held));
@@ -817,7 +819,7 @@ export function projectWorld(state,content) {
       return {id:`travel:${mode}`,type:'travel',portalId:portal.id,mode,label:`${estimate.label}で向かう · ${duration}分 · ${fare} · ${estimate.riskLabel}`,available:estimate.missing.length===0,missing:estimate.missing,minutes:estimate.minutes,price:estimate.cost,risk:estimate.risk,riskLabel:estimate.riskLabel,destination:destination?.name};
     })});
   }
-  if(combatNearby(state,content))for(const target of interactables)for(const action of target.actions)if(MACRO_COMMANDS.has(action.type)){action.available=false;action.missing=[...(action.missing||[]),'周囲の危険への対処'];}
+  if(combatNearby(state,content))for(const target of interactables)for(const action of target.actions)if(MACRO_COMMANDS.has(action.type)&&!String(action.id).endsWith('/inspect')){action.available=false;action.missing=[...(action.missing||[]),'周囲の危険への対処'];}
   const knownEvents=state.knowledge.filter(k=>k.kind==='event'&&idx.events.has(k.eventId)).map(k=>{const e=idx.events.get(k.eventId),timing=knownTiming(state,e.id);return {id:e.id,name:e.name,region:e.region,description:k.text,status:k.status==='critical'&&!Number.isFinite(timing.deadline)?'active':k.status,observedAt:k.observedAt,source:clone(k.source),...timing,position:e.region===p.region?clone(e.position):undefined};});
   const quests=state.quests.map(quest=>{
     const event=idx.events.get(quest.eventId),known=knownEvents.find(k=>k.id===quest.eventId),worldStatus=known?.status,timing=knownTiming(state,quest.eventId);

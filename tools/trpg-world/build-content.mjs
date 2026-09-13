@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
 import {DEFAULT_STRUCTURES} from '../../src/shared/trpg-world/infrastructure.js';
+import {DEFAULT_PROCESSES} from '../../src/shared/trpg-world/process-content.js';
 import {createRegion,createPortal,placeNPC,finalizeRegions} from './region-layout.mjs';
 const base=new URL('../../',import.meta.url);
 const source=JSON.parse(await fs.readFile(new URL('sources/world.json',import.meta.url),'utf8'));
@@ -60,18 +61,21 @@ const eventSpecs=[
 ];
 const events=eventSpecs.map((s,i)=>{
  const [id,name,region,sd,sh,dd,dh,sourceIds,description,cause,preferred,skill,cooperate,logistics,force]=s;
+ const localObservation={harbor:'港の作業場に未払いの支払簿と空の配給箱が置かれている。',roots:'大河の流れが弱い。川中に魔力を帯びた塊が見える。',crown:'孤児院の入口に立退き申請の通知が貼られている。',resonance:'回廊の古代文字が明滅し、転移環の固定具が割れている。',border:'北門の兵が増え、出入りする荷車が止められている。'}[id]||description;
  const ally=npcs.find(n=>n.id===preferred&&n.region===region)||npcs.find(n=>n.region===region);
  const binding=DEFAULT_STRUCTURES.find(s=>s.hazardEventId===id),reg=byRegion[region],position=binding?[...reg.objects.find(o=>o.id===binding.targetId).position]:[i%2?32:-32,0,-5],proof=`${id}:proof`;
- reg.objects.push({id:`evidence:${id}`,kind:'evidence',name:`${name}の手がかり`,position:[position[0],0,position[2]+10],asset:'crate',eventId:id,evidenceId:proof,description:`${description} 調べた痕跡を手帳へ写した。`});
- return {id,name,region,position,startsAt:at(sd,sh),deadline:at(dd,dh),severity:'major',description,cause,sourceIds,reward:90,
+ reg.objects.push({id:`evidence:${id}`,kind:'evidence',name:`${name}の手がかり`,position:[position[0],0,position[2]+10],asset:'crate',eventId:id,evidenceId:proof,description:`${localObservation} 調べた痕跡を手帳へ写した。`});
+ return {id,name,region,position,startsAt:at(sd,sh),deadline:at(dd,dh),severity:'major',description,localObservation,cause,sourceIds,reward:90,
   causalSourceIds:DEFAULT_CAUSAL_SCENARIOS.find(s=>s.eventId===id)?.sourceIds||[],
-  causalStatus:DEFAULT_CAUSAL_SCENARIOS.some(s=>s.eventId===id)?'partial':'unadapted',
+  causalStatus:DEFAULT_CAUSAL_SCENARIOS.some(s=>s.eventId===id)||DEFAULT_PROCESSES.some(s=>s.eventId===id)?'partial':'unadapted',
   opposition:{monsterId:['MON-0005','MON-0033','MON-0034','MON-0015','MON-0049','MON-0025','MON-0062','MON-0055'][i],description:'現場に存在する脅威。排除だけでは事件全体の解決を意味しない。'},
-  failureEffects:{stock:{[region]:-.55,...(['bread-fire','harbor','roots'].includes(id)?{capital:-.2}: {})},threat:{[region]:18},setFacts:[`${id}:aftermath`],deaths:[]},signals:[{kind:'local',text:description}],
+  failureEffects:{stock:{[region]:-.55,...(['bread-fire','harbor','roots'].includes(id)?{capital:-.2}: {})},threat:{[region]:18},setFacts:[`${id}:aftermath`],deaths:[]},signals:[{kind:'local',text:localObservation}],
  };
 });
 finalizeRegions(regions,npcs,events);
-const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:DEFAULT_STRUCTURES,skills,items,recipes,jobs,...combat,
+const processes=structuredClone(DEFAULT_PROCESSES);
+for(const process of processes)if(process.kind==='inquiry')process.reviewers=npcs.filter(n=>n.region===process.region&&n.workFacilityId===process.targetId).map(n=>n.id);
+const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:DEFAULT_STRUCTURES,processes,skills,items,recipes,jobs,...combat,
  provenance:{sourceUrl:source.sourceUrl,retrievedAt:source.retrievedAt,policy:'Source material, not legacy rules. No Human Virtue ledger or replay used.',eventPolicy:'19 causes regrouped into 8 crises; deadlines and balance authored anew.',assets:'Kenney CC0 Fantasy Town Kit 2.0 and Blocky Characters 2.0.'}};
 content.revision='world-10d-'+createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0,12);
 const target=new URL('src/server/trpg/world/content/world-content.json',base);await fs.mkdir(new URL('.',target),{recursive:true});await fs.writeFile(target,JSON.stringify(content,null,2)+'\n');
