@@ -1,6 +1,6 @@
 import {initializeCausality} from './causal-events.js';
 import {initializeRelationships} from './relationships.js';
-import {retireGeneratedBiographies} from './knowledge-migration.js';
+import {retireGeneratedBiographies,retireDesignInspections} from './knowledge-migration.js';
 // WORLD_TIME is calendar seconds. SIMULATION_TIME is active local realtime seconds.
 // Combat actions use SIMULATION_TIME; no misleading combat-only clock is stored.
 export const WORLD_SCHEMA_VERSION = 2;
@@ -24,7 +24,7 @@ export function playerIsLocal(state) { return state.player.activity?.kind!=='tra
 export function canMove(state) { return ['idle','walking','running','combat'].includes(state.player.activity?.kind); }
 export function migrateWorld(state, content) {
   if (![1,2].includes(state.schemaVersion)) throw new Error('Unsupported world schema');
-  initializeRelationships(state);initializeCausality(state,content);
+  initializeRelationships(state);initializeCausality(state,content);retireDesignInspections(state,content);
   if(retireGeneratedBiographies(state,content)&&state.player.activity?.kind==='conversation')setActivity(state,'idle');
   state.simulationTime??=state.combatTime??state.localSimulationTime??0;
   delete state.combatTime;delete state.localSimulationTime;

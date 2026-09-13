@@ -73,6 +73,14 @@ const events=eventSpecs.map((s,i)=>{
  };
 });
 finalizeRegions(regions,npcs,events);
+const publicSiteDescriptions={
+ LOC_FARM_GRANARY:'穀物袋が積まれ、奥へ続く作業用の通路がある。',
+ LOC_FARM_EDGE:'草地に踏み跡が続き、村の柵の向こうへ抜けている。',
+ LOC_CAP_ORPHANAGE:'子どもの靴が入口に並び、壁には寄付と配達の掲示がある。',
+ LOC_BLACKRIDGE_WATERWAY:'水路には流量を測る目盛りがあり、川辺へ降りる階段がある。',
+};
+for(const object of regions.flatMap(r=>r.objects))if(publicSiteDescriptions[object.id]){object.sourceDesignNotes=object.description;object.description=publicSiteDescriptions[object.id];}
+
 const processes=structuredClone(DEFAULT_PROCESSES);
 for(const process of processes)if(process.kind==='inquiry')process.reviewers=npcs.filter(n=>n.region===process.region&&n.workFacilityId===process.targetId).map(n=>n.id);
 const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:DEFAULT_STRUCTURES,processes,skills,items,recipes,jobs,...combat,

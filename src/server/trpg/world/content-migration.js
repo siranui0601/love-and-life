@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 // Explicitly observed historical content versions, never a wildcard compatibility rule.
 const versions=new Map([
+ ['world-10d-c0ca1f03faba','4f969820b2b81e895304621bd54a92b7380c8aad864cc42ebe746c1be1ed9390'],
  ['world-10d-940b5356c6a8','5594baac95de746eb873321e3c074e6499f9f233cb32acb2e1fc8ce4fce3120f'],
  ['world-10d-0c89fc7ee769','a257dd91c417239bbdeb89df8414119f7a66caa7afcfefa3056c9fbc30726360'],
  ['world-10d-3d92a17b3ca5','6fb542356bf8d214b8f3a7d93410c027dd43980fc54f9a7352823518964721ac'],
@@ -13,7 +14,7 @@ export function canMigrateContent(record,content) {
  // This additive migration retains existing outcomes and introduces the shaft
  // only in the reviewed target generation. It is not permission for any future
  // content revision to reinterpret the checkpoint's save.
- if(['world-10d-940b5356c6a8','world-10d-24de1ef85209','world-10d-10c3365b9e26','world-10d-ec2c41296f3c'].includes(record.contentRevision)&&(content.revision!=='world-10d-c0ca1f03faba'||createHash('sha256').update(JSON.stringify(content)).digest('hex')!=='4f969820b2b81e895304621bd54a92b7380c8aad864cc42ebe746c1be1ed9390'))return false;
+ if(['world-10d-c0ca1f03faba','world-10d-940b5356c6a8','world-10d-24de1ef85209','world-10d-10c3365b9e26','world-10d-ec2c41296f3c'].includes(record.contentRevision)&&(content.revision!=='world-10d-1620f79180c0'||createHash('sha256').update(JSON.stringify(content)).digest('hex')!=='2dd4e9662ebc4cbe525776f85a168fa5812bfc7d5c2affe76295b972e996f8d3'))return false;
  if(!versions.has(record.contentRevision)||record.state?.schemaVersion!==1&&record.state?.schemaVersion!==2)return false;
  if((record.contentHash??null)!==versions.get(record.contentRevision))return false;
  const s=record.state;

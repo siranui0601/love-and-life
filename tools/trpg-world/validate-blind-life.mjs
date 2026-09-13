@@ -1,0 +1,15 @@
+import fs from 'node:fs/promises';
+import {writeFileSync} from 'node:fs';
+import {runBlind,verifyBlindRecord} from './validation/blind-run.mjs';
+import {decisionCounts} from './validation/action-domain.mjs';
+const name=process.argv[2]||'blind-life',directory=new URL('./reports/',import.meta.url);
+const content=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
+const result=runBlind(content,{decisions:4000,untilDay:5,onProgress:state=>console.log(JSON.stringify(state)),onCheckpoint:({run,memory,decisionsLog})=>{writeFileSync(new URL(name+'-checkpoint.json',directory),JSON.stringify({record:run.export(),memory,decisionsLog}));}});
+await fs.writeFile(new URL(name+'-record.json',directory),JSON.stringify(result.run.export()));
+if(result.intermediate)await fs.writeFile(new URL(name+'-intermediate.json',directory),JSON.stringify(result.intermediate));
+result.summary.counts=decisionCounts(result.run);
+result.summary.conversationDiscoveries=result.run.trace.filter(t=>t.selected?.includes('ask')&&t.changedDomains?.includes('knowledge')).length;
+await fs.writeFile(new URL(name+'-summary.json',directory),JSON.stringify(result.summary,null,2));
+console.log(JSON.stringify({...result.summary,decisionsLog:result.summary.decisionsLog.slice(-3)},null,2));
+const verification=verifyBlindRecord(content,result);result.summary.verification=verification;
+await fs.writeFile(new URL(name+'-summary.json',directory),JSON.stringify(result.summary,null,2));console.log(JSON.stringify(verification));

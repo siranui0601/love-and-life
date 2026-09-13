@@ -23,3 +23,11 @@ export function retireGeneratedBiographies(state,content) {
  }
  state.knowledgeMigrationVersion=1;return ended;
 }
+
+export function retireDesignInspections(state,content){
+ const notes=new Map((content.regions||[]).flatMap(r=>r.objects||[]).filter(o=>o.sourceDesignNotes).map(o=>[o.id,o.sourceDesignNotes]));
+ for(const [id,entry] of Object.entries(state.player.inspections||{}))if(notes.get(id)===entry.text){
+  state.legacySnapshot||={};state.legacySnapshot.invalidDesignInspections||={};state.legacySnapshot.invalidDesignInspections[id]=structuredClone(entry);delete state.player.inspections[id];
+ }
+ // Objective socialFacts and memories of actual speech are deliberately retained.
+}

@@ -15,6 +15,7 @@ export function auditWorldContent(content) {
   for(const region of content.regions||[]) {
     for(const [label,position] of [['spawn',region.spawn],...(region.objects||[]).map(o=>[o.id,o.position]),...(region.portals||[]).map(o=>[o.id,o.position])])
       if(!position||position.length!==3||position.some(v=>!Number.isFinite(v))||!canOccupy(region,position))errors.push(`${region.id}/${label}: invalid or blocked interaction position`);
+    for(const object of region.objects||[])if(/T\d{2}|真因証明|route[_ -]?flag/i.test(object.description||''))errors.push(object.id+': design-only notes leaked into public inspection');
     for(const portal of region.portals||[]) {
       const route=(content.routes||[]).find(r=>r.id===portal.routeId);
       if(!ids.regions.has(portal.to)||!route)errors.push(`${portal.id}: dangling portal target`);

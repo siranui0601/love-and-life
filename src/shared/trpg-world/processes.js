@@ -32,7 +32,7 @@ export function processDescription(state,spec){
  const p=state.processes[spec.id];
  const physical=spec.kind==='device'?`${p.powered?'機構へ動力が流れ続けている。':'動力線は切り離されている。'}${p.integrity<80?'固定具は傷んでいる。':'固定具は補修されている。'}`:
  spec.kind==='supply'?`保管と受領の記録：${Object.entries(spec.required).map(([id,n])=>`${spec.resourceNames?.[id]||id} ${Math.min(n,p.stock[id]||0)}/${n}`).join('、')}。`:
- spec.kind==='patient'?(p.treated?'処置を受け、呼吸が落ち着いている。':p.exposed?'顔色が悪く、手足が震えている。':'飲食物の封には傷があり、異臭がする。'):
+ spec.kind==='patient'?(state.npcs[spec.actorId]?.hp<=0?'呼吸がなく、呼びかけにも反応しない。':p.treated?'処置を受け、呼吸が落ち着いている。':p.exposed?'顔色が悪く、手足が震えている。':'飲食物の封には傷があり、異臭がする。'):
  p.order?.status==='issued'?'提出された記録の審理が終わり、是正命令が交付されている。':p.documents.length?'提出された書類は担当者の審理を待っている。':'照合する原本と証言の提出を窓口で受け付けている。';
  return `${spec.observation} ${physical}${p.failedAt!==undefined?' 被害の後始末はまだ続いている。':''}`;
 }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-c0ca1f03faba",
+  "revision": "world-10d-1620f79180c0",
   "time": {
     "days": 10,
     "scale": 60,
@@ -665,7 +665,7 @@
             "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=2008",
             "id": "LOC_FARM_GRANARY"
           },
-          "description": "穀物保管、T02調査",
+          "description": "穀物袋が積まれ、奥へ続く作業用の通路がある。",
           "placement": "authored-geography",
           "buildingPosition": [
             -37,
@@ -683,7 +683,8 @@
             ],
             "floorY": 0,
             "openFront": true
-          }
+          },
+          "sourceDesignNotes": "穀物保管、T02調査"
         },
         {
           "id": "LOC_FARM_WELL",
@@ -795,8 +796,9 @@
             "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=2008",
             "id": "LOC_FARM_EDGE"
           },
-          "description": "T01捜索、T03狼遭遇",
-          "placement": "authored-geography"
+          "description": "草地に踏み跡が続き、村の柵の向こうへ抜けている。",
+          "placement": "authored-geography",
+          "sourceDesignNotes": "T01捜索、T03狼遭遇"
         },
         {
           "id": "LOC_FARM_NORTH_FENCE",
@@ -2456,7 +2458,7 @@
             "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=2009",
             "id": "LOC_CAP_ORPHANAGE"
           },
-          "description": "子ども、T10相談、裏路地情報",
+          "description": "子どもの靴が入口に並び、壁には寄付と配達の掲示がある。",
           "placement": "authored-geography",
           "buildingPosition": [
             -41,
@@ -2474,7 +2476,8 @@
             ],
             "floorY": 0,
             "openFront": true
-          }
+          },
+          "sourceDesignNotes": "子ども、T10相談、裏路地情報"
         },
         {
           "id": "LOC_CAP_BIG_STORE",
@@ -18043,8 +18046,9 @@
             "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=2012",
             "id": "LOC_BLACKRIDGE_WATERWAY"
           },
-          "description": "水棲種族、川調査、T13真因証明",
-          "placement": "authored-geography"
+          "description": "水路には流量を測る目盛りがあり、川辺へ降りる階段がある。",
+          "placement": "authored-geography",
+          "sourceDesignNotes": "水棲種族、川調査、T13真因証明"
         },
         {
           "id": "LOC_BLACKRIDGE_EXILE",
