@@ -70,6 +70,13 @@ try {
    const home=r.view().leads.find(l=>l.targetId===patient.id&&l.expectedAction==='escort-arrival');if(!home)throw new Error('FIRST_MISSING_AFFORDANCE: requested refuge');
    split??={operation:r.operations.length,state:JSON.parse(JSON.stringify(r.state))};
    must(r.command({type:'track',leadId:home.id}));must(walk(r,home.position));for(let i=0;i<45&&r.view().arrival?.status==='waiting-companion';i++)r.advance(1);
+   if(r.view().arrival?.status==='waiting-recipient'){
+    const recipient=r.view().npcs.find(n=>n.id===home.recipientId&&n.hp>0);
+    if(!recipient)throw new Error('FIRST_MISSING_AFFORDANCE: named recipient not observed near destination');
+    visit(recipient,null,{},'同行者から名前を聞いた家族の姿を見つけ、一緒に近づく');
+    for(let i=0;i<45&&r.view().arrival?.status!=='completed';i++)r.advance(1);
+   }
+   if(r.view().arrival?.status!=='completed')throw new Error('FIRST_MISSING_AFFORDANCE: actual handoff not completed');
   }
   for(let cycle=0;cycle<(natural?48:8)&&r.view().day<5;cycle++)liveCycle();
  }

@@ -71,12 +71,18 @@ export function advanceCausality(state,content,seconds) {
       if(causal.phase==='injured')person.activity=person.companionOf?'支えられながら村へ戻る':'脚を負傷し、助けを待つ';
       if(person.companionOf==='player'&&state.player.region===person.region&&person.hp>0) {
         followPath(region,person,state.player.position,seconds/(content.time?.scale||60)*2.6);
-        const home=content.npcs.find(n=>n.id===family.id)?.home||region.spawn;
-        if(family.hp>0&&!family.travel&&family.region===person.region&&distance(person.position,family.position)<18&&hasLineOfSight(region,person.position,family.position))family.causalAssignment=`reunion:${event.id}`;
-        if(family.causalAssignment===`reunion:${event.id}`){family.activity='家族を家で迎える';followPath(region,family,home,seconds/(content.time?.scale||60)*1.55);}
-        if((!person.injury||person.injury.treated)&&distance(person.position,home)<6&&conditionHolds(state,content,{type:'co-located',actorId:person.id,targetId:family.id,range:3})) {
-          const fact=rememberAction(state,content,'family-reunion',{actorId:person.id,targetId:family.id,payload:{escortId:'player'}});
-          causal.phase='reunited';delete person.companionOf;delete person.causalAssignment;delete family.causalAssignment;
+        if(family.causalAssignment===`reunion:${event.id}`&&!family.reunionObservation){delete family.causalAssignment;family.nextDecision=0;}
+        if(family.hp>0&&!family.travel&&family.region===person.region&&distance(person.position,family.position)<18&&hasLineOfSight(region,person.position,family.position)){
+          family.causalAssignment=`reunion:${event.id}`;
+          family.reunionObservation={personId:person.id,position:[...person.position],at:state.time};
+        }
+        if(family.causalAssignment===`reunion:${event.id}`&&family.reunionObservation){
+          family.activity='見つけた家族へ歩み寄る';followPath(region,family,family.reunionObservation.position,seconds/(content.time?.scale||60)*1.55);
+          if(distance(family.position,family.reunionObservation.position)<2&&distance(family.position,person.position)>18){delete family.causalAssignment;delete family.reunionObservation;family.nextDecision=0;}
+        }
+        if((!person.injury||person.injury.treated)&&conditionHolds(state,content,{type:'co-located',actorId:person.id,targetId:family.id,range:3})) {
+          const fact=rememberAction(state,content,'family-reunion',{actorId:person.id,targetId:family.id,payload:{escortId:'player',recipientPosition:[...family.position]}});
+          causal.phase='reunited';delete person.companionOf;delete person.causalAssignment;delete family.causalAssignment;delete family.reunionObservation;
           settle(state,event,'resolved',fact.id);
         }
       }
@@ -158,7 +164,7 @@ export function applyCausalAction(state,content,target,id) {
   else if(id==='escort') {
     npc.companionOf='player';
     const definition=causalDefinitions(content).find(d=>d.type==='return-person'&&d.personId===npc.id),family=content.npcs.find(n=>n.id===definition?.familyId);
-    if(family&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:'家まで一緒に来てほしい。家族に引き渡してほしい。',personId:npc.id,destination:{region:family.region,position:[...family.home]},source:{type:'told',actorId:npc.id},observedAt:state.time});
+    if(family&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:`家まで一緒に来てほしい。家族の${family.name}に引き渡してほしい。`,personId:npc.id,recipientId:family.id,destination:{region:family.region,position:[...family.home]},source:{type:'told',actorId:npc.id},observedAt:state.time});
     const shelter=content.regions.find(r=>r.id===npc.region)?.objects.find(o=>o.id===npc.care?.destination);
     if(shelter&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:`${shelter.name}まで付き添ってほしい。そこで休める。`,personId:npc.id,destination:{region:npc.region,position:[...shelter.position]},source:{type:'told',actorId:npc.id},observedAt:state.time});
   }

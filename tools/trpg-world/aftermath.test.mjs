@@ -35,6 +35,25 @@ test('a missed return deadline preserves physical life and permits a later famil
   assert.equal(digest(replay(c,{...record,initialState:split.state,operations:record.operations.slice(split.operation)}).state),digest(r.state));
  }
 });
+
+test('an absent recipient is identified by testimony and found in the world, not teleported home for handoff',()=>{
+ const c=aftermathFixture();c.structures=[];c.time.startSeconds=28800;
+ c.events=[{id:'overdue',name:'帰りを待つ家族',region:'village',position:[-30,0,6],startsAt:28860,deadline:30000}];
+ c.causalScenarios=[{eventId:'overdue',type:'return-person',personId:'traveller',familyId:'family'}];
+ c.npcs=[{id:'traveller',name:'旅の人',region:'village',home:[-30,0,6],work:[-30,0,6],knowledge:[]},{id:'family',name:'迎える人',region:'village',home:[-40,0,0],work:[30,0,0],knowledge:[]}];
+ const r=new WorldReplay(c);ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));
+ ok(performAt(r,r.view().npcs.find(n=>n.id==='traveller'),'causal',{action:'escort'}));
+ const home=r.view().leads.find(l=>l.expectedAction==='escort-arrival');assert.equal(home.recipientId,'family');assert(home.explanation.includes('迎える人'));
+ ok(r.command({type:'track',leadId:home.id}));ok(walk(r,home.position));
+ for(let i=0;i<45&&r.view().arrival.status==='waiting-companion';i++)r.advance(1);
+ assert.equal(r.view().arrival.status,'waiting-recipient');assert(r.state.npcs.family.position[0]>10);
+ assert(!Object.hasOwn(home,'recipientPosition'),'testimony must not expose the recipient current whereabouts');
+ const seen=r.view().npcs.find(n=>n.id===home.recipientId);assert(seen);ok(performAt(r,seen,null));
+ for(let i=0;i<45&&r.view().arrival.status!=='completed';i++)r.advance(1);
+ assert.equal(r.view().arrival.status,'completed');assert.equal(r.state.events.overdue.status,'failed');
+ assert(r.state.npcs.traveller.position[0]>0,'handoff occurred where family was actually found');
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
 test('physical collapse: sleeping elsewhere, remembered testimony, preparation, release, treatment and actual escort; failure stays historical',()=>{
  const c=aftermathFixture(),r=new WorldReplay(c);
  ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));

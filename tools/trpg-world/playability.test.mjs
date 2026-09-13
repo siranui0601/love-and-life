@@ -209,8 +209,9 @@ test('Finn is found in the world, accompanied on foot and returned to his living
   journey.walk(home);
   for(let seconds=0;journey.state.events['lost-road'].causal.phase!=='reunited'&&seconds<120;seconds++)advanceWorld(journey.state,content,1);
   assert.equal(journey.state.events['lost-road'].causal.phase,'reunited');
-  assert(distance(child.position,home)<6);assert(journey.state.npcs.NPC002.hp>0);
-  assert(journey.state.socialFacts.some(f=>f.kind==='family-reunion'&&f.actorId==='NPC001'&&f.targetId==='NPC002'));
+  assert(journey.state.npcs.NPC002.hp>0);
+  const handoff=journey.state.socialFacts.find(f=>f.kind==='family-reunion'&&f.actorId==='NPC001'&&f.targetId==='NPC002');
+  assert(handoff);assert(distance(handoff.position,handoff.payload.recipientPosition)<3,'the living family physically met at the recorded handoff');
   assert(!child.companionOf);t.diagnostic(`Physical rescue: ${journey.commands} commands, no position or skill injection.`);
 });
 

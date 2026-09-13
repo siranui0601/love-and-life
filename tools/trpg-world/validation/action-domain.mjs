@@ -8,6 +8,13 @@ export function performAt(run,target,type,parameter={},reason='現地で提示�
  if(!target)return {error:'FIRST_MISSING_AFFORDANCE',reason:'対象は今見えていない',type,parameter};
  if(target.region&&target.region!==run.view().region.id){const travel=travelTo(run,target.region);if(travel.error)return travel;}
  const moved=walk(run,target.position);if(moved.error)return moved;
+ if(['maintain','work','train','craft','rest','eat'].includes(type)){
+  const view=run.view();
+  if(view.monsters.some(m=>m.activity==='attack'||distance(m.position,view.player.position)<12)){
+   const safe=secureArea(run);if(safe.error)return safe;
+   const returned=walk(run,target.position);if(returned.error)return returned;
+  }
+ }
  // A person can walk while being approached. Follow their observed position;
  // never the immutable coordinate captured at the beginning of the journey.
  if(run.view().npcs.some(n=>n.id===target.id))for(let attempts=0;attempts<8;attempts++) {

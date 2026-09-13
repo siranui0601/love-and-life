@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "worldline": "ordinary-overdue",
+  "sourceOperation": 2792,
+  "sourceHash": "c1c2a15dd3608e5f0b8115bbd52f6702f7c79b93303c938bafeb93c52ac5688f",
+  "contentRevision": "world-10d-940b5356c6a8",
+  "diskRoundTrips": 2,
+  "offlineCalendarAdvance": 0,
+  "suffixOperations": 808,
+  "finalHash": "22a248af676e13a2ef874b8c52583dbf9f2dc422811725e9f9a953848275ff82",
+  "sameFinalState": true,
+  "scope": "FileWorldStore + PersistentWorldService restore, followed by exact recorded shared-runtime continuation; not HTTP timing equivalence"
+}

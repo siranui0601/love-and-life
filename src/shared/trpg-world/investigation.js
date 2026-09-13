@@ -7,7 +7,7 @@ export function investigationLeads(state,content) {
   const target=fact.destination.targetId;
   if(!state.player.inspections?.[target]||state.player.inspections[target].at<fact.observedAt)leads.push({id:`lead:${fact.id}`,targetId:target,region:fact.destination.region,position:[...fact.destination.position],expectedAction:'inspect',label:'聞いた異変の現場を確かめる',explanation:fact.text,sourceKnowledgeId:fact.id});
  }
- for(const fact of state.knowledge.filter(k=>k.kind==='testimony'&&k.destination&&k.personId))if(state.npcs[fact.personId]?.companionOf==='player')leads.push({id:`lead:${fact.id}:home`,targetId:fact.personId,region:fact.destination.region,position:[...fact.destination.position],expectedAction:'escort-arrival',label:'同行者を家族のもとへ送る',explanation:fact.text,sourceKnowledgeId:fact.id});
+ for(const fact of state.knowledge.filter(k=>k.kind==='testimony'&&k.destination&&k.personId))if(state.npcs[fact.personId]?.companionOf==='player')leads.push({id:`lead:${fact.id}:home`,targetId:fact.personId,...(fact.recipientId?{recipientId:fact.recipientId}:{}),region:fact.destination.region,position:[...fact.destination.position],expectedAction:'escort-arrival',label:fact.recipientId?'同行者を家族のもとへ送る':'同行者を休める場所へ送る',explanation:fact.text,sourceKnowledgeId:fact.id});
  for(const definition of content.causalScenarios||[]) {
   const known=state.knowledge.find(k=>k.kind==='event'&&k.eventId===definition.eventId);if(!known)continue;
   const event=content.events.find(e=>e.id===definition.eventId),region=content.regions.find(r=>r.id===event.region);
@@ -45,8 +45,17 @@ export function trackLead(state,content,id) {
 }
 export function arrivalContract(state,content,interactables) {
  const intent=state.player.investigationIntent;if(!intent)return null;
+ if(intent.expectedAction==='escort-arrival'){
+  const person=state.npcs[intent.targetId];
+  if(person?.companionOf!=='player'){
+   const delivered=person?.care?.status==='recovered'||state.socialFacts.some(f=>f.kind==='family-reunion'&&f.actorId===intent.targetId&&f.payload?.escortId==='player');
+   return {...intent,status:delivered?'completed':'unavailable',message:delivered?'同行者を送り届けた。':'同行は終わったが、引き渡しはまだ確認できていない。'};
+  }
+  if(state.player.region!==intent.region||distance(state.player.position,intent.position)>5)return {...intent,status:'travelling',message:intent.explanation};
+  const nearby=person.region===state.player.region&&distance(person.position,state.player.position)<4;
+  return {...intent,status:nearby&&intent.recipientId?'waiting-recipient':'waiting-companion',message:nearby&&intent.recipientId?'同行者は到着した。迎える家族を探そう。姿が見えなければ、ここで待つか周囲を確かめられる。':'同行者が追いつくまで、そばで見守ろう。'};
+ }
  if(state.player.region!==intent.region||distance(state.player.position,intent.position)>5)return {...intent,status:'travelling',message:intent.explanation};
- if(intent.expectedAction==='escort-arrival')return {...intent,status:state.npcs[intent.targetId]?.companionOf==='player'?'waiting-companion':'completed',message:state.npcs[intent.targetId]?.companionOf==='player'?'同行者が追いつき、家族と落ち着いて話せるまでそばで見守ろう。':'同行者を送り届けた。'};
  const opportunity=interactables.find(t=>t.id===intent.targetId)?.actions.find(a=>(a.action||a.id)===intent.expectedAction);
  if(opportunity)return {...intent,status:opportunity.available===false?'requirements-missing':'available',message:opportunity.available===false?`準備が足りない：${(opportunity.missing||[]).join('、')}`:'目的の場所に着いた。近くの対象を調べられる。'};
  const npc=content.npcs.find(n=>n.id===intent.targetId);
