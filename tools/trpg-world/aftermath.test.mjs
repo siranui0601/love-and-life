@@ -15,6 +15,26 @@ export function aftermathFixture(kind='collapse') {
  items:[{id:'timber',name:'木材',price:2},{id:'rope',name:'縄',price:2},{id:'medicine',name:'傷薬',price:2},{id:'supplies',name:'食料',price:2}],skills:[{id:'crafting',name:'工作',goldCost:2,cost:1}]};
 }
 const ok=result=>assert(!result?.error,JSON.stringify(result));
+
+test('a missed return deadline preserves physical life and permits a later family reunion without erasing failure',()=>{
+ for(const id of ['late-walker','overdue-traveller']){
+  const c=aftermathFixture();c.structures=[];
+  c.events=[{id,name:'戻らない家族',region:'village',position:[0,0,6],startsAt:25260,deadline:27000}];
+  c.causalScenarios=[{eventId:id,type:'return-person',personId:'traveller',familyId:'family'}];
+  c.npcs=[{id:'traveller',name:'旅の人',region:'village',home:[0,0,0],work:[0,0,0],knowledge:[]},{id:'family',name:'家族',region:'village',home:[-40,0,0],work:[-40,0,0],knowledge:[]}];
+  const r=new WorldReplay(c);ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));
+  assert.equal(r.state.events[id].status,'failed');assert.equal(r.state.npcs.traveller.hp,70);
+  assert(r.state.events[id].causal.aftermath.some(f=>f.kind==='missing-person-not-returned'));
+  const person=r.view().npcs.find(n=>n.id==='traveller');assert(person);ok(performAt(r,person,'causal',{action:'escort'}));
+  const split={operation:r.operations.length,state:structuredClone(r.state)};
+  ok(walk(r,[-40,0,0]));for(let i=0;i<45&&r.state.events[id].causal.phase!=='reunited';i++)r.advance(1);
+  assert.equal(r.state.events[id].causal.phase,'reunited');assert.equal(r.state.events[id].status,'failed');
+  assert(r.state.socialFacts.some(f=>f.kind==='family-reunion'&&f.actorId==='traveller'));
+  const wages=r.state.player.gold;ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));assert.equal(r.state.player.gold,wages-8);
+  const record=r.export();assert.equal(digest(replay(c,record).state),digest(r.state));
+  assert.equal(digest(replay(c,{...record,initialState:split.state,operations:record.operations.slice(split.operation)}).state),digest(r.state));
+ }
+});
 test('physical collapse: sleeping elsewhere, remembered testimony, preparation, release, treatment and actual escort; failure stays historical',()=>{
  const c=aftermathFixture(),r=new WorldReplay(c);
  ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));

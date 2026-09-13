@@ -49,6 +49,7 @@ try {
  if(kind==='mine')must(travelTo(r,'dwarf'));
  if(kind==='prevention') {
   visit(object('LOC_FARM_GRANARY'),'interact',{action:'inspect'},'穀倉で危険な油を確かめる');
+  must(secureArea(r));visit(object('LOC_FARM_GRANARY'),null,{},'周囲の危険へ対処してから、油を見つけた場所へ戻る');
   const option=r.options().find(o=>o.command.type==='maintain'&&o.command.action==='remove-fuel');if(!option)throw new Error('FIRST_MISSING_AFFORDANCE: fuel cleanup');must(r.select(option,'見つけた油を片付ける'));
  } else {
   let discovered=false;

@@ -1,0 +1,127 @@
+{
+  "kind": "ordinary",
+  "lifePolicy": "public hunger/fatigue/night, paid labor and at most one contact per person per day",
+  "routine": [
+    {
+      "action": "eat",
+      "at": 65268.66251142395,
+      "hunger": 40.86909505803359,
+      "fatigue": 22.26036806190215
+    },
+    {
+      "action": "rest",
+      "at": 127038.34205221347,
+      "hunger": 33.04080315219545,
+      "fatigue": 56.5768566956715,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 151638.34205221347,
+      "hunger": 45.85330315219545,
+      "fatigue": 1.6666666666666667
+    },
+    {
+      "action": "rest",
+      "at": 170079.3417025158,
+      "hunger": 15.457990470061539,
+      "fatigue": 11.911666472390124,
+      "reason": "night"
+    }
+  ],
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": "{\"error\":\"FIRST_MISSING_AFFORDANCE\",\"target\":\"フィン\",\"type\":\"causal\",\"parameter\":{\"action\":\"tend\"}}",
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 2812,
+    "simulationAdvances": 1250,
+    "movementInputs": 1286,
+    "meaningfulPlayerDecisions": 157,
+    "travelSegments": 42,
+    "investigations": 6,
+    "conversationTurns": 11,
+    "preparationActions": 38,
+    "combatActions": 41,
+    "otherDecisions": 19
+  },
+  "day": 3,
+  "clock": "11:58",
+  "hp": 132,
+  "replayEqual": true,
+  "intermediateRestartEqual": null,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 18.80405829020002,
+      "milestones": [],
+      "operating": true,
+      "water": 60
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": false,
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:12799",
+          "kind": "extinguish",
+          "at": 202917.43756266966,
+          "evidence": "social:12798"
+        },
+        {
+          "id": "milestone:13128",
+          "kind": "clear-rubble",
+          "at": 206115.7208338237,
+          "evidence": "social:13127"
+        },
+        {
+          "id": "milestone:13796",
+          "kind": "shore",
+          "at": 213841.89460323384,
+          "evidence": "social:13795"
+        },
+        {
+          "id": "milestone:13897",
+          "kind": "reopen",
+          "at": 214741.89460323384,
+          "evidence": "social:13896"
+        }
+      ],
+      "operating": true,
+      "water": 0,
+      "blocked": false,
+      "damageAt": 151200,
+      "casualties": [],
+      "recoveries": [],
+      "damageFactId": "physical:9205",
+      "recoveredAt": 213841.89460323384
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "active"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active"
+    }
+  },
+  "runName": "ordinary-boundary"
+}

@@ -2,7 +2,7 @@ import {findPath,distance} from '../../../src/shared/trpg-world/navigation.js';
 import {MOVEMENT} from '../../../src/shared/trpg-world/progression.js';
 import {observePlayer,choosePolicy} from './policies.mjs';
 import {digest,WorldReplay} from './replay.mjs';
-import {prepare,engage} from './action-domain.mjs';
+import {prepare,engage,secureArea} from './action-domain.mjs';
 export function walk(run,target) {
  run.command({type:'resume'});const region=run.view().region;
  const path=findPath(region,run.state.player.position,target);
@@ -67,6 +67,8 @@ export function travelTo(run,destination) {
   for(const route of run.content.routes.filter(r=>r.from===node.region||r.to===node.region))queue.push({region:route.from===node.region?route.to:route.from,path:[...node.path,route.id]});}
  if(!path)return {error:'no-travel-network-path'};
  for(const routeId of path){const portal=run.view().region.portals.find(p=>p.routeId===routeId);const moved=walk(run,portal.position);if(moved.error)return moved;
+  const safe=secureArea(run);if(safe.error)return safe;
+  const returned=walk(run,portal.position);if(returned.error)return returned;
   const option=run.options().find(o=>o.command.type==='travel'&&o.command.portalId===portal.id&&o.command.mode==='foot');if(!option)return {error:'no-legal-travel-action'};
   const result=run.select(option,'街道の出口に着いたので、歩いて次の地域へ向かう');if(result.error)return result;
  }

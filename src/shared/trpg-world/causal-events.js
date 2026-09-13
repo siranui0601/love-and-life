@@ -58,7 +58,7 @@ export function advanceCausality(state,content,seconds) {
       if(structures.length&&structures.every(s=>s&&structureSafe(state,s)))settle(state,event,state.time<event.startsAt?'prevented':'resolved',structures.flatMap(s=>state.structures[s.id].milestones.map(m=>m.evidence)));
       else if(structures.some(s=>s&&(state.structures[s.id].integrity<=0||state.structures[s.id].fire>0)))failCausality(state,content,event);
     } else if(definition.type==='return-person') {
-      const person=state.npcs[definition.personId],family=state.npcs[definition.familyId];if(!person||!family)continue;
+      const person=state.npcs[definition.personId],family=state.npcs[definition.familyId];if(!person||!family||person.hp<=0)continue;
       if(causal.phase==='home'&&state.time>=event.startsAt&&person.hp>0) {causal.phase='excursion';person.causalAssignment=event.id;}
       if(causal.phase==='excursion'&&!person.companionOf) {
         person.activity='村の外を探検する';followPath(region,person,event.position,seconds/(content.time?.scale||60)*1.5);
@@ -111,7 +111,8 @@ export function failCausality(state,content,event) {
     const spec=(content.structures||[]).find(s=>s.id===id);if(spec){damageStructure(state,content,spec);causal.aftermath.push({kind:'damaged-structure',structureId:id,at:state.time});}
   }
   if(definition?.type==='return-person') {
-    const person=state.npcs[definition.personId];if(person&&causal.phase!=='reunited'){person.hp=0;delete person.companionOf;person.activity='倒れている';}
+    // A missed return is an overdue person, not a physical cause of death.
+    // Existing injury, whereabouts and escort continue independently of this deadline.
     causal.aftermath.push({kind:'missing-person-not-returned',at:state.time});
   } else if(definition?.type==='institution') {
     causal.tenure='evicted';state.facilities[definition.facilityId]={kind:'shop',name:'旧孤児院跡の冒険者店',status:'repurposed'};
@@ -132,6 +133,7 @@ export function failCausality(state,content,event) {
 export function causalActions(state,content,target) {
   const actions=[];
   const npc=state.npcs[target.id];
+  if(npc&&npc.hp<=0)return actions;
   if(npc?.injury&&!npc.injury.treated&&!npc.entrapment)actions.push({id:'tend',type:'causal',label:'傷を手当てする · 傷薬1つ',requirements:{items:{medicine:1}},available:(state.player.inventory.medicine||0)>0,missing:['傷薬1つ']});
   if((npc?.injury?.treated||npc?.causalAssignment&&!npc.injury)&&!npc.companionOf)actions.push({id:'escort',type:'causal',label:'身体を支えて、一緒に歩く'});
   if(npc?.companionOf==='player')actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
