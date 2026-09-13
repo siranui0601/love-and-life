@@ -1,0 +1,76 @@
+{
+  "kind": "prevention",
+  "lifePolicy": "fixed macro stress itinerary; not a natural-life certificate",
+  "routine": [],
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": null,
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 611,
+    "simulationAdvances": 296,
+    "movementInputs": 288,
+    "meaningfulPlayerDecisions": 26,
+    "travelSegments": 5,
+    "investigations": 1,
+    "conversationTurns": 0,
+    "preparationActions": 2,
+    "combatActions": 17,
+    "otherDecisions": 1
+  },
+  "day": 1,
+  "clock": "07:43",
+  "hp": 85,
+  "replayEqual": true,
+  "intermediateRestartEqual": null,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 35,
+      "milestones": [],
+      "operating": true,
+      "water": 60
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": false,
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:172",
+          "kind": "remove-fuel",
+          "at": 27811.469234799468,
+          "evidence": "social:171"
+        }
+      ],
+      "operating": false,
+      "water": 0
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "prevented"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "latent"
+    },
+    "harbor": {
+      "status": "latent"
+    },
+    "lost-road": {
+      "status": "latent"
+    },
+    "resonance": {
+      "status": "latent"
+    },
+    "roots": {
+      "status": "latent"
+    }
+  },
+  "runName": "prevention-final"
+}

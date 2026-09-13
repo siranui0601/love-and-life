@@ -1,0 +1,497 @@
+{
+  "runtimeCommit": "3632dca05c21fb85e812de7ca0c698183a7d8925",
+  "contentRevision": "world-10d-940b5356c6a8",
+  "worldCheck": {
+    "pass": 111,
+    "fail": 0,
+    "skip": 0,
+    "audit": "PASS",
+    "assets": "PASS",
+    "build": "PASS",
+    "exitCode": 0
+  },
+  "browser": "SKIP",
+  "paidLiveLlmCalls": 0,
+  "hashEncoding": "UTF-8, CRLF normalized to LF",
+  "worldlines": [
+    {
+      "name": "ordinary-final",
+      "scope": "public hunger/fatigue/night, paid labor and at most one contact per person per day",
+      "status": "PASS",
+      "day": 5,
+      "clock": "05:35",
+      "hp": 140,
+      "counts": {
+        "lowLevelOperations": 3537,
+        "simulationAdvances": 1554,
+        "movementInputs": 1596,
+        "meaningfulPlayerDecisions": 197,
+        "travelSegments": 55,
+        "investigations": 7,
+        "conversationTurns": 11,
+        "preparationActions": 65,
+        "combatActions": 41,
+        "otherDecisions": 18
+      },
+      "contentHash": "a0ffafc285fa87c5f2c08abebbbf7bb806bd07f9f2a89107ddcf505fee84d304",
+      "finalHash": "9d46a131a1d5b7c7d7ff21ce1f9d5510937d13f5a35d1cbd1ce3cebad110a6b6",
+      "replayEqual": true,
+      "intermediateRestartEqual": true,
+      "fileSave": {
+        "status": "PASS",
+        "worldline": "ordinary-final",
+        "sourceOperation": 2792,
+        "sourceHash": "d9b58d6ee5e582341878786e50d2914a0fc281dcc6f34f0396d38cfb3b82bdbd",
+        "contentRevision": "world-10d-940b5356c6a8",
+        "diskRoundTrips": 2,
+        "offlineCalendarAdvance": 0,
+        "suffixOperations": 745,
+        "finalHash": "9d46a131a1d5b7c7d7ff21ce1f9d5510937d13f5a35d1cbd1ce3cebad110a6b6",
+        "sameFinalState": true,
+        "scope": "FileWorldStore + PersistentWorldService restore, followed by exact recorded shared-runtime continuation; not HTTP timing equivalence"
+      },
+      "handoffs": [
+        {
+          "id": "social:13323",
+          "kind": "family-reunion",
+          "actorId": "NPC001",
+          "targetId": "NPC002",
+          "payload": {
+            "escortId": "player",
+            "recipientPosition": [
+              -12.86652514014891,
+              0,
+              26.246289826400428
+            ]
+          },
+          "at": 208777.35283526086,
+          "region": "farm",
+          "position": [
+            -11.389618873456278,
+            0,
+            24.638477536733433
+          ],
+          "witnesses": [
+            "NPC001",
+            "NPC002",
+            "NPC003",
+            "NPC004",
+            "NPC005",
+            "NPC006",
+            "NPC058",
+            "NPC060",
+            "NPC061",
+            "NPC062",
+            "NPC111"
+          ]
+        }
+      ],
+      "structures": {
+        "deep-shaft": {
+          "integrity": 0,
+          "milestones": [],
+          "operating": false,
+          "water": 60,
+          "blocked": true,
+          "damageAt": 224675.7030528632,
+          "casualties": [
+            "NPC036",
+            "NPC037",
+            "NPC086",
+            "NPC089"
+          ],
+          "recoveries": [],
+          "damageFactId": "physical:16204"
+        },
+        "grain-store": {
+          "fire": 0,
+          "fuel": false,
+          "integrity": 100,
+          "milestones": [
+            {
+              "id": "milestone:12004",
+              "kind": "extinguish",
+              "at": 193758.2595567703,
+              "evidence": "social:12003"
+            },
+            {
+              "id": "milestone:12233",
+              "kind": "clear-rubble",
+              "at": 196746.54282792434,
+              "evidence": "social:12232"
+            },
+            {
+              "id": "milestone:12998",
+              "kind": "shore",
+              "at": 204472.71659733448,
+              "evidence": "social:12997"
+            },
+            {
+              "id": "milestone:13064",
+              "kind": "reopen",
+              "at": 205372.71659733448,
+              "evidence": "social:13063"
+            }
+          ],
+          "operating": true,
+          "water": 0,
+          "blocked": false,
+          "damageAt": 151200,
+          "casualties": [],
+          "recoveries": [],
+          "damageFactId": "physical:9205",
+          "recoveredAt": 204472.71659733448
+        }
+      },
+      "discovery": [
+        {
+          "id": "site:grain-store:physical:9205",
+          "text": "共同穀倉で、炎と煙が上がっている。崩れた物が入口を塞いでいる。壊れた設備と散らばった残骸がある。",
+          "source": {
+            "type": "heard",
+            "actorId": "NPC001",
+            "sessionId": "conversation:11906",
+            "previous": {
+              "type": "seen",
+              "observerId": "NPC001"
+            }
+          },
+          "originFactId": "physical:9205",
+          "chain": [
+            {
+              "speakerId": "NPC001",
+              "at": 191762.10502149854,
+              "memoryStatus": "clear",
+              "changes": []
+            }
+          ]
+        }
+      ],
+      "activities": {
+        "working:true": 45,
+        "eating:true": 4,
+        "sleeping:true": 4,
+        "crafting:true": 4,
+        "training:true": 2
+      },
+      "events": {
+        "border": {
+          "status": "latent"
+        },
+        "bread-fire": {
+          "status": "failed"
+        },
+        "crown": {
+          "status": "active"
+        },
+        "deep-mine": {
+          "status": "failed"
+        },
+        "harbor": {
+          "status": "active"
+        },
+        "lost-road": {
+          "status": "failed"
+        },
+        "resonance": {
+          "status": "active"
+        },
+        "roots": {
+          "status": "failed"
+        }
+      }
+    },
+    {
+      "name": "mine-final",
+      "scope": "fixed macro stress itinerary; not a natural-life certificate",
+      "status": "PASS",
+      "day": 5,
+      "clock": "00:33",
+      "hp": 124,
+      "counts": {
+        "lowLevelOperations": 2847,
+        "simulationAdvances": 1264,
+        "movementInputs": 1336,
+        "meaningfulPlayerDecisions": 159,
+        "travelSegments": 52,
+        "investigations": 12,
+        "conversationTurns": 12,
+        "preparationActions": 42,
+        "combatActions": 21,
+        "otherDecisions": 20
+      },
+      "contentHash": "a0ffafc285fa87c5f2c08abebbbf7bb806bd07f9f2a89107ddcf505fee84d304",
+      "finalHash": "fc64e855519c1342005813447a40e002f0dca142ba75ff88ee80417841a5b204",
+      "replayEqual": true,
+      "intermediateRestartEqual": true,
+      "fileSave": {
+        "status": "PASS",
+        "worldline": "mine-final",
+        "sourceOperation": 2353,
+        "sourceHash": "d8002a5b15b80a907a85c8f6ea0dc91fe6769e8a6d8cb70ce210377a2e71d623",
+        "contentRevision": "world-10d-940b5356c6a8",
+        "diskRoundTrips": 2,
+        "offlineCalendarAdvance": 0,
+        "suffixOperations": 494,
+        "finalHash": "fc64e855519c1342005813447a40e002f0dca142ba75ff88ee80417841a5b204",
+        "sameFinalState": true,
+        "scope": "FileWorldStore + PersistentWorldService restore, followed by exact recorded shared-runtime continuation; not HTTP timing equivalence"
+      },
+      "handoffs": [
+        {
+          "id": "social:18611",
+          "kind": "rescue",
+          "actorId": "player",
+          "targetId": "NPC086",
+          "payload": {
+            "shelterId": "LOC_DWARF_INN",
+            "sourceFactId": "physical:15813"
+          },
+          "at": 253877.95223091452,
+          "region": "dwarf",
+          "position": [
+            -25.999999999999993,
+            0,
+            36.999999999999986
+          ],
+          "witnesses": [
+            "NPC086"
+          ]
+        }
+      ],
+      "structures": {
+        "deep-shaft": {
+          "integrity": 100,
+          "milestones": [
+            {
+              "id": "milestone:17331",
+              "kind": "drain",
+              "at": 239627.9883982747,
+              "evidence": "social:17330"
+            },
+            {
+              "id": "milestone:18046",
+              "kind": "shore",
+              "at": 247496.35718486973,
+              "evidence": "social:18045"
+            },
+            {
+              "id": "milestone:18468",
+              "kind": "clear-rubble",
+              "at": 251780.75832959206,
+              "evidence": "social:18467"
+            }
+          ],
+          "operating": false,
+          "water": 0,
+          "blocked": false,
+          "damageAt": 224709.61696391238,
+          "casualties": [
+            "NPC086"
+          ],
+          "recoveries": [
+            {
+              "personId": "NPC086",
+              "factId": "social:18611",
+              "at": 253877.95223091452
+            }
+          ],
+          "damageFactId": "physical:15813",
+          "recoveredAt": 253877.95223091452
+        },
+        "grain-store": {
+          "fire": 100,
+          "fuel": true,
+          "integrity": 25,
+          "milestones": [],
+          "operating": false,
+          "water": 0,
+          "blocked": true,
+          "damageAt": 151200,
+          "casualties": [],
+          "recoveries": [],
+          "damageFactId": "physical:9163"
+        }
+      },
+      "discovery": [
+        {
+          "id": "site:deep-shaft:physical:15813",
+          "text": "採掘坑道で、崩れた物が入口を塞いでいる。壊れた設備と散らばった残骸がある。奥から人の声がする。",
+          "source": {
+            "type": "heard",
+            "actorId": "NPC036",
+            "sessionId": "conversation:16873",
+            "previous": {
+              "type": "seen",
+              "observerId": "NPC036"
+            }
+          },
+          "originFactId": "physical:15813",
+          "chain": [
+            {
+              "speakerId": "NPC036",
+              "at": 234609.61696391238,
+              "memoryStatus": "clear",
+              "changes": []
+            }
+          ]
+        }
+      ],
+      "activities": {
+        "travelling:true": 3,
+        "working:true": 9,
+        "eating:true": 9,
+        "sleeping:true": 9,
+        "crafting:true": 3,
+        "training:true": 2
+      },
+      "events": {
+        "border": {
+          "status": "latent"
+        },
+        "bread-fire": {
+          "status": "failed"
+        },
+        "crown": {
+          "status": "active"
+        },
+        "deep-mine": {
+          "status": "failed"
+        },
+        "harbor": {
+          "status": "active"
+        },
+        "lost-road": {
+          "status": "failed"
+        },
+        "resonance": {
+          "status": "active"
+        },
+        "roots": {
+          "status": "failed"
+        }
+      }
+    },
+    {
+      "name": "prevention-final",
+      "scope": "fixed macro stress itinerary; not a natural-life certificate",
+      "status": "PASS",
+      "day": 1,
+      "clock": "07:43",
+      "hp": 85,
+      "counts": {
+        "lowLevelOperations": 611,
+        "simulationAdvances": 296,
+        "movementInputs": 288,
+        "meaningfulPlayerDecisions": 26,
+        "travelSegments": 5,
+        "investigations": 1,
+        "conversationTurns": 0,
+        "preparationActions": 2,
+        "combatActions": 17,
+        "otherDecisions": 1
+      },
+      "contentHash": "a0ffafc285fa87c5f2c08abebbbf7bb806bd07f9f2a89107ddcf505fee84d304",
+      "finalHash": "6584bb46ac5cfa1c49b4fc0d7cda977c9d9f1a359bc541cd94b4d9a18413a4c5",
+      "replayEqual": true,
+      "intermediateRestartEqual": null,
+      "fileSave": null,
+      "handoffs": [],
+      "structures": {
+        "deep-shaft": {
+          "integrity": 35,
+          "milestones": [],
+          "operating": true,
+          "water": 60
+        },
+        "grain-store": {
+          "fire": 0,
+          "fuel": false,
+          "integrity": 100,
+          "milestones": [
+            {
+              "id": "milestone:172",
+              "kind": "remove-fuel",
+              "at": 27811.469234799468,
+              "evidence": "social:171"
+            }
+          ],
+          "operating": false,
+          "water": 0
+        }
+      },
+      "discovery": [],
+      "activities": {
+        "crafting:true": 1
+      },
+      "events": {
+        "border": {
+          "status": "latent"
+        },
+        "bread-fire": {
+          "status": "prevented"
+        },
+        "crown": {
+          "status": "latent"
+        },
+        "deep-mine": {
+          "status": "latent"
+        },
+        "harbor": {
+          "status": "latent"
+        },
+        "lost-road": {
+          "status": "latent"
+        },
+        "resonance": {
+          "status": "latent"
+        },
+        "roots": {
+          "status": "latent"
+        }
+      }
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "ordinary-final-replay.json",
+      "sha256": "77bdffc521eb994c386c0e64e24194807469e82c1b50902538772c51685e68e3"
+    },
+    {
+      "file": "ordinary-final-summary.json",
+      "sha256": "ec1b84cff5f6b092d0d7e9ec3ba90772a963a185d66fb7a5ca5b0d1544619896"
+    },
+    {
+      "file": "ordinary-final-intermediate.json",
+      "sha256": "41d21a846cbe0a97ea5b477499fbc9ff708f02e21669c0eff577b44ef592d958"
+    },
+    {
+      "file": "ordinary-final-save-summary.json",
+      "sha256": "ed49289ffd24a0604e84974f6621cd2e533b5d7e23876ba0ebda6baff4fdb789"
+    },
+    {
+      "file": "mine-final-replay.json",
+      "sha256": "b7cd7d35538ba37197b0900d8ac424cd76e9c810b8eecea768055cb36e081ff7"
+    },
+    {
+      "file": "mine-final-summary.json",
+      "sha256": "fd3815febe0dc0ea9a84afdb4d72dd179ea9e34f9b8e0b4e7e97434b9de09bc9"
+    },
+    {
+      "file": "mine-final-intermediate.json",
+      "sha256": "f148186101595d4a5830e29f439ace9a62753f92767b9896e4102f96e545c6c7"
+    },
+    {
+      "file": "mine-final-save-summary.json",
+      "sha256": "2576ef7fcfd420e93fe85ebee5dca3cceb117dfbd5c22fa0c4926f5020c8e17e"
+    },
+    {
+      "file": "prevention-final-replay.json",
+      "sha256": "339ec22de43b2e7ef1937943c1a413e09515efbe8b18a2e04a089849a19782d5"
+    },
+    {
+      "file": "prevention-final-summary.json",
+      "sha256": "f8690f632366710391595dc1a5d2d21e06467d7d0e66113baadc82f8e793548d"
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "kind": "mine",
+  "lifePolicy": "fixed macro stress itinerary; not a natural-life certificate",
+  "routine": [
+    {
+      "action": "eat",
+      "at": 54142.675381849695,
+      "hunger": 35.07431009471351,
+      "fatigue": 16.07926410102766
+    },
+    {
+      "action": "rest",
+      "at": 55042.675381849695,
+      "hunger": 0.46875,
+      "fatigue": 16.579264101027665,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 85395.22449201968,
+      "hunger": 16.27736932821368,
+      "fatigue": 4.862527283427735
+    },
+    {
+      "action": "rest",
+      "at": 86295.22449201968,
+      "hunger": 0.46875,
+      "fatigue": 5.3625272834277355,
+      "reason": "night"
+    },
+    {
+      "action": "eat",
+      "at": 116825.30526278303,
+      "hunger": 16.369833734772744,
+      "fatigue": 4.961155983757377
+    },
+    {
+      "action": "rest",
+      "at": 117725.30526278303,
+      "hunger": 0.46875,
+      "fatigue": 5.4611559837573775,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 149445.6605999097,
+      "hunger": 16.989768404753793,
+      "fatigue": 5.622419631737018
+    },
+    {
+      "action": "rest",
+      "at": 150345.6605999097,
+      "hunger": 0.46875,
+      "fatigue": 6.122419631737019,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 180875.741370673,
+      "hunger": 16.369833734772744,
+      "fatigue": 4.961155983757377
+    },
+    {
+      "action": "rest",
+      "at": 181775.741370673,
+      "hunger": 0.46875,
+      "fatigue": 5.4611559837573775,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 212109.61696391238,
+      "hunger": 16.267643538145656,
+      "fatigue": 4.852153107355175
+    },
+    {
+      "action": "rest",
+      "at": 213009.61696391238,
+      "hunger": 0.46875,
+      "fatigue": 5.352153107355176,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 262641.8278241539,
+      "hunger": 26.31885982304368,
+      "fatigue": 15.573450477912145
+    },
+    {
+      "action": "rest",
+      "at": 263541.8278241539,
+      "hunger": 0.46875,
+      "fatigue": 16.073450477912143,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 293875.7034173932,
+      "hunger": 16.267643538145656,
+      "fatigue": 4.852153107355175
+    },
+    {
+      "action": "rest",
+      "at": 294775.7034173932,
+      "hunger": 0.46875,
+      "fatigue": 5.352153107355176,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 325109.57901063253,
+      "hunger": 16.267643538145656,
+      "fatigue": 4.852153107355175
+    },
+    {
+      "action": "rest",
+      "at": 326009.57901063253,
+      "hunger": 0.46875,
+      "fatigue": 5.352153107355176,
+      "reason": "fatigue"
+    }
+  ],
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": null,
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 2847,
+    "simulationAdvances": 1264,
+    "movementInputs": 1336,
+    "meaningfulPlayerDecisions": 159,
+    "travelSegments": 52,
+    "investigations": 12,
+    "conversationTurns": 12,
+    "preparationActions": 42,
+    "combatActions": 21,
+    "otherDecisions": 20
+  },
+  "day": 5,
+  "clock": "00:33",
+  "hp": 124,
+  "replayEqual": true,
+  "intermediateRestartEqual": true,
+  "rescueDemonstrated": true,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:17331",
+          "kind": "drain",
+          "at": 239627.9883982747,
+          "evidence": "social:17330"
+        },
+        {
+          "id": "milestone:18046",
+          "kind": "shore",
+          "at": 247496.35718486973,
+          "evidence": "social:18045"
+        },
+        {
+          "id": "milestone:18468",
+          "kind": "clear-rubble",
+          "at": 251780.75832959206,
+          "evidence": "social:18467"
+        }
+      ],
+      "operating": false,
+      "water": 0,
+      "blocked": false,
+      "damageAt": 224709.61696391238,
+      "casualties": [
+        "NPC086"
+      ],
+      "recoveries": [
+        {
+          "personId": "NPC086",
+          "factId": "social:18611",
+          "at": 253877.95223091452
+        }
+      ],
+      "damageFactId": "physical:15813",
+      "recoveredAt": 253877.95223091452
+    },
+    "grain-store": {
+      "fire": 100,
+      "fuel": true,
+      "integrity": 25,
+      "milestones": [],
+      "operating": false,
+      "water": 0,
+      "blocked": true,
+      "damageAt": 151200,
+      "casualties": [],
+      "recoveries": [],
+      "damageFactId": "physical:9163"
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "failed"
+    }
+  },
+  "runName": "mine-final"
+}

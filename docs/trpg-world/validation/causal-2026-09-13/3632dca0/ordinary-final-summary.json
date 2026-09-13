@@ -1,0 +1,163 @@
+{
+  "kind": "ordinary",
+  "lifePolicy": "public hunger/fatigue/night, paid labor and at most one contact per person per day",
+  "routine": [
+    {
+      "action": "eat",
+      "at": 65268.66251142395,
+      "hunger": 40.86909505803359,
+      "fatigue": 22.26036806190215
+    },
+    {
+      "action": "rest",
+      "at": 127038.34205221347,
+      "hunger": 33.04080315219545,
+      "fatigue": 56.5768566956715,
+      "reason": "fatigue"
+    },
+    {
+      "action": "eat",
+      "at": 151638.34205221347,
+      "hunger": 45.85330315219545,
+      "fatigue": 1.6666666666666667
+    },
+    {
+      "action": "rest",
+      "at": 170079.3417025158,
+      "hunger": 15.457990470061539,
+      "fatigue": 11.911666472390124,
+      "reason": "night"
+    },
+    {
+      "action": "eat",
+      "at": 217806.91908210318,
+      "hunger": 40.31610368859565,
+      "fatigue": 14.515320766437597
+    },
+    {
+      "action": "rest",
+      "at": 253671.91873240552,
+      "hunger": 18.995791006461445,
+      "fatigue": 34.44032057216127,
+      "reason": "night"
+    },
+    {
+      "action": "eat",
+      "at": 296271.9187324055,
+      "hunger": 41.183291006461445,
+      "fatigue": 11.666666666666659
+    },
+    {
+      "action": "rest",
+      "at": 344100.918382708,
+      "hunger": 26.094228324327236,
+      "fatigue": 38.238333139056955,
+      "reason": "night"
+    }
+  ],
+  "layer": "structural travel prefix, public local life/discovery/response",
+  "firstMissing": null,
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 3537,
+    "simulationAdvances": 1554,
+    "movementInputs": 1596,
+    "meaningfulPlayerDecisions": 197,
+    "travelSegments": 55,
+    "investigations": 7,
+    "conversationTurns": 11,
+    "preparationActions": 65,
+    "combatActions": 41,
+    "otherDecisions": 18
+  },
+  "day": 5,
+  "clock": "05:35",
+  "hp": 140,
+  "replayEqual": true,
+  "intermediateRestartEqual": true,
+  "rescueDemonstrated": false,
+  "structures": {
+    "deep-shaft": {
+      "integrity": 0,
+      "milestones": [],
+      "operating": false,
+      "water": 60,
+      "blocked": true,
+      "damageAt": 224675.7030528632,
+      "casualties": [
+        "NPC036",
+        "NPC037",
+        "NPC086",
+        "NPC089"
+      ],
+      "recoveries": [],
+      "damageFactId": "physical:16204"
+    },
+    "grain-store": {
+      "fire": 0,
+      "fuel": false,
+      "integrity": 100,
+      "milestones": [
+        {
+          "id": "milestone:12004",
+          "kind": "extinguish",
+          "at": 193758.2595567703,
+          "evidence": "social:12003"
+        },
+        {
+          "id": "milestone:12233",
+          "kind": "clear-rubble",
+          "at": 196746.54282792434,
+          "evidence": "social:12232"
+        },
+        {
+          "id": "milestone:12998",
+          "kind": "shore",
+          "at": 204472.71659733448,
+          "evidence": "social:12997"
+        },
+        {
+          "id": "milestone:13064",
+          "kind": "reopen",
+          "at": 205372.71659733448,
+          "evidence": "social:13063"
+        }
+      ],
+      "operating": true,
+      "water": 0,
+      "blocked": false,
+      "damageAt": 151200,
+      "casualties": [],
+      "recoveries": [],
+      "damageFactId": "physical:9205",
+      "recoveredAt": 204472.71659733448
+    }
+  },
+  "events": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "failed"
+    }
+  },
+  "runName": "ordinary-final"
+}

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "worldline": "ordinary-final",
+  "sourceOperation": 2792,
+  "sourceHash": "d9b58d6ee5e582341878786e50d2914a0fc281dcc6f34f0396d38cfb3b82bdbd",
+  "contentRevision": "world-10d-940b5356c6a8",
+  "diskRoundTrips": 2,
+  "offlineCalendarAdvance": 0,
+  "suffixOperations": 745,
+  "finalHash": "9d46a131a1d5b7c7d7ff21ce1f9d5510937d13f5a35d1cbd1ce3cebad110a6b6",
+  "sameFinalState": true,
+  "scope": "FileWorldStore + PersistentWorldService restore, followed by exact recorded shared-runtime continuation; not HTTP timing equivalence"
+}
