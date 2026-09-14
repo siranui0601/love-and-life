@@ -280,6 +280,11 @@ export function returnEquipmentLoan(state, loanId, { facilityId = null, automati
 export function reconcileEquipmentLoans(state) {
   const returned = [];
   for (const loan of activeEquipmentLoans(state)) {
+    // Mission reconciliation owns only mission-scoped loans. Tutorial/player-choice
+    // loans deliberately remain active until the player uses their explicit return
+    // path; treating missionId=null as "mission closed" would silently confiscate
+    // them on the next ordinary production command.
+    if (loan?.returnPolicy === "player_choice" || !loan?.missionId) continue;
     const missionStatus = state.missions?.[loan.missionId]?.status;
     if (["active", "available", "in_progress"].includes(missionStatus)) continue;
     const result = returnEquipmentLoan(state, loan.loanId, {

@@ -2,7 +2,7 @@ import * as base from "./authored-mission-flow-day2-t01-village-warning-result.j
 
 export * from "./authored-mission-flow-day2-t01-village-warning-result.js";
 
-export const AUTHORED_DAY2_DAY8_VILLAGE_WATCH_VERSION = "authored-day2-day8-village-watch-v1";
+export const AUTHORED_DAY2_DAY8_VILLAGE_WATCH_VERSION = "authored-day2-day8-village-watch-v2";
 
 const T01_MISSION_ID = "MSN-T01";
 const T03_MISSION_ID = "MSN-T03";
@@ -14,7 +14,9 @@ const VILLAGE_SQUARE_ID = "LOC_FARM_SQUARE";
 const NORTH_FENCE_ID = "LOC_FARM_NORTH_FENCE";
 const JILL_ID = "NPC060";
 const RIONA_ID = "NPC008";
-const DAY8_DAWN_MINUTE = 7 * 1440 + 5 * 60;
+// Production absoluteMinute=0 is Day1 10:00. Day8 05:00 therefore needs the
+// same -600 minute epoch offset used by clockFromMinute-based authored scenes.
+const DAY8_DAWN_MINUTE = 7 * 1440 + 5 * 60 - 10 * 60;
 
 const ROSTER_CHOICES = Object.freeze([
   Object.freeze({

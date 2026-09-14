@@ -23,6 +23,8 @@ jobs:
   regression:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,10 +35,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Export canonical v2 source from Google Sheets
+        run: node tools/trpg-sim/export-virtue-route-v2-source.mjs
       - name: Run complete TRPG regression suite
-        run: npm run trpg:test
+        shell: bash
+        run: |
+          mkdir -p tools/trpg-sim/reports
+          set -o pipefail
+          npm run trpg:test 2>&1 | tee tools/trpg-sim/reports/route-regression.log
+      - name: Upload regression diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trpg-day100-regression
+          path: tools/trpg-sim/reports/route-regression.log
+          if-no-files-found: error
+          retention-days: 14
 
   route-matrix:
+    # Full Day1->100 replay is an explicit late-stage certification. Draft PRs
+    # run the regression suite above but must not use full routes as a debugger.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     needs: regression
     runs-on: ubuntu-latest
     timeout-minutes: 180
@@ -80,6 +99,8 @@ jobs:
           retention-days: 14
 
   companion-route:
+    # Same rule as route-matrix: no full replay while the integration PR is Draft.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     needs: regression
     runs-on: ubuntu-latest
     timeout-minutes: 180

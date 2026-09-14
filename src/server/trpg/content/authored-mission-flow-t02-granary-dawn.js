@@ -2,7 +2,7 @@ import * as base from "./authored-mission-flow-human-route-t04-falco-progress-sy
 
 export * from "./authored-mission-flow-human-route-t04-falco-progress-sync.js";
 
-export const AUTHORED_T02_GRANARY_DAWN_VERSION = "authored-t02-granary-dawn-v1";
+export const AUTHORED_T02_GRANARY_DAWN_VERSION = "authored-t02-granary-dawn-v2";
 
 const MISSION_ID = "MSN-T02";
 const TROUBLE_ID = "T02";
@@ -33,10 +33,13 @@ const HEADCOUNT_SCENE = "t02-dawn-thoma-search";
 const RECORD_SCENE = "t02-dawn-scene-record";
 const STOCK_SCENE = "t02-dawn-stock-count";
 
-const DAWN_OPEN_MINUTE = 4 * 1440;
-const DAWN_CLOSE_MINUTE = 6 * 1440;
+// 正本の放火はDay5「夜」。焼け跡はそれより前に存在しないので、
+// 窓はDay5 22:00に開き、Day7 00:00に閉じる。production absoluteMinuteは
+// Day1 10:00を0とするため、壁時計の通算分からその600分を差し引く。
+const DAWN_OPEN_MINUTE = 4 * 1440 + 22 * 60 - 10 * 60;
+const DAWN_CLOSE_MINUTE = 6 * 1440 - 10 * 60;
 
-// Day5 夜明け。共同穀倉はまだ煙を上げている。
+// Day6 夜明け。共同穀倉はまだ煙を上げている。
 // ここで最初に何を守るかが、この事件の証拠経路と、村がプレイヤーをどう見るかを決める。
 const DAWN_CHOICES = Object.freeze([
   Object.freeze({
@@ -342,6 +345,21 @@ function findMission(runtime) {
   return null;
 }
 
+function markT02MissionAttempt(runtime, minute) {
+  const mission = findMission(runtime);
+  if (mission && mission.attemptedAt == null) mission.attemptedAt = minute;
+
+  const missionProgress = runtime?.playerState?.progress?.missions;
+  if (!missionProgress) return;
+  const attempted = missionProgress.attemptedTroubleIds;
+  if (attempted instanceof Set) {
+    attempted.add(TROUBLE_ID);
+    return;
+  }
+  missionProgress.attemptedTroubleIds = new Set(Array.isArray(attempted) ? attempted : []);
+  missionProgress.attemptedTroubleIds.add(TROUBLE_ID);
+}
+
 function statusOf(value) {
   return String(value?.status ?? value ?? "");
 }
@@ -477,6 +495,7 @@ function consume(runtime, action, result) {
   state.closedActionIds[sceneId] = closed;
   state.currentSceneId = action.authoredT02DawnNextSceneId ?? null;
   state.lastChoiceAtMinute = minute;
+  markT02MissionAttempt(runtime, minute);
 
   runtime.playerState.worldFlags ??= {};
   runtime.playerState.history ??= [];

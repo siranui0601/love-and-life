@@ -75,7 +75,7 @@ class Day100CompanionRouteRunner extends Day100GameRunner {
       const accepted = outcome?.ok !== false
         && outcome?.success !== false
         && outcome?.accepted !== false;
-      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted);
+      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted, this.save);
     }
     return true;
   }

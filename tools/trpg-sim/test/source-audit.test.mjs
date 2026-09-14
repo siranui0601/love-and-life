@@ -31,5 +31,6 @@ test("known source-contract gaps remain visible instead of being silently repair
   assert.ok(audit.skills.provisionalSkillIds.length >= 90);
   assert.ok(audit.world.chainCycles.includes("T04->T17"));
   assert.ok(audit.world.chainCycles.includes("T06->T14"));
-  assert.ok(audit.battle.monstersWithoutFallbackAction.includes("MON-0076"));
+  assert.deepEqual(audit.battle.monstersWithoutUnconditionalAction, []);
+  assert.deepEqual(audit.battle.specialStateContractMismatches, []);
 });

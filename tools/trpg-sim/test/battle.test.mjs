@@ -20,11 +20,12 @@ import {
   resolveInteractiveBattleRound,
   runMonteCarlo,
   simulateBattle,
+  copyableEnemySkill,
 } from "../lib/battle-simulator.mjs";
 
 const data = await loadBattleData();
 
-function observerBuild() {
+function observerBuild(overrides = {}) {
   return createPlayerBuild(data, {
     id: "observer",
     name: "Candidate exhaustion observer",
@@ -46,6 +47,7 @@ function observerBuild() {
       critical: 0,
       debuffSuccess: 0,
       debuffResistance: 100,
+      ...overrides,
     },
   });
 }
@@ -60,11 +62,11 @@ test("battle fixture joins every combat table and all four skill shards", () => 
     encounters: data.encounters.length,
     playerSkills: data.playerSkills.length,
   }, {
-    equipment: 116,
-    inventory: 123,
+    equipment: 142,
+    inventory: 149,
     monsters: 77,
     monsterSkills: 96,
-    monsterActions: 285,
+    monsterActions: 286,
     encounters: 76,
     playerSkills: 1141,
   });
@@ -110,19 +112,18 @@ test("seeded RNG and encounter party expansion are reproducible", () => {
   assert.ok(partyOne.every((monsterId) => data.monsterById.has(monsterId)));
 });
 
-test("battle data audit preserves actionable state and command inconsistencies", () => {
-  assert.ok(data.audit.monstersWithoutUnconditionalAction.includes("MON-0076"));
-  assert.deepEqual(
-    [...new Set(data.audit.unresolvedStateReferences.map((entry) => entry.stateId))].sort(),
-    ["bound", "mana_absorb膜", "overheat"],
-  );
-  assert.ok(data.audit.unresolvedModifierReferences.some((entry) => (
-    entry.modifier === "physicalPower"
-      && entry.normalized === "physical_power"
-      && entry.normalizationResolves
-  )));
-  assert.ok(data.audit.unknownCommands.some((entry) => entry.command === "SUMMON_UNIT"));
-  assert.ok(data.audit.unknownCommands.some((entry) => entry.command === "COPY_LAST_ENEMY_SKILL"));
+test("canonical monster actions, commands and all nine bosses are runtime-ready", () => {
+  assert.deepEqual(data.audit.monstersWithoutUnconditionalAction, []);
+  assert.deepEqual(data.audit.unresolvedStateReferences, []);
+  assert.deepEqual(data.audit.unresolvedModifierReferences, []);
+  assert.deepEqual(data.audit.unknownCommands, []);
+  assert.deepEqual(data.audit.unknownSpecialStateSemantics, []);
+  assert.deepEqual(data.audit.unknownDebuffSemantics, []);
+  assert.deepEqual(data.audit.customHandlerSkills, []);
+  assert.deepEqual(data.audit.bossesMissingCombatCatalog, []);
+  assert.deepEqual(data.audit.unknownBossCatalogMonsterIds, []);
+  assert.deepEqual(data.audit.bossCatalogIssues, []);
+  assert.equal(data.bossCatalog.bosses.length, 9);
   assert.equal(data.audit.passiveSkillsWithDamage.length, 25);
   assert.equal(data.audit.provisionalRuleSkills.length, 98);
   assert.equal(data.audit.contextualActiveSkills.length, 345);
@@ -379,7 +380,7 @@ test("timeline includes deterministic end-of-round resource effects", () => {
     data,
     seed: "round-effect-4",
     monsterIds: ["MON-0010"],
-    playerBuild: observerBuild(),
+    playerBuild: observerBuild({ debuffResistance: -100 }),
     maxTurns: 5,
     captureTimeline: true,
   });
@@ -387,7 +388,7 @@ test("timeline includes deterministic end-of-round resource effects", () => {
     data,
     seed: "round-effect-4",
     monsterIds: ["MON-0010"],
-    playerBuild: observerBuild(),
+    playerBuild: observerBuild({ debuffResistance: -100 }),
     maxTurns: 5,
     captureTimeline: true,
   });
@@ -398,26 +399,32 @@ test("timeline includes deterministic end-of-round resource effects", () => {
   assert.ok(roundEffects.some((frame) => frame.effects.some((effect) => effect.hpAfter < effect.hpBefore)));
 });
 
-test("MON-0076 candidate exhaustion is diagnosed and falls back to normal attacks", () => {
+test("MON-0076 uses authored wing-blade combat instead of normal-attack fallback", () => {
   const result = simulateBattle({
     data,
     seed: "blackridge-wing-scout-regression",
     monsterIds: ["MON-0076"],
     playerBuild: observerBuild(),
     maxTurns: 5,
+    captureTimeline: true,
   });
 
   assert.equal(result.winner, "draw");
   assert.equal(result.turns, 5);
   assert.equal(result.actionUsage["MSK-0016"], 1, "the turn-one-only action must not repeat");
-  assert.equal(result.candidateExhaustion, 4);
-  assert.equal(result.fallbackAttacks, 4);
-  assert.equal(result.diagnostics.counts.candidateExhaustion, 4);
-  assert.ok(result.actionUsage.__normal__ >= result.fallbackAttacks);
-  assert.ok(result.players[0].alive, "fallback behavior must progress battle without crashing");
+  assert.equal(result.actionUsage["MSK-0012"], 4, "the authored zero-CT wing blade must cover later turns");
+  assert.equal(result.candidateExhaustion, 0);
+  assert.equal(result.fallbackAttacks, 0);
+  assert.equal(result.diagnostics.counts.candidateExhaustion, undefined);
+  assert.equal(result.timeline.frames.some((frame) => (
+    frame.actorSide === "enemy" && frame.action?.actionId === "__normal__"
+  )), false);
+  assert.ok(result.players[0].alive, "authored behavior must progress battle without crashing");
 });
 
-test("Monte Carlo reports win, turns, MP, usage and exhaustion per build", () => {
+const monteCarloTest = process.env.TRPG_RUN_MONTE_CARLO === "1" ? test : test.skip;
+
+monteCarloTest("Monte Carlo reports win, turns, MP, usage and exhaustion per build", () => {
   const builds = createDefaultBuilds(data).slice(0, 2);
   assert.equal(new Set(builds.map((build) => build.level)).size, 2);
   assert.ok(builds.every((build) => build.equipmentIds.length > 0));
@@ -450,4 +457,106 @@ test("Monte Carlo reports win, turns, MP, usage and exhaustion per build", () =>
     assert.ok(Number.isFinite(report.playerResourceExhaustionEvents));
     assert.ok(Number.isFinite(report.fallbackAttacks));
   }
+});
+
+/**
+ * MON-0028 空殻の勇者の「空殻模倣」（MSK-0090）を検算する。
+ *
+ * 正本の行動表 MACT-00092 は `history.playerLastSkillRepeatable==true` を条件に、
+ * `COPY_LAST_ENEMY_SKILL`（威力75%）を重み30で撃つ。**同じ技を押し続ける戦い方への咎めである。**
+ * この命令はかつて `default:` に落ちて何もしていなかった。戻ると退行になる。
+ *
+ * **検算の形について。**当初これを「技を連打する build と通常攻撃だけの build の被ダメ比較」で
+ * 書いたが、二度続けて誤った理由で通った。
+ *   一度目：倍率でいちばん大きい技を選んだら SKL-0209 メガクラッシュ（`costs.hpMode:"set_zero"`）で、
+ *           押した本人が一ターン目に死んでいた。模倣とは無関係に被ダメが最大化していた。
+ *   二度目：次に選ばれた SKL-0789 古代砲撃 は分類が「防御」で、**被ダメが0になった。**
+ * **build 比較はスキルの副作用に汚染される。**写す側の判定そのものを直接検算する。
+ */
+test("空殻模倣は、写せる技と写せない技を正本どおりに選り分ける", () => {
+  const mimicSkill = data.monsterSkills.find((entry) => entry.id === "MSK-0090");
+  assert.ok(mimicSkill, "MSK-0090 空殻模倣が正本に無い");
+  const command = (mimicSkill.commands ?? []).find((entry) => entry.command === "COPY_LAST_ENEMY_SKILL");
+  assert.ok(command, "MSK-0090 に COPY_LAST_ENEMY_SKILL が無い");
+  assert.equal(Number(command.powerMultiplier), 0.75);
+  assert.deepEqual(command.excludedTags, ["uncopyable", "self_sacrifice"]);
+
+  const plain = data.playerSkillById.get("SKL-0001");
+  const sacrifice = data.playerSkillById.get("SKL-0209");
+  assert.ok(plain && sacrifice);
+  assert.equal(sacrifice.costs.hpMode, "set_zero", "SKL-0209 が自己犠牲でなくなったら、この検算は前提から見直す");
+
+  assert.equal(
+    copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: plain }])?.id,
+    "SKL-0001",
+  );
+  assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: false, lastSkill: plain }]), null);
+  assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: null }]), null);
+  assert.equal(copyableEnemySkill(command, [{ lastSkillRepeatable: true, lastSkill: sacrifice }]), null);
+});
+
+test("空殻の勇者は、技を使った相手にだけ模倣を撃つ", () => {
+  const base = {
+    maxHp: 200_000, maxMp: 100_000, attack: 120, defense: 60, agility: 60, luck: 20,
+    physicalPower: 60, magicPower: 60, magicResistance: 50, accuracy: 40, evasion: 10,
+    critical: 5, debuffSuccess: 10, debuffResistance: 30,
+  };
+  const run = (skillIds) => {
+    let mimicUses = 0;
+    for (let index = 0; index < 12; index += 1) {
+      const result = simulateBattle({
+        data, seed: `hollow-mimic-${index}`, monsterIds: ["MON-0028"], maxTurns: 20,
+        playerBuild: createPlayerBuild(data, {
+          id: "p", name: "candidate", level: 22, equipmentIds: [], skillIds, baseStats: base,
+        }),
+      });
+      mimicUses += Number(result.actionUsage?.["MSK-0090"] || 0);
+    }
+    return mimicUses;
+  };
+
+  assert.ok(run(["SKL-0001"]) > 0, "技を押し続けても模倣が一度も出ない");
+  assert.equal(run([]), 0, "通常攻撃しかしていない相手に模倣が出ている");
+});
+
+/**
+ * ボス戦だけ打ち切りが延びることを検算する。
+ * 通常戦は20回、bossBattleTurnLimitはboss contentを検証するための安全上限であり、
+ * 勝率や所要ターンから戦闘設計を逆算するための目標値ではない。
+ */
+test("ボスがいる戦闘だけ、打ち切り回数が延びる", () => {
+  assert.ok(BATTLE_ASSUMPTIONS.bossBattleTurnLimit > BATTLE_ASSUMPTIONS.battleTurnLimit);
+
+  const stall = simulateBattle({
+    data, seed: "turn-limit-mob", monsterIds: ["MON-0010"], playerBuild: observerBuild(),
+  });
+  assert.equal(stall.turns, BATTLE_ASSUMPTIONS.battleTurnLimit, "雑魚戦の打ち切りが動いている");
+
+  const boss = simulateBattle({
+    data, seed: "turn-limit-boss", monsterIds: ["MON-0028"], playerBuild: observerBuild(),
+  });
+  assert.ok(
+    boss.turns > BATTLE_ASSUMPTIONS.battleTurnLimit,
+    `ボス戦が通常の打ち切り(${BATTLE_ASSUMPTIONS.battleTurnLimit})で切れている：${boss.turns}回`,
+  );
+  assert.ok(boss.turns <= BATTLE_ASSUMPTIONS.bossBattleTurnLimit);
+});
+
+/**
+ * T18装備は世界側の解禁契約として検証する。
+ * Checkpoint B以降、boss combatは人間が明示的に設計し、simulationはruntime検証だけを担う。
+ * 「特定装備でN戦中M勝」のようなsimulation結果をゲーム仕様へ昇格させない。
+ */
+test("空殻の勇者向けT18装備の解禁契約は正本条件で固定する", () => {
+  const hollowHero = data.monsterById.get("MON-0028");
+  const armor = data.equipmentById.get("EQP-A-0008");
+  const stockRows = data.inventory.filter((entry) => entry.equipmentId === "EQP-A-0008");
+
+  assert.ok(hollowHero?.boss, "MON-0028 must remain a canonical boss");
+  assert.ok(armor, "EQP-A-0008 must remain in canonical equipment");
+  assert.ok(stockRows.length > 0, "EQP-A-0008 must have an authoritative acquisition row");
+  assert.ok(
+    stockRows.some((entry) => /T18/.test(String(entry.unlockCondition ?? ""))),
+    "EQP-A-0008 acquisition must remain gated by the authored T18 world condition",
+  );
 });

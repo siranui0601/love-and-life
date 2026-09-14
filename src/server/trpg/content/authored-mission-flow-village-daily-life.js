@@ -1,4 +1,5 @@
 import * as base from "./authored-mission-flow-t03-pasture-night.js";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-mission-flow-t03-pasture-night.js";
 
@@ -232,7 +233,7 @@ function absoluteMinute(runtime) {
 }
 
 function minuteOfDay(runtime) {
-  return ((absoluteMinute(runtime) % 1440) + 1440) % 1440;
+  return clockFromMinute(absoluteMinute(runtime)).minuteOfDay;
 }
 
 function readState(runtime) {

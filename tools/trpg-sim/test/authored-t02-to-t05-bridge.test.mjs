@@ -115,6 +115,14 @@ test("the three doors record three different leads into the poisoning", () => {
   assert.equal(new Set(flat).size, 3, "each door must yield a distinct canonical lead");
 });
 
+test("settling the granary at its canonical last moment still reaches the bridge", () => {
+  // 正本のT02の最終期限はDay35。そこで解決した回もここを通れなければ、
+  // 期限いっぱいまで粘る遊び方が橋ごと消える。
+  const lastMoment = runtime("village_ledger_public_reading");
+  lastMoment.playerState.absoluteMinute = 34 * 1440 + 12 * 60;
+  assert.equal(bridge.eligible(lastMoment), true);
+});
+
 test("the bridge is absent outside the city, outside its window, and after the lord dies", () => {
   const away = runtime("public_prosecution_and_contract_void");
   away.playerState.player.location = "王都";
@@ -125,7 +133,7 @@ test("the bridge is absent outside the city, outside its window, and after the l
   assert.equal(bridge.eligible(early), false);
 
   const late = runtime("public_prosecution_and_contract_void");
-  late.playerState.absoluteMinute = 24 * 1440;
+  late.playerState.absoluteMinute = 38 * 1440;
   assert.equal(bridge.eligible(late), false);
 
   const dead = runtime("public_prosecution_and_contract_void");
@@ -149,4 +157,76 @@ test("the bridge never replays after it is spent", () => {
   for (const choice of bridge.BRIDGE_CHOICES) {
     assert.equal(offered.includes(bridge.actionIdFor(choice)), false);
   }
+});
+
+// 扉で分かったことが、正史のT05調査へ実際に渡っているか。
+// 手掛かりを水増しせず、見たものだけを正史側の名前で登録し直す契約。
+
+test("meeting Mariel completes the canonical hearing, the other two doors do not", () => {
+  const physician = runtime("public_prosecution_and_contract_void");
+  physician.playerState.missions[1].progress = { hear: 0, investigate: 0 };
+  choose(physician, bridge.actionIdFor(bridge.BRIDGE_CHOICES[0]));
+  assert.equal(physician.playerState.missions[1].progress.hear, 1,
+    "the bedside account is the canonical hearing");
+
+  for (const index of [1, 2]) {
+    const other = runtime("public_prosecution_and_contract_void");
+    other.playerState.missions[1].progress = { hear: 0, investigate: 0 };
+    choose(other, bridge.actionIdFor(bridge.BRIDGE_CHOICES[index]));
+    assert.equal(other.playerState.missions[1].progress.hear, 0,
+      "a player who never met Mariel still owes the hearing");
+  }
+});
+
+test("each door unlocks exactly the canonical leads it actually saw", () => {
+  const expected = [
+    ["bedside_symptoms", "antidote_formula"],
+    ["warehouse_manifest"],
+    ["antidote_formula", "crime_ledger"],
+  ];
+  for (const [index, leads] of expected.entries()) {
+    const state = runtime("restitution_grain_and_debt_compact");
+    choose(state, bridge.actionIdFor(bridge.BRIDGE_CHOICES[index]));
+    const flow = state.authoredMissionFlows[bridge.FLOW_ID];
+    assert.deepEqual([...flow.unlockedLeadIds].sort(), [...leads].sort());
+  }
+});
+
+test("only the bedside account records a canonical fact", () => {
+  const physician = runtime("public_prosecution_and_contract_void");
+  choose(physician, bridge.actionIdFor(bridge.BRIDGE_CHOICES[0]));
+  assert.deepEqual(
+    physician.authoredMissionFlows[bridge.FLOW_ID].knownFactIds,
+    ["T05-FACT-NONNATURAL-POISON"]);
+
+  const ledger = runtime("public_prosecution_and_contract_void");
+  choose(ledger, bridge.actionIdFor(bridge.BRIDGE_CHOICES[1]));
+  assert.deepEqual(ledger.authoredMissionFlows[bridge.FLOW_ID].knownFactIds, []);
+});
+
+test("the handoff builds a complete canonical flow state, not a partial one", () => {
+  const state = runtime("public_prosecution_and_contract_void");
+  choose(state, bridge.actionIdFor(bridge.BRIDGE_CHOICES[2]));
+  const flow = state.authoredMissionFlows[bridge.FLOW_ID];
+
+  assert.equal(flow.flowId, bridge.FLOW_ID);
+  for (const field of ["openingChoiceId", "selectedLeadId", "evidenceIds", "prematureResolutionCount"]) {
+    assert.ok(Object.hasOwn(flow, field), `canonical flow state must keep ${field}`);
+  }
+});
+
+test("the handoff adds to leads a canonical flow already holds instead of replacing them", () => {
+  const state = runtime("public_prosecution_and_contract_void");
+  state.authoredMissionFlows = {};
+  state.authoredMissionFlows[bridge.FLOW_ID] = {
+    flowId: bridge.FLOW_ID,
+    unlockedLeadIds: ["port_meeting"],
+    knownFactIds: ["T05-FACT-EXISTING"],
+    evidenceIds: [],
+  };
+  choose(state, bridge.actionIdFor(bridge.BRIDGE_CHOICES[1]));
+
+  const flow = state.authoredMissionFlows[bridge.FLOW_ID];
+  assert.deepEqual([...flow.unlockedLeadIds].sort(), ["port_meeting", "warehouse_manifest"]);
+  assert.deepEqual(flow.knownFactIds, ["T05-FACT-EXISTING"]);
 });

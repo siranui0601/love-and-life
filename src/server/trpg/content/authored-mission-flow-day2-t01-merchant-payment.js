@@ -2,11 +2,11 @@ import * as base from "./authored-mission-flow-day1-t01-village-night-canonical.
 
 export * from "./authored-mission-flow-day1-t01-village-night-canonical.js";
 
-export const AUTHORED_DAY2_T01_MERCHANT_PAYMENT_VERSION = "authored-day2-t01-merchant-payment-v1";
+export const AUTHORED_DAY2_T01_MERCHANT_PAYMENT_VERSION = "authored-day2-t01-merchant-payment-v2";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
-const FACILITY_ID = "LOC_FARM_INN";
+const FACILITY_ID = "LOC_FARM_BAKERY";
 const SCENE_ID = "t01-day2-merchant-payment";
 const SOURCE_ACTION_ID = "MISSION_FLOW:T01:DAY2_MERCHANT:help_unload";
 const MERCHANT_ID = "NPC008";
@@ -70,6 +70,7 @@ function ensureState(runtime) {
 function eligible(runtime) {
   const current = player(runtime);
   return current.location === LOCATION
+    && current.facilityId === FACILITY_ID
     && hasHistory(runtime, "DAY2_MERCHANT_UNLOADING_HELPED")
     && ensureState(runtime).completedAtMinute == null;
 }
@@ -82,6 +83,8 @@ function actionFor(choice) {
     minutes: choice.minutes,
     label: choice.label,
     targetNpcId: MERCHANT_ID,
+    targetLocation: LOCATION,
+    targetFacilityId: FACILITY_ID,
     dialogueTopic: `t01_day2_payment_${choice.id}`,
     dialogueExit: true,
     authoredMissionFlowExclusiveChoice: true,
@@ -197,5 +200,5 @@ export function applyAuthoredMissionFlowAction(runtime, action, result) {
 }
 
 export const AUTHORED_DAY2_T01_MERCHANT_PAYMENT_INTERNALS = Object.freeze({
-  ensureState, hasHistory, eligible, actionFor, actions, consume, CHOICES, SCENE_ID, SOURCE_ACTION_ID, MERCHANT_ID,
+  ensureState, hasHistory, eligible, actionFor, actions, consume, CHOICES, SCENE_ID, SOURCE_ACTION_ID, MERCHANT_ID, FACILITY_ID,
 });

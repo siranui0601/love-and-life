@@ -5,22 +5,21 @@ import {
   applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance,
-  AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS as aftercare,
-  AUTHORED_DAY1_T01_VILLAGE_NIGHT_INTERNALS as night,
-  AUTHORED_DAY2_T01_MERCHANT_PAYMENT_INTERNALS as payment,
   AUTHORED_DAY2_T01_MERCHANT_STALL_INTERNALS as stall,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
-function runtime() {
+const STALL_MINUTE = 1317; // Day2 07:57 after the four-minute cash-payment choice.
+
+function runtime({ cashPaid = false } = {}) {
   return {
     playerState: {
-      absoluteMinute: 780,
-      player: { location: "田園の村", facilityId: "LOC_FARM_SQUARE", hunger: 34, fatigue: 58, gold: 0 },
-      gold: 0,
+      absoluteMinute: STALL_MINUTE,
+      player: { location: "田園の村", facilityId: "LOC_FARM_BAKERY", hunger: 34, fatigue: 18, gold: cashPaid ? 3 : 0 },
+      gold: cashPaid ? 3 : 0,
       inventory: {},
-      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed", completedAt: 780 }],
+      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed", completedAt: 292 }],
       worldFlags: { t01Resolved: true, t01FinnReturned: true },
-      history: [],
+      history: cashPaid ? [{ type: "DAY2_MERCHANT_CASH_WAGE_TAKEN" }] : [],
       evidence: {},
       contracts: {},
     },
@@ -34,21 +33,16 @@ function choose(state, action) {
   return result;
 }
 
-function chooseId(state, id) {
-  return choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.id === id));
-}
-
 function reachStall(state) {
-  chooseId(state, aftercare.HELP_ACTION_ID);
-  chooseId(state, "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread");
-  chooseId(state, night.SLEEP_ACTION_ID);
-  chooseId(state, payment.SOURCE_ACTION_ID);
-  choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "三Gを受け取る"));
+  if (!state.playerState.history.some((entry) => entry.type === "DAY2_MERCHANT_CASH_WAGE_TAKEN")) {
+    state.playerState.history.push({ type: "DAY2_MERCHANT_CASH_WAGE_TAKEN" });
+    state.playerState.player.gold = 3;
+    state.playerState.gold = 3;
+  }
 }
 
-test("Day1 route reaches a three-choice merchant stall after cash payment", () => {
-  const state = runtime();
-  reachStall(state);
+test("cash-payment history at the bakery opens a three-choice merchant stall", () => {
+  const state = runtime({ cashPaid: true });
   const actions = authoredMissionFlowExclusiveActions(state);
   assert.equal(authoredMissionFlowGuidance(state).title, "行商人の朝市");
   assert.deepEqual(actions.map((action) => action.label), ["黒パンを買う", "値段を書き留める", "猟師の荷を預かる"]);
@@ -60,8 +54,7 @@ test("Day1 route reaches a three-choice merchant stall after cash payment", () =
 });
 
 test("buying canonical black bread spends one gold and opens a distinct bread scene", () => {
-  const state = runtime();
-  reachStall(state);
+  const state = runtime({ cashPaid: true });
   const result = choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "黒パンを買う"));
   assert.equal(state.playerState.gold, 2);
   assert.equal(state.playerState.inventory.ITM008, 1);
@@ -72,8 +65,7 @@ test("buying canonical black bread spends one gold and opens a distinct bread sc
 });
 
 test("eating purchased bread applies authored recovery and prevents repetition", () => {
-  const state = runtime();
-  reachStall(state);
+  const state = runtime({ cashPaid: true });
   choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "黒パンを買う"));
   const hungerBeforeMealAction = state.playerState.player.hunger;
   choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "今ここで食べる"));
@@ -84,8 +76,7 @@ test("eating purchased bread applies authored recovery and prevents repetition",
 });
 
 test("copying prices opens three distinct record and conversation outcomes", () => {
-  const state = runtime();
-  reachStall(state);
+  const state = runtime({ cashPaid: true });
   choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "値段を書き留める"));
   assert.equal(authoredMissionFlowGuidance(state).title, "今朝の値段");
   assert.deepEqual(authoredMissionFlowExclusiveActions(state).map((action) => action.label), ["村長に見せる", "パン屋に聞く", "紙片をしまう"]);
@@ -93,14 +84,13 @@ test("copying prices opens three distinct record and conversation outcomes", () 
   assert.deepEqual(state.playerState.evidence["T02-EVIDENCE-DAY2-BASELINE-PRICES"], {
     id: "T02-EVIDENCE-DAY2-BASELINE-PRICES",
     source: "LOC_FARM_SQUARE:VILLAGE_DUTY_LEDGER",
-    acquiredAtMinute: 780,
+    acquiredAtMinute: STALL_MINUTE,
   });
 });
 
 test("hunter parcel can be delivered, delegated, or retained as an unfinished contract", () => {
   for (const [label, expectedStatus] of [["狩人小屋へ向かう", "completed"], ["村長に預ける", "delegated"], ["あとで届ける", "accepted"]]) {
-    const state = runtime();
-    reachStall(state);
+    const state = runtime({ cashPaid: true });
     choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === "猟師の荷を預かる"));
     assert.equal(authoredMissionFlowGuidance(state).title, "猟師への小包");
     choose(state, authoredMissionFlowExclusiveActions(state).find((action) => action.label === label));
@@ -118,7 +108,7 @@ test("stall requires saved cash-payment history and completed scenes do not repe
   assert.equal(stall.stallEligible(state), false);
   state.playerState.history.push({ type: "DAY2_MERCHANT_BLACK_BREAD_PAYMENT_TAKEN" });
   assert.equal(stall.stallEligible(state), false);
-  state.playerState.history.push({ type: "DAY2_MERCHANT_CASH_WAGE_TAKEN" });
+  reachStall(state);
   assert.equal(stall.stallEligible(state), true);
   const copyPrices = stall.STALL_CHOICES.find((choice) => choice.id === "copy_prices");
   choose(state, stall.stallAction(copyPrices));

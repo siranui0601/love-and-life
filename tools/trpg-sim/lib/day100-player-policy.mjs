@@ -40,12 +40,16 @@ function decisionContextSignature(save) {
   ].join("|");
 }
 
+// 「この食事処では買えなかった」という事実は、腹が減っただけでは覆らない。
+// 覆るのは買う手段が増えた時、つまり所持金か無料枠が変わった時だけである。
+//
+// 以前は空腹度を10刻みで署名へ含めていたため、歩いて空腹が上がるたびに
+// 記録が無効化され、同じ食事処を延々と往復していた。Day72までの通し再生では
+// 全4200行動のうち1883回が食事処探索移動で、食事は11回しか成立していない。
 function resourceContextSignature(save) {
-  const hunger = Math.floor(number(save?.player?.needs?.hunger) / 10) * 10;
   return [
     Number(save?.player?.gold ?? 0),
     Number(save?.player?.freeMeals ?? 0),
-    hunger,
   ].join("|");
 }
 
@@ -333,6 +337,16 @@ function facilityLooksLike(move, pattern) {
   return pattern.test(`${move.destinationFacilityName ?? ""} ${move.label ?? ""}`);
 }
 
+// 正本で食料か食事を売っている施設は十八ある。名前で拾おうとすると、そのうち八つを
+// 取り落とす。「亭」が入っていなかったので麦穂亭・鉄樽亭・黒灯亭が見えず、
+// 「小屋」が無いので森の狩人小屋が見えず、休憩所・露店・大型店・補給倉庫も同様だった。
+//
+// 見落とされた施設の中に、出発の村で唯一まともに食える麦穂亭が入っている。
+// 拾えるのは王都と交易都市と辺境の村だけになるので、遠隔地で腹を空かせた
+// プレイヤーは食える町まで地方移動を繰り返すしかなくなる。
+// 通し再生の食事処探索移動1746回のうち、観測できた分はすべて地方間移動だった。
+const EATERY_PATTERN = /宿|食堂|酒場|茶屋|パン|市場|亭|小屋|休憩所|露店|大型店|補給倉庫|商店/u;
+
 function skillLearningDecision(save) {
   const learnable = [...(save?.skills?.learnable ?? [])]
     .sort((left, right) => Number(Boolean(right.recommended)) - Number(Boolean(left.recommended))
@@ -439,7 +453,7 @@ function survivalDecision(save, model, state) {
     const mealMove = (save.movement ?? [])
       .filter((move) => !isDecisionBlocked(state, `MOVE:${move.moveId}`, save))
       .filter((move) => !mealSourceBlocked(state, move.destinationFacilityId, save))
-      .find((move) => facilityLooksLike(move, /宿|食堂|酒場|茶屋|パン|市場/u));
+      .find((move) => facilityLooksLike(move, EATERY_PATTERN));
     if (mealMove) return moveDecision(mealMove, "別の食事処で価格や無料の食事を確かめる", { category: "meal_search_move" });
   }
 
@@ -687,3 +701,5 @@ export const DAY100_POLICY_INTERNALS = Object.freeze({
   isDecisionBlocked,
   mealAffordable,
 });
+
+export const DAY100_EATERY_PATTERN = EATERY_PATTERN;

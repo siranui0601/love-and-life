@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "combat-sheet-canonical-overlay-v1",
+  "source": {
+    "spreadsheetId": "1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+    "sheet": "店舗装備在庫",
+    "readBackRange": "A143:G153",
+    "retrievedAt": "2026-08-26T08:18:00+09:00",
+    "reason": "The early-equipment proposal introduced two facility IDs that never existed in the live world canonical. Reconcile shop stock to existing canonical retail facilities instead of inventing aliases or new world locations."
+  },
+  "stockOverrides": {
+    "STK-0139": {
+      "equipmentId": "EQP-W-0209",
+      "facilityId": "LOC_CRIME_WEAPON_MARKET",
+      "seller": "武器密売市場"
+    },
+    "STK-0140": {
+      "equipmentId": "EQP-X-0204",
+      "facilityId": "LOC_CRIME_WEAPON_MARKET",
+      "seller": "武器密売市場"
+    },
+    "STK-0204": {
+      "equipmentId": "EQP-W-0211",
+      "facilityId": "LOC_BORDER_SOUVENIR",
+      "seller": "神殿土産屋"
+    },
+    "STK-0205": {
+      "equipmentId": "EQP-X-0205",
+      "facilityId": "LOC_BORDER_SOUVENIR",
+      "seller": "神殿土産屋"
+    },
+    "STK-0206": {
+      "equipmentId": "EQP-W-0212",
+      "facilityId": "LOC_CRIME_WEAPON_MARKET",
+      "seller": "武器密売市場"
+    }
+  }
+}

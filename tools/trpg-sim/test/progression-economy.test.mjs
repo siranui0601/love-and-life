@@ -8,6 +8,7 @@ import {
   skillPointSupplyForLevel,
 } from "../lib/skill-progression.mjs";
 import { auditEconomy, parseGold } from "../lib/economy.mjs";
+import { loadCanonicalBattleSnapshotSync } from "../lib/canonical-battle-snapshot.mjs";
 
 const predicateContext = {
   player: {
@@ -19,6 +20,13 @@ const predicateContext = {
     score: 12,
   },
 };
+
+function canonicalBattleDataRows(tabName) {
+  const snapshot = loadCanonicalBattleSnapshotSync();
+  const provenance = snapshot.provenance?.[tabName];
+  assert.ok(provenance, `canonical battle provenance missing for ${tabName}`);
+  return provenance.rowCount - 4;
+}
 
 test("generic predicate evaluator supports every required logical and leaf operator", () => {
   const leaf = (op, value, path = "score") => ({ scope: "player", path, op, value });
@@ -115,12 +123,15 @@ test("skill audit exposes missing grant supply without confusing it with prerequ
 
 test("economy audit joins all product, equipment, stock and monster snapshots", () => {
   const report = auditEconomy();
+  const canonicalEquipment = canonicalBattleDataRows("装備性能マスター");
+  const canonicalStock = canonicalBattleDataRows("店舗装備在庫");
+  const canonicalMonsters = canonicalBattleDataRows("モンスター一覧");
   assert.deepEqual(report.totals, {
     products: 219,
-    equipment: 116,
-    equipmentStockRows: 123,
-    stockedEquipment: 116,
-    monsters: 77,
+    equipment: canonicalEquipment,
+    equipmentStockRows: canonicalStock,
+    stockedEquipment: canonicalEquipment,
+    monsters: canonicalMonsters,
   });
   assert.equal(report.diagnostics.missingEquipmentForStock.length, 0);
   assert.equal(report.diagnostics.unstockedEquipment.length, 0);

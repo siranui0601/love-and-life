@@ -77,7 +77,7 @@ class Day100RouteRunner extends Day100GameRunner {
       const accepted = outcome?.ok !== false
         && outcome?.success !== false
         && outcome?.accepted !== false;
-      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted);
+      recordChoiceSetSelection(this.choiceSetAudit, choiceSet.signature, accepted, this.save);
     }
     return true;
   }
@@ -147,6 +147,24 @@ console.log(`TRPG_DAY100_ROUTE_DISCOVERED=${result.report.counts.discovered}`);
 console.log(`TRPG_DAY100_ROUTE_PROGRESSED=${result.report.counts.progressed}`);
 console.log(`TRPG_DAY100_ROUTE_RESOLVED=${result.report.counts.resolved}`);
 console.log(`TRPG_DAY100_ROUTE_DUPLICATE_CHOICE_SETS=${result.report.routeTrial.choiceSets.duplicateEncounterCount}`);
+// 内訳を全件から出す。**例は先頭20件しか残らないので、内訳の判断に使ってはいけない。**
+for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateFamilies ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_FAMILY ${String(count).padStart(5)}  ${family}`);
+}
+// **どちらが多いかで直し方が正反対になるので、先にこれを出す。**
+//   前回と同じ施設 → その場面の作り方が、同じ場所で同じ札を返している
+//   前回と違う施設 → 札のIDに現在地が入っていないだけ
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_SAME_PLACE_AS_LAST_TIME=${result.report.routeTrial.choiceSets.duplicateRepeatedInPlaceCount}`);
+console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_SINCE_LAST_TIME=${result.report.routeTrial.choiceSets.duplicateMovedBetweenCount}`);
+for (const [family, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateMovedBetweenFamilies ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_FAMILY ${String(count).padStart(5)}  ${family}`);
+}
+for (const [key, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateSamePlaceChangeCounts ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_SAME_PLACE_CHANGED ${String(count).padStart(5)}  ${key}`);
+}
+for (const [kind, count] of Object.entries(result.report.routeTrial.choiceSets.duplicateMovedBetweenKinds ?? {})) {
+  console.log(`TRPG_DAY100_ROUTE_DUPLICATE_MOVED_KIND ${String(count).padStart(5)}  ${kind}`);
+}
 console.log(`TRPG_DAY100_ROUTE_ALL_RESCUE=${result.report.routeTrial.allRescueCandidate ? "YES" : "NO"}`);
 
 if (process.argv.includes("--strict-runtime")) {

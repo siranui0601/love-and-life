@@ -4,6 +4,11 @@ import {
   AUTHORED_MISSION_REVISIT_INTERNALS,
   AUTHORED_MISSION_REVISIT_VERSION,
 } from "../../../src/server/trpg/content/authored-mission-flow-revisit.js";
+import { T13_FOREST_KING_SLIME_WORLD_TREE_PACK as T13 } from "../../../src/server/trpg/content/authored/missions/t13-forest-king-slime-world-tree-collapse.js";
+
+const T13_ALL_EVIDENCE_IDS = (T13.investigation?.focuses ?? [])
+  .flatMap((focus) => focus.groups ?? [])
+  .flatMap((group) => group.evidenceIds ?? []);
 
 const {
   ensureRevisitState,
@@ -226,4 +231,42 @@ test("a consequence redirect moves to a different focus while preserving every e
   assert.equal(flow.selectedLeadId, null);
   assert.equal(flow.deferredUntilMinute, null);
   assert.deepEqual(flow.evidenceIds, []);
+});
+
+test("a revisit with nothing forward to offer hands back the original three, never an empty screen", () => {
+  // 空配列は真値なので、service.js はそれを「排他的な選択肢はこれで確定」と読む。
+  // 通し再生ではこれが選択肢ゼロの画面を大量に生み、プレイヤーは移動しかできなくなっていた。
+  const state = runtime();
+  const flow = state.authoredMissionFlows[FLOW_ID];
+
+  // 進行系の種別を一つも持たない三択。差し替える材料が無い状態である。
+  const controlOnly = [
+    {
+      id: `MISSION_FLOW:${FLOW_ID}:NAVIGATOR_BACK:focus`,
+      minutes: 2,
+      authoredMissionFlowId: FLOW_ID,
+      authoredMissionFlowKind: "navigator_back",
+    },
+    {
+      id: `MISSION_FLOW:${FLOW_ID}:RECONSIDER:lead`,
+      minutes: 2,
+      authoredMissionFlowId: FLOW_ID,
+      authoredMissionFlowKind: "reconsider_lead",
+    },
+    {
+      id: `MISSION_FLOW:${FLOW_ID}:DEFER:defer`,
+      minutes: 2,
+      authoredMissionFlowId: FLOW_ID,
+      authoredMissionFlowKind: "defer",
+    },
+  ];
+  // 焦点の差し替え先も残っていない状態にする。
+  flow.evidenceIds = [...new Set(T13_ALL_EVIDENCE_IDS)];
+
+  const signature = choiceSetSignature(controlOnly);
+  consumeSignature(flow, signature);
+  const revisited = buildRevisitActions(flow, controlOnly, signature);
+
+  assert.equal(revisited.length, 3, "the screen still asks three questions");
+  assert.deepEqual(revisited.map((action) => action.id), controlOnly.map((action) => action.id));
 });

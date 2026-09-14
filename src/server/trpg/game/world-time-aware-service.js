@@ -1,5 +1,9 @@
 import * as journey from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 import {
+  recordPlayerNpcConversation,
+  recordPlayerTravelInteractions,
+} from "../../../../tools/trpg-sim/lib/player-common-interaction.mjs";
+import {
   advancePlayerNeeds,
   ensurePlayerNeeds,
 } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
@@ -20,7 +24,7 @@ import {
 } from "./survival-aware-service.js";
 import { resolveCanonicalWeather } from "../resolvers/weather-resolver.js";
 
-export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v10";
+export const WORLD_TIME_AWARE_SERVICE_VERSION = "world-time-aware-service-v11";
 
 const LIFE_ACTION_PATTERN = /^(?:EAT|LODGE|REST_OUTDOOR|WORK_MEAL):/u;
 const WORK_MEAL_PATTERN = /^WORK_MEAL:([^:]+)$/u;
@@ -199,6 +203,40 @@ function commandPayload(input) {
   };
 }
 
+function visibleRequestedAction(view, input) {
+  const type = String(input?.type ?? "").trim().toUpperCase();
+  if (type === "MOVE") {
+    const moveId = String(input?.payload?.moveId ?? "").trim();
+    const move = (view?.movement ?? []).find((entry) => String(entry?.moveId ?? "") === moveId);
+    return move ? { ...move, id: move.moveId, actionId: move.moveId, type: "move" } : null;
+  }
+  if (type === "TALK") {
+    const npcId = String(input?.payload?.npcId ?? "").trim();
+    return (view?.choices ?? []).find((entry) => entry?.type === "conversation" && entry?.targetNpcId === npcId) ?? null;
+  }
+  if (type !== "CHOOSE") return null;
+  const actionId = String(input?.payload?.actionId ?? "").trim();
+  const choiceId = String(input?.payload?.choiceId ?? "").trim();
+  return (view?.choices ?? []).find((entry) =>
+    (actionId && entry?.actionId === actionId)
+    || (choiceId && entry?.choiceId === choiceId)) ?? null;
+}
+
+function playerIdentity(record, runtime) {
+  const player = runtime?.playerState?.player ?? {};
+  return {
+    id: String(player.id ?? `PLAYER:${record.id}`),
+    name: String(player.displayName ?? player.name ?? record.playerName ?? "旅人"),
+  };
+}
+
+function playerLocation(runtime) {
+  return {
+    hubId: runtime?.playerState?.player?.location ?? null,
+    facilityId: runtime?.playerState?.player?.facilityId ?? null,
+  };
+}
+
 export function synchronizePersistedRecordHash(record, data) {
   if (!record?.runtimeSnapshot || !data) return false;
   const hydratedRuntime = deserializeRuntime(record.runtimeSnapshot, data);
@@ -345,6 +383,11 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
       return this.runLocked(id, () => this.resolveWorkMealAction(ownerHash, id, input, workMeal));
     }
 
+    const runtimeBefore = deserializeRuntime(recordBefore.runtimeSnapshot, this.data);
+    const visibleBefore = this.gameViewForRecord(recordBefore);
+    const selectedBefore = visibleRequestedAction(visibleBefore, input);
+    const locationBefore = playerLocation(runtimeBefore);
+
     const result = await super.command(ownerHash, id, input);
     if (result?.duplicate) return result;
 
@@ -353,6 +396,41 @@ export class WorldTimeAwareTrpgGameService extends SurvivalAwareTrpgGameService 
     if (isLifeAction(input)) {
       changed = synchronizeLifeActionWeatherRecord(record, this.data) || changed;
     }
+
+    if (selectedBefore) {
+      const runtime = deserializeRuntime(record.runtimeSnapshot, this.data);
+      const identity = playerIdentity(record, runtime);
+      const absoluteHour = Number(runtime.playerState.absoluteMinute ?? 0) / 60;
+      let commonChanged = false;
+      if (selectedBefore.type === "conversation" && selectedBefore.targetNpcId) {
+        const conversation = recordPlayerNpcConversation(runtime.livingWorld, {
+          playerId: identity.id,
+          playerName: identity.name,
+          npcId: selectedBefore.targetNpcId,
+          absoluteHour,
+          location: playerLocation(runtime),
+          actionId: selectedBefore.actionId ?? selectedBefore.id ?? null,
+        });
+        commonChanged = conversation.learned || commonChanged;
+      }
+      if (selectedBefore.type === "move") {
+        const contacts = recordPlayerTravelInteractions(runtime.livingWorld, {
+          playerId: identity.id,
+          playerName: identity.name,
+          before: locationBefore,
+          after: playerLocation(runtime),
+          absoluteHour,
+          actionId: selectedBefore.actionId ?? selectedBefore.moveId ?? null,
+        });
+        commonChanged = contacts.length > 0 || commonChanged;
+      }
+      if (commonChanged) {
+        persistRuntime(record, runtime, this.data);
+        reconcileLatestCommand(record);
+        changed = true;
+      }
+    }
+
     if (!changed) return result;
     await this.store.put(record);
     return {

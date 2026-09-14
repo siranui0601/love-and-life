@@ -1,9 +1,11 @@
 import * as base from "./authored-mission-flow-t13-workshop-cargo-yard.js";
+import { consumeMeal } from "../../../../tools/trpg-sim/lib/player-needs.mjs";
+import { clockFromMinute } from "../../../../tools/trpg-sim/lib/player-journey.mjs";
 
 export * from "./authored-mission-flow-t13-workshop-cargo-yard.js";
 
 export const AUTHORED_DAY1_T01_SQUARE_AFTERCARE_VERSION =
-  "authored-day1-t01-square-aftercare-v4";
+  "authored-day1-t01-square-aftercare-v5";
 
 const MISSION_ID = "MSN-T01";
 const LOCATION = "田園の村";
@@ -54,7 +56,7 @@ const AFTERCARE_CHOICES = Object.freeze([
     minutes: 22,
     summary: "広場に残っていた子どもたちと、石を狼に見立てた追いかけ遊びをした。笑い声の中で、見張り小屋へ続く別の細道を知っている子がいると分かった。",
     speech: Object.freeze({
-      actorId: "NPC004",
+      actorId: "NPC062",
       text: "フィンだけずるいよ、秘密の道を知ってたんだ。井戸の裏から行く方なら、ぼくらも途中まで行ったことある。……村長には内緒ね。",
       emotion: "興奮と少しの後ろめたさ",
     }),
@@ -146,11 +148,12 @@ function atVillageSquare(runtime) {
 }
 
 function withinDay1AftercareWindow(runtime) {
-  const minute = Number(runtime?.playerState?.absoluteMinute ?? -1);
-  const day = Number(runtime?.playerState?.day ?? Math.floor(minute / 1440) + 1);
-  return day === 1
-    && minute >= DAY1_AFTERCARE_OPEN_MINUTE
-    && minute < DAY1_AFTERCARE_CLOSE_MINUTE;
+  const absoluteMinute = Number(runtime?.playerState?.absoluteMinute ?? -1);
+  if (!Number.isFinite(absoluteMinute) || absoluteMinute < 0) return false;
+  const clock = clockFromMinute(absoluteMinute);
+  return clock.day === 1
+    && clock.minuteOfDay >= DAY1_AFTERCARE_OPEN_MINUTE
+    && clock.minuteOfDay < DAY1_AFTERCARE_CLOSE_MINUTE;
 }
 
 function readState(runtime) {
@@ -250,6 +253,19 @@ function consume(runtime, action, result) {
   runtime.playerState.history ??= [];
   runtime.playerState.evidence ??= {};
   runtime.playerState.worldFlags[action.authoredDay1T01AftercareWorldFlag] = true;
+  if (action.id === "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread") {
+    const meal = consumeMeal(player(runtime), {
+      minute,
+      nutrition: 58,
+      quality: "standard",
+    });
+    result.meal = {
+      source: "Mira and Finn's shared bread",
+      price: 0,
+      quality: meal.quality,
+      hungerReduced: meal.hungerReduced,
+    };
+  }
   if (action.authoredDay1T01AftercareEvidenceId) {
     runtime.playerState.evidence[action.authoredDay1T01AftercareEvidenceId] = {
       id: action.authoredDay1T01AftercareEvidenceId,

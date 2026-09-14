@@ -1,6 +1,6 @@
-import * as base from "./authored-mission-flow-day2-day8-village-watch.js";
+import * as base from "./authored-mission-flow-day8-t03-night-vigil.js";
 
-export * from "./authored-mission-flow-day2-day8-village-watch.js";
+export * from "./authored-mission-flow-day8-t03-night-vigil.js";
 
 export const AUTHORED_DAY8_T03_COMMUNITY_FOLLOWTHROUGH_VERSION = "authored-day8-t03-community-followthrough-v1";
 
@@ -99,7 +99,8 @@ function ensureState(runtime) {
 }
 
 function watchCompleted(runtime) {
-  return runtime?.playerState?.day2Day8VillageWatch?.howlCompletedAtMinute != null;
+  return runtime?.playerState?.day2Day8VillageWatch?.howlCompletedAtMinute != null
+    && runtime?.playerState?.day8T03NightVigil?.completedAtMinute != null;
 }
 
 function atStart(runtime) {

@@ -1,0 +1,849 @@
+{
+  "schemaVersion": "combat-certification-v1",
+  "generatedAt": "2026-08-16",
+  "mode": "one fixed deterministic 12-round-or-resolution interactive scenario per canonical boss",
+  "discoverySearch": false,
+  "randomSeedSearch": false,
+  "monteCarlo": false,
+  "routeReplay": false,
+  "interpretation": "Metrics are evidence for design review; no single repetition threshold is an automatic failure.",
+  "policy": {
+    "skillIds": [
+      "SKL-0009",
+      "SKL-0010",
+      "SKL-0001",
+      "SKL-0019",
+      "SKL-0228"
+    ],
+    "telegraphResponse": "DEFEND",
+    "otherwise": "fixed rotating skill order with authoritative availability checks"
+  },
+  "certifications": [
+    {
+      "certificationId": "CERT-MON-0007",
+      "bossId": "BOSS-T03-RED-FANG-PARENT",
+      "monsterId": "MON-0007",
+      "seed": "combat-certification-v1:MON-0007",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 35,
+      "enemySkillUseCount": 35,
+      "enemyActionVariety": 5,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 2,
+      "playerActionDistribution": {
+        "SKL-0001": 2,
+        "SKL-0009": 3,
+        "SKL-0010": 3,
+        "SKL-0019": 2,
+        "SKL-0228": 2
+      },
+      "enemyActionDistribution": {
+        "MSK-0001": 12,
+        "MSK-0007": 5,
+        "MSK-0008": 15,
+        "MSK-0042": 2,
+        "MSK-0093": 1
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T03-RED-FANG-PARENT",
+          "monsterId": "MON-0007",
+          "actorInstanceId": "MON-0007#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "群れの統率",
+          "text": "群れ親が低い唸りで赤牙狼を統率する。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T03-RED-FANG-PARENT",
+          "monsterId": "MON-0007",
+          "actorInstanceId": "MON-0007#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "追い詰められた親",
+          "text": "群れ親が退路を捨て、前脚を沈めて突進の間合いへ入る。"
+        }
+      ],
+      "statusBuffDebuffFrames": 23,
+      "resourceDecisionCount": 10,
+      "gimmickInteractionCount": 2,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T03-RED-FANG-PARENT",
+          "monsterId": "MON-0007",
+          "actorInstanceId": "MON-0007#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "群れの統率",
+          "text": "群れ親が低い唸りで赤牙狼を統率する。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T03-RED-FANG-PARENT",
+          "monsterId": "MON-0007",
+          "actorInstanceId": "MON-0007#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "追い詰められた親",
+          "text": "群れ親が退路を捨て、前脚を沈めて突進の間合いへ入る。"
+        }
+      ],
+      "basicRecoveryAttacks": 0,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0015",
+      "bossId": "BOSS-T13-KING-SLIME-EARLY",
+      "monsterId": "MON-0015",
+      "seed": "combat-certification-v1:MON-0015",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 24,
+      "enemySkillUseCount": 23,
+      "enemyActionVariety": 7,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 4,
+      "playerActionDistribution": {
+        "SKL-0001": 2,
+        "SKL-0009": 3,
+        "SKL-0010": 3,
+        "SKL-0019": 2,
+        "SKL-0228": 2
+      },
+      "enemyActionDistribution": {
+        "__normal__": 1,
+        "MSK-0003": 7,
+        "MSK-0026": 9,
+        "MSK-0027": 2,
+        "MSK-0065": 1,
+        "MSK-0066": 3,
+        "MSK-0067": 1
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-KING-SLIME-EARLY",
+          "monsterId": "MON-0015",
+          "actorInstanceId": "MON-0015#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "未成体",
+          "text": "未成体の王粘体が周囲の水と魔力を取り込み始める。"
+        }
+      ],
+      "statusBuffDebuffFrames": 27,
+      "resourceDecisionCount": 10,
+      "gimmickInteractionCount": 2,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-KING-SLIME-EARLY",
+          "monsterId": "MON-0015",
+          "actorInstanceId": "MON-0015#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "未成体",
+          "text": "未成体の王粘体が周囲の水と魔力を取り込み始める。"
+        },
+        {
+          "type": "summon",
+          "unitPool": "slime_fragment",
+          "requested": 2,
+          "summoned": [
+            {
+              "id": "MON-0013",
+              "instanceId": "MON-0013#1",
+              "name": "川スライム"
+            },
+            {
+              "id": "MON-0013",
+              "instanceId": "MON-0013#2",
+              "name": "川スライム"
+            }
+          ],
+          "blocked": 0
+        }
+      ],
+      "basicRecoveryAttacks": 1,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0016",
+      "bossId": "BOSS-T13-KING-SLIME-SWOLLEN",
+      "monsterId": "MON-0016",
+      "seed": "combat-certification-v1:MON-0016",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 32,
+      "enemySkillUseCount": 29,
+      "enemyActionVariety": 7,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 10,
+      "playerActionDistribution": {
+        "SKL-0001": 2,
+        "SKL-0009": 3,
+        "SKL-0010": 3,
+        "SKL-0019": 2,
+        "SKL-0228": 2
+      },
+      "enemyActionDistribution": {
+        "__normal__": 3,
+        "MSK-0003": 4,
+        "MSK-0026": 16,
+        "MSK-0027": 3,
+        "MSK-0065": 1,
+        "MSK-0067": 3,
+        "MSK-0068": 2
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-KING-SLIME-SWOLLEN",
+          "monsterId": "MON-0016",
+          "actorInstanceId": "MON-0016#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "河川吸収",
+          "text": "膨張個体が河川へ触手を伸ばす。"
+        }
+      ],
+      "statusBuffDebuffFrames": 26,
+      "resourceDecisionCount": 10,
+      "gimmickInteractionCount": 4,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-KING-SLIME-SWOLLEN",
+          "monsterId": "MON-0016",
+          "actorInstanceId": "MON-0016#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "河川吸収",
+          "text": "膨張個体が河川へ触手を伸ばす。"
+        },
+        {
+          "type": "summon",
+          "unitPool": "slime_fragment",
+          "requested": 2,
+          "summoned": [
+            {
+              "id": "MON-0013",
+              "instanceId": "MON-0013#1",
+              "name": "川スライム"
+            },
+            {
+              "id": "MON-0013",
+              "instanceId": "MON-0013#2",
+              "name": "川スライム"
+            }
+          ],
+          "blocked": 0
+        },
+        {
+          "type": "field_change",
+          "fieldEffect": "river_drain",
+          "beforeStacks": 0,
+          "afterStacks": 1
+        },
+        {
+          "type": "field_change",
+          "fieldEffect": "river_drain",
+          "beforeStacks": 1,
+          "afterStacks": 2
+        }
+      ],
+      "basicRecoveryAttacks": 3,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0017",
+      "bossId": "BOSS-T13-KING-SLIME-GIANT",
+      "monsterId": "MON-0017",
+      "seed": "combat-certification-v1:MON-0017",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 28,
+      "enemySkillUseCount": 23,
+      "enemyActionVariety": 7,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 4,
+      "playerActionDistribution": {
+        "__defend__": 2,
+        "SKL-0001": 2,
+        "SKL-0009": 3,
+        "SKL-0010": 2,
+        "SKL-0019": 2,
+        "SKL-0228": 1
+      },
+      "enemyActionDistribution": {
+        "__normal__": 3,
+        "MSK-0003": 7,
+        "MSK-0026": 9,
+        "MSK-0065": 1,
+        "MSK-0068": 2,
+        "MSK-0069": 4,
+        "MSK-0070": 2
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-KING-SLIME-GIANT",
+          "monsterId": "MON-0017",
+          "actorInstanceId": "MON-0017#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "巨大化",
+          "text": "巨大王粘体が水面を覆い、生命力を探る。"
+        }
+      ],
+      "statusBuffDebuffFrames": 25,
+      "resourceDecisionCount": 8,
+      "gimmickInteractionCount": 6,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-KING-SLIME-GIANT",
+          "monsterId": "MON-0017",
+          "actorInstanceId": "MON-0017#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "巨大化",
+          "text": "巨大王粘体が水面を覆い、生命力を探る。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0017",
+          "actorInstanceId": "MON-0017#1",
+          "skillId": "MSK-0069",
+          "text": "王粘体の管が世界樹へ食い込み、全員の生命力を吸う脈動が始まる。",
+          "counterplayHint": "次の行動は全体吸命。guard、回復阻害、interrupt、または本体へのburstで備えられる。"
+        },
+        {
+          "type": "field_change",
+          "fieldEffect": "river_drain",
+          "beforeStacks": 0,
+          "afterStacks": 1
+        },
+        {
+          "type": "summon",
+          "unitPool": "slime_fragment",
+          "requested": 2,
+          "summoned": [
+            {
+              "id": "MON-0013",
+              "instanceId": "MON-0013#1",
+              "name": "川スライム"
+            },
+            {
+              "id": "MON-0013",
+              "instanceId": "MON-0013#2",
+              "name": "川スライム"
+            }
+          ],
+          "blocked": 0
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0017",
+          "actorInstanceId": "MON-0017#1",
+          "skillId": "MSK-0069",
+          "text": "王粘体の管が世界樹へ食い込み、全員の生命力を吸う脈動が始まる。",
+          "counterplayHint": "次の行動は全体吸命。guard、回復阻害、interrupt、または本体へのburstで備えられる。"
+        },
+        {
+          "type": "field_change",
+          "fieldEffect": "river_drain",
+          "beforeStacks": 1,
+          "afterStacks": 2
+        }
+      ],
+      "basicRecoveryAttacks": 3,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0018",
+      "bossId": "BOSS-T13-WORLD-TREE-EATER",
+      "monsterId": "MON-0018",
+      "seed": "combat-certification-v1:MON-0018",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 12,
+      "enemySkillUseCount": 7,
+      "enemyActionVariety": 5,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 2,
+      "playerActionDistribution": {
+        "__defend__": 2,
+        "SKL-0001": 2,
+        "SKL-0009": 3,
+        "SKL-0010": 2,
+        "SKL-0019": 2,
+        "SKL-0228": 1
+      },
+      "enemyActionDistribution": {
+        "__normal__": 3,
+        "MSK-0067": 2,
+        "MSK-0068": 2,
+        "MSK-0069": 4,
+        "MSK-0070": 1
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-WORLD-TREE-EATER",
+          "monsterId": "MON-0018",
+          "actorInstanceId": "MON-0018#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "根元侵食",
+          "text": "王粘体が世界樹の根元へ食い込み、河川を逆流させる。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-WORLD-TREE-EATER",
+          "monsterId": "MON-0018",
+          "actorInstanceId": "MON-0018#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "水脈枯渇",
+          "text": "水位が落ち、王粘体の表面だけが濡れた光を保つ。"
+        }
+      ],
+      "statusBuffDebuffFrames": 17,
+      "resourceDecisionCount": 8,
+      "gimmickInteractionCount": 6,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-WORLD-TREE-EATER",
+          "monsterId": "MON-0018",
+          "actorInstanceId": "MON-0018#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "根元侵食",
+          "text": "王粘体が世界樹の根元へ食い込み、河川を逆流させる。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0018",
+          "actorInstanceId": "MON-0018#1",
+          "skillId": "MSK-0069",
+          "text": "根を締める脈動が全員の足元へ伝わる。",
+          "counterplayHint": "次の行動は全体吸命。guard、回復阻害、状態異常、集中攻撃のいずれかで対処できる。"
+        },
+        {
+          "type": "field_change",
+          "fieldEffect": "river_drain",
+          "beforeStacks": 0,
+          "afterStacks": 1
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T13-WORLD-TREE-EATER",
+          "monsterId": "MON-0018",
+          "actorInstanceId": "MON-0018#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "水脈枯渇",
+          "text": "水位が落ち、王粘体の表面だけが濡れた光を保つ。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0018",
+          "actorInstanceId": "MON-0018#1",
+          "skillId": "MSK-0069",
+          "text": "根を締める脈動が全員の足元へ伝わる。",
+          "counterplayHint": "次の行動は全体吸命。guard、回復阻害、状態異常、集中攻撃のいずれかで対処できる。"
+        },
+        {
+          "type": "field_change",
+          "fieldEffect": "river_drain",
+          "beforeStacks": 1,
+          "afterStacks": 2
+        }
+      ],
+      "basicRecoveryAttacks": 3,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0028",
+      "bossId": "BOSS-T17-HOLLOW-HERO",
+      "monsterId": "MON-0028",
+      "seed": "combat-certification-v1:MON-0028",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 12,
+      "enemySkillUseCount": 8,
+      "enemyActionVariety": 5,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 2,
+      "playerActionDistribution": {
+        "SKL-0001": 3,
+        "SKL-0009": 3,
+        "SKL-0010": 3,
+        "SKL-0019": 2,
+        "SKL-0228": 1
+      },
+      "enemyActionDistribution": {
+        "__normal__": 4,
+        "MSK-0019": 3,
+        "MSK-0036": 2,
+        "MSK-0052": 1,
+        "MSK-0090": 2
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T17-HOLLOW-HERO",
+          "monsterId": "MON-0028",
+          "actorInstanceId": "MON-0028#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "空の器",
+          "text": "空殻の勇者がこちらの構えを鏡のようになぞる。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T17-HOLLOW-HERO",
+          "monsterId": "MON-0028",
+          "actorInstanceId": "MON-0028#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "障壁展開",
+          "text": "空殻の鎧へ魔力障壁が走り、模倣精度が上がる。"
+        }
+      ],
+      "statusBuffDebuffFrames": 15,
+      "resourceDecisionCount": 8,
+      "gimmickInteractionCount": 4,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T17-HOLLOW-HERO",
+          "monsterId": "MON-0028",
+          "actorInstanceId": "MON-0028#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "空の器",
+          "text": "空殻の勇者がこちらの構えを鏡のようになぞる。"
+        },
+        {
+          "type": "copy_skill",
+          "copiedSkillId": "SKL-0009"
+        },
+        {
+          "type": "copy_skill",
+          "copiedSkillId": "SKL-0001"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T17-HOLLOW-HERO",
+          "monsterId": "MON-0028",
+          "actorInstanceId": "MON-0028#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "障壁展開",
+          "text": "空殻の鎧へ魔力障壁が走り、模倣精度が上がる。"
+        }
+      ],
+      "basicRecoveryAttacks": 4,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0063",
+      "bossId": "BOSS-T18-SEALED-COLOSSUS",
+      "monsterId": "MON-0063",
+      "seed": "combat-certification-v1:MON-0063",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 24,
+      "enemySkillUseCount": 12,
+      "enemyActionVariety": 6,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 4,
+      "playerActionDistribution": {
+        "__defend__": 1,
+        "SKL-0001": 3,
+        "SKL-0009": 3,
+        "SKL-0010": 3,
+        "SKL-0019": 1,
+        "SKL-0228": 1
+      },
+      "enemyActionDistribution": {
+        "__normal__": 10,
+        "MSK-0036": 2,
+        "MSK-0072": 3,
+        "MSK-0073": 3,
+        "MSK-0077": 3,
+        "MSK-0078": 3
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T18-SEALED-COLOSSUS",
+          "monsterId": "MON-0063",
+          "actorInstanceId": "MON-0063#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "封印残存",
+          "text": "残った封印が巨神兵の動作を断続的に止めている。"
+        }
+      ],
+      "statusBuffDebuffFrames": 17,
+      "resourceDecisionCount": 8,
+      "gimmickInteractionCount": 3,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T18-SEALED-COLOSSUS",
+          "monsterId": "MON-0063",
+          "actorInstanceId": "MON-0063#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "封印残存",
+          "text": "残った封印が巨神兵の動作を断続的に止めている。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0063",
+          "actorInstanceId": "MON-0063#1",
+          "skillId": "MSK-0073",
+          "text": "胸部砲口へ古代魔力が収束し、照準が一人へ固定される。",
+          "counterplayHint": "次は古代砲。guard、barrier、target protection、命中低下、interruptで対処できる。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0063",
+          "actorInstanceId": "MON-0063#1",
+          "skillId": "MSK-0073",
+          "text": "胸部砲口へ古代魔力が収束し、照準が一人へ固定される。",
+          "counterplayHint": "次は古代砲。guard、barrier、target protection、命中低下、interruptで対処できる。"
+        }
+      ],
+      "basicRecoveryAttacks": 10,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0064",
+      "bossId": "BOSS-T18-AWAKENED-COLOSSUS",
+      "monsterId": "MON-0064",
+      "seed": "combat-certification-v1:MON-0064",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 48,
+      "enemySkillUseCount": 23,
+      "enemyActionVariety": 7,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 4,
+      "playerActionDistribution": {
+        "__defend__": 2,
+        "SKL-0001": 2,
+        "SKL-0009": 3,
+        "SKL-0010": 2,
+        "SKL-0019": 2,
+        "SKL-0228": 1
+      },
+      "enemyActionDistribution": {
+        "__normal__": 23,
+        "MSK-0036": 6,
+        "MSK-0072": 3,
+        "MSK-0073": 4,
+        "MSK-0075": 3,
+        "MSK-0077": 6,
+        "MSK-0078": 3
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T18-AWAKENED-COLOSSUS",
+          "monsterId": "MON-0064",
+          "actorInstanceId": "MON-0064#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "完全起動",
+          "text": "完全起動した巨神兵が複数の兵装を展開する。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T18-AWAKENED-COLOSSUS",
+          "monsterId": "MON-0064",
+          "actorInstanceId": "MON-0064#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "過熱運転",
+          "text": "装甲の継ぎ目が赤熱し、火力と引き換えに防御が落ちる。"
+        }
+      ],
+      "statusBuffDebuffFrames": 20,
+      "resourceDecisionCount": 8,
+      "gimmickInteractionCount": 4,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T18-AWAKENED-COLOSSUS",
+          "monsterId": "MON-0064",
+          "actorInstanceId": "MON-0064#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "完全起動",
+          "text": "完全起動した巨神兵が複数の兵装を展開する。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0064",
+          "actorInstanceId": "MON-0064#1",
+          "skillId": "MSK-0073",
+          "text": "古代砲の照準輪が収束し、射線が床へ刻まれる。",
+          "counterplayHint": "次は高威力単体魔法。guard、barrier、回避、命中低下、interruptが有効。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T18-AWAKENED-COLOSSUS",
+          "monsterId": "MON-0064",
+          "actorInstanceId": "MON-0064#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "過熱運転",
+          "text": "装甲の継ぎ目が赤熱し、火力と引き換えに防御が落ちる。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0064",
+          "actorInstanceId": "MON-0064#1",
+          "skillId": "MSK-0073",
+          "text": "古代砲の照準輪が収束し、射線が床へ刻まれる。",
+          "counterplayHint": "次は高威力単体魔法。guard、barrier、回避、命中低下、interruptが有効。"
+        }
+      ],
+      "basicRecoveryAttacks": 23,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    },
+    {
+      "certificationId": "CERT-MON-0077",
+      "bossId": "BOSS-T19-BLACKRIDGE-CAPTAIN",
+      "monsterId": "MON-0077",
+      "seed": "combat-certification-v1:MON-0077",
+      "winner": "draw",
+      "battleRounds": 12,
+      "meaningfulPlayerChoiceCount": 12,
+      "playerActionCount": 12,
+      "enemyActionCount": 48,
+      "enemySkillUseCount": 44,
+      "enemyActionVariety": 7,
+      "playerSkillVariety": 5,
+      "maximumConsecutivePlayerAction": 1,
+      "maximumConsecutiveEnemyAction": 2,
+      "playerActionDistribution": {
+        "__defend__": 1,
+        "SKL-0001": 3,
+        "SKL-0009": 2,
+        "SKL-0010": 3,
+        "SKL-0019": 2,
+        "SKL-0228": 1
+      },
+      "enemyActionDistribution": {
+        "__normal__": 3,
+        "MSK-0017": 8,
+        "MSK-0018": 10,
+        "MSK-0019": 3,
+        "MSK-0082": 10,
+        "MSK-0083": 12,
+        "MSK-0095": 2
+      },
+      "phaseTransitions": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T19-BLACKRIDGE-CAPTAIN",
+          "monsterId": "MON-0077",
+          "actorInstanceId": "MON-0077#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "侵攻隊形",
+          "text": "隊長が号令を発し、前衛と翼斥候が隊形を組む。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T19-BLACKRIDGE-CAPTAIN",
+          "monsterId": "MON-0077",
+          "actorInstanceId": "MON-0077#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "突破命令",
+          "text": "隊長が長期戦を打ち切り、王都突破の照準を定める。"
+        }
+      ],
+      "statusBuffDebuffFrames": 33,
+      "resourceDecisionCount": 9,
+      "gimmickInteractionCount": 3,
+      "gimmickEvents": [
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T19-BLACKRIDGE-CAPTAIN",
+          "monsterId": "MON-0077",
+          "actorInstanceId": "MON-0077#1",
+          "previousPhase": 0,
+          "phase": 1,
+          "phaseName": "侵攻隊形",
+          "text": "隊長が号令を発し、前衛と翼斥候が隊形を組む。"
+        },
+        {
+          "type": "phase_transition",
+          "bossId": "BOSS-T19-BLACKRIDGE-CAPTAIN",
+          "monsterId": "MON-0077",
+          "actorInstanceId": "MON-0077#1",
+          "previousPhase": 1,
+          "phase": 2,
+          "phaseName": "突破命令",
+          "text": "隊長が長期戦を打ち切り、王都突破の照準を定める。"
+        },
+        {
+          "type": "telegraph",
+          "monsterId": "MON-0077",
+          "actorInstanceId": "MON-0077#1",
+          "skillId": "MSK-0095",
+          "text": "隊長が一人を指し、前衛が一直線の突破路を空ける。",
+          "counterplayHint": "次は王都突破。guard、庇護、回復、隊形崩し、状態異常で対処できる。"
+        }
+      ],
+      "basicRecoveryAttacks": 3,
+      "fallbackAttacks": 0,
+      "candidateExhaustion": 0
+    }
+  ]
+}
