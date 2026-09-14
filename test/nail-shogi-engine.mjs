@@ -8,6 +8,7 @@ import {
   getNail,
   previewMove,
   setDirection,
+  tipMaterial,
 } from "../public/nail-shogi/engine.js";
 
 function disableExcept(state, ids) {
@@ -54,6 +55,24 @@ test("hide never lets friendly nails phase through one another", () => {
   assert.equal(getNail(state, 0, 0).path.length, 1);
   assert.equal(getNail(state, 0, 1).path.length, 1);
   assert.ok(result.events.some((event) => event.type === "own-block"));
+});
+
+test("hook care attaches to the current tip and remains at the tip as the nail grows", () => {
+  const state = createInitialState();
+  disableExcept(state, ["0:2"]);
+  const nail = getNail(state, 0, 2);
+  nail.path = [{ x: 4, y: 7 }, { x: 4, y: 6 }, { x: 4, y: 5 }];
+  nail.materials = Array.from({ length: 3 }, () => ({ kind: "bare", gel: false, sharpened: false }));
+
+  const care = applyCare(state, 0, 2, "hook");
+  assert.equal(care.ok, true);
+  assert.equal(care.effect.segmentIndex, 2);
+  assert.equal(nail.materials[0].kind, "bare");
+  assert.equal(tipMaterial(nail).kind, "hook");
+
+  resolveRound(state);
+  assert.equal(nail.path.length, 4);
+  assert.equal(tipMaterial(nail).kind, "hook");
 });
 
 test("hook cuts a nail only when it actually enters the body from the side", () => {

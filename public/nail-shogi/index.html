@@ -89,14 +89,10 @@
           <div class="board-wrap" id="boardWrap">
             <svg id="boardSvg" class="board" viewBox="0 0 1000 800" role="img" aria-labelledby="boardTitle boardDesc" tabindex="0">
               <title id="boardTitle">爪将棋の盤面</title>
-              <desc id="boardDesc">10列8段。上下に5本ずつの指があり、爪が中央へ伸びます。</desc>
+              <desc id="boardDesc">10列8段。上下に5本ずつの指があり、自分の5本すべてに次に伸びる方向が表示されます。</desc>
             </svg>
             <svg id="fxSvg" class="fx-svg" viewBox="0 0 1000 800" aria-hidden="true"></svg>
             <div class="fx-layer" id="fxLayer" aria-hidden="true"></div>
-            <div class="next-outcome" id="nextOutcome" data-kind="grow" aria-live="polite">
-              <span class="next-outcome-icon" aria-hidden="true"></span>
-              <strong id="nextOutcomeText">伸びる</strong>
-            </div>
             <div class="target-banner" id="targetBanner" hidden>
               <strong id="targetTitle">ジェル</strong>
               <span id="targetText">塗る場所をタップ</span>
@@ -125,7 +121,7 @@
           <div class="care-grid" id="careGrid" aria-label="ケア">
             <button type="button" data-care="sharpen" aria-label="研ぐ。先端を鋭くする"><span class="care-icon icon-sharpen" aria-hidden="true"></span><b>研ぐ</b></button>
             <button type="button" data-care="gel" aria-label="ジェル。選んだ場所をかたくする"><span class="care-icon icon-gel" aria-hidden="true"></span><b>ジェル</b><i id="gelStock">4</i></button>
-            <button type="button" data-care="hook" aria-label="鉤爪。根元に仕込む"><span class="care-icon icon-hook" aria-hidden="true"></span><b>鉤爪</b><i id="hookStock">2</i></button>
+            <button type="button" data-care="hook" aria-label="鉤爪。今の先端に装着し、横から相手の爪を切る"><span class="care-icon icon-hook" aria-hidden="true"></span><b>鉤爪</b><i id="hookStock">2</i></button>
             <button type="button" data-care="sculpt" aria-label="スカルプ。このラウンドだけ追加で1マス伸びる"><span class="care-icon icon-sculpt" aria-hidden="true"></span><b>スカルプ</b><i id="sculptStock">2</i></button>
             <button type="button" data-care="hide" aria-label="隠す。このラウンドだけ敵の爪をすり抜ける"><span class="care-icon icon-hide" aria-hidden="true"></span><b>隠す</b></button>
             <button type="button" data-care="cut" aria-label="切る。先端を1節切る"><span class="care-icon icon-cut" aria-hidden="true"></span><b>切る</b></button>
@@ -161,7 +157,7 @@
         <div><span class="rule-glyph">✦</span><b>ケアは2回</b></div>
         <div><span class="rule-glyph">◎</span><b>指まで届けば詰み</b></div>
       </div>
-      <p class="rules-note">爪は両者の操作後に一斉に伸びます。途中が折れたら、その先は全部落ちます。鉤爪は先端まで来ると横から切断できます。</p>
+      <p class="rules-note">爪は両者の操作後に一斉に伸びます。途中が折れたら、その先は全部落ちます。鉤爪は今の先端に装着し、相手の爪の胴へ横から入ると、当たった場所より先をまとめて切断します。</p>
       <button class="primary-button dialog-ok" value="close">はじめる</button>
     </form>
   </dialog>

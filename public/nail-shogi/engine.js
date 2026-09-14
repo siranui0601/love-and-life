@@ -585,9 +585,10 @@ export function applyCare(state, player, fingerIndex, type, options = {}) {
     effect = { type: "care-gel", player, fingerIndex, segmentIndex: index, cell: { ...nail.path[index] } };
   } else if (type === "hook") {
     if (state.stock[player].hook <= 0) return { ok: false, reason: "out-of-stock" };
-    nail.materials[0].kind = "hook";
+    const tipIndex = nail.materials.length - 1;
+    nail.materials[tipIndex].kind = "hook";
     state.stock[player].hook -= 1;
-    effect = { type: "care-hook", player, fingerIndex, segmentIndex: 0, cell: { ...nail.path[0] }, turnsToTip: Math.max(0, nail.path.length - 1) };
+    effect = { type: "care-hook", player, fingerIndex, segmentIndex: tipIndex, cell: { ...currentTip(nail) } };
   } else if (type === "sculpt") {
     if (state.stock[player].sculpt <= 0) return { ok: false, reason: "out-of-stock" };
     nail.sculptPending = true;
