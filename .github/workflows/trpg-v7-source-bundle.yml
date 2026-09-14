@@ -1,0 +1,36 @@
+name: TRPG v7 source bundle
+
+on:
+  push:
+    branches:
+      - chatgpt/trpg-deep-simulation-v7
+    paths:
+      - ".github/workflows/trpg-v7-source-bundle.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/trpg-v7-source-bundle.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/trpg-deep-simulation-v7
+          fetch-depth: 1
+          show-progress: false
+      - name: Create source archive
+        run: |
+          zip -qr /tmp/trpg-v7-source.zip . \
+            -x '.git/*' 'node_modules/*' 'runtime-data/*' 'tools/trpg-sim/reports/*'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trpg-v7-source
+          path: /tmp/trpg-v7-source.zip
+          retention-days: 1
