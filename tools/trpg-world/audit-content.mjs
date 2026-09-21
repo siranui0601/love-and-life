@@ -49,6 +49,8 @@ export function auditWorldContent(content) {
   const structures=new Set((content.structures||[]).map(s=>s.id));
   for(const structure of content.structures||[]) {
     if(!objects.has(structure.targetId)||!ids.regions.has(structure.region)||!ids.events.has(structure.hazardEventId))errors.push(`${structure.id}: dangling infrastructure binding`);
+    if(structure.shelterId&&!objects.has(structure.shelterId))errors.push(structure.id+': missing physical shelter');
+    if(structure.processId&&!(content.processes||[]).some(p=>p.id===structure.processId&&p.structureId===structure.id&&p.targetId===structure.targetId&&p.region===structure.region))errors.push(structure.id+': mismatched physical process');
     for(const action of structure.actions||[]) {
       if(!(action.minutes>0&&action.minutes<=240))errors.push(`${structure.id}/${action.id}: invalid work duration`);
       for(const id of Object.keys(action.requirements?.items||{}))if(!ids.items.has(id))errors.push(`${structure.id}: unavailable work resource ${id}`);
@@ -63,6 +65,7 @@ export function auditWorldContent(content) {
     const event=(content.events||[]).find(e=>e.id===process.eventId);
     if(!event?.sourceIds.includes(process.sourceId))errors.push(process.id+': unbound source component');
     if(!ids.regions.has(process.region)||!objects.has(process.targetId)&&!ids.npcs.has(process.targetId))errors.push(process.id+': inaccessible process target');
+    if(process.structureId&&!structures.has(process.structureId))errors.push(process.id+': missing physical structure');
     if(process.kind==='patient'&&!ids.npcs.has(process.actorId))errors.push(process.id+': missing actual patient');
     if(process.kind==='inquiry'&&(!process.documents?.length||!process.reviewers?.length))errors.push(process.id+': no documents or responsible inhabitants');
     for(const doc of process.documents||[])if(!objects.has(doc.targetId))errors.push(process.id+': inaccessible original '+doc.id);

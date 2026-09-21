@@ -18,7 +18,7 @@ export const DEFAULT_STRUCTURES=[{id:'deep-shaft',targetId:'LOC_DWARF_MINE',regi
  {id:'shore',label:'焼けた柱を補修する',minutes:45,when:{fire:0},requirements:{items:{timber:3},skills:['crafting']},effects:{integrity:100}}]}];
 export function initializeStructures(state,content) {
  state.structures||={};
- for(const spec of content.structures||[])state.structures[spec.id]||={...structuredClone(spec.initial),milestones:[]};
+ for(const spec of content.structures||[])state.structures[spec.id]||={...structuredClone(spec.initial),milestones:[],...(spec.processId&&state.contentRevision!==content.revision?{legacyDormant:true}:{})};
 }
 export function structureSafe(state,spec) {
  const s=state.structures?.[spec.id];return !!s&&Object.entries(spec.safe).every(([key,value])=>key==='integrity'?s[key]>=value:key==='water'?s[key]<=value:s[key]===value);
@@ -31,20 +31,20 @@ function workDefinitions(state,spec) {
 export function advanceStructures(state,content,seconds) {
  initializeStructures(state,content);
  for(const spec of content.structures||[]) {
-  const s=state.structures[spec.id],hazard=content.events.find(e=>e.id===spec.hazardEventId);
-  if(hazard&&state.time>=hazard.startsAt&&s.operating&&s.water>spec.safe.water)s.integrity=Math.max(0,s.integrity-seconds/3600*(spec.damagePerHour||3));
-  if(hazard&&state.time>=hazard.startsAt&&s.fuel&&s.damageAt===undefined)s.fire=100;
+  const s=state.structures[spec.id];if(s.legacyDormant)continue;const hazard=content.events.find(e=>e.id===spec.hazardEventId);
+  if(!spec.processId&&hazard&&state.time>=hazard.startsAt&&s.operating&&s.water>spec.safe.water)s.integrity=Math.max(0,s.integrity-seconds/3600*(spec.damagePerHour||3));
+  if(!spec.processId&&hazard&&state.time>=hazard.startsAt&&s.fuel&&s.damageAt===undefined)s.fire=100;
   state.facilities||={};state.facilities[spec.targetId]={...state.facilities[spec.targetId],closed:!s.operating||s.integrity<=0};
  }
 }
 export function structureObservation(state,content,targetId) {
- const spec=(content.structures||[]).find(s=>s.targetId===targetId);if(!spec)return null;
+ const spec=(content.structures||[]).find(s=>s.targetId===targetId);if(!spec||state.structures[spec.id]?.legacyDormant)return null;
  const s=state.structures[spec.id],site=content.regions.find(r=>r.id===spec.region)?.objects.find(o=>o.id===targetId),voices=site&&(s.casualties||[]).some(id=>state.npcs[id]?.hp>0&&distance(state.npcs[id].position,site.position)<12);
  return {text:`${siteDescription(s,voices)}${s.operating?'作業は続いている。':'入口は閉じられ、作業は止まっている。'}${s.water>spec.safe.water?'水が溜まっている。':'排水は通っている。'}${s.integrity<spec.safe.integrity?'支柱にはひびがある。':'支柱は補強されている。'}`,work:structureActions(state,content,targetId)};
 }
 export function structureActions(state,content,targetId) {
  initializeStructures(state,content);const p=state.player,actions=[];
- for(const spec of content.structures||[])if(spec.targetId===targetId)for(const action of workDefinitions(state,spec)) {
+ for(const spec of content.structures||[])if(spec.targetId===targetId&&!state.structures[spec.id].legacyDormant)for(const action of workDefinitions(state,spec)) {
   if(!Object.entries(action.when||{}).every(([key,value])=>state.structures[spec.id][key]===value))continue;
   if(Object.entries(action.effects).every(([key,value])=>state.structures[spec.id][key]===value))continue;
   const missing=[];for(const [id,n] of Object.entries(action.requirements.items||{}))if((p.inventory[id]||0)<n)missing.push(`${content.items.find(i=>i.id===id)?.name||id} ${n}個`);

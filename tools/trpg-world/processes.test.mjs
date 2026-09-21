@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
+import {DEFAULT_PROCESS_STRUCTURES} from '../../src/shared/trpg-world/process-content.js';
+import {walk} from './validation/journey.mjs';
 import {prepare,performAt} from './validation/action-domain.mjs';
 
 function fixture(){return {revision:'process-contract',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'村',size:160,spawn:[0,0,0],obstacles:[],portals:[],objects:[{id:'shop',kind:'shop',name:'店',position:[0,0,2]},{id:'teacher',kind:'trainer',name:'師匠',skills:['crafting'],position:[2,0,0]},{id:'board',kind:'board',name:'仕事場',position:[-2,0,0]},{id:'inn',kind:'inn',name:'宿',position:[0,0,-2]},{id:'machine',kind:'landmark',name:'機械',position:[1,0,1]},{id:'office',kind:'landmark',name:'審理窓口',position:[-1,0,1]}]}],npcs:[{id:'clerk',name:'係員',region:'farm',home:[-1,0,1],work:[-1,0,1],workFacilityId:'office'}],events:[{id:'incident',name:'異変',region:'farm',position:[0,0,3],startsAt:100000,deadline:200000,sourceIds:['a','b']}],causalScenarios:[],routes:[],items:[{id:'timber',name:'木材',price:2},{id:'rope',name:'縄',price:2},{id:'supplies',name:'携帯食',price:5,kind:'food'},{id:'antidote',name:'解毒薬',price:3}],skills:[{id:'crafting',name:'工作',goldCost:2,cost:1}],jobs:[{id:'labor',name:'荷運び',region:'farm',facilityId:'board',minutes:30,pay:45,xp:32}],equipment:[],monsters:[],processes:[{id:'drive',kind:'device',eventId:'incident',sourceId:'a',region:'farm',targetId:'machine',name:'送出機',observation:'留め具に傷がある。',initial:{powered:true,integrity:40},aftermath:{closedTarget:'machine'}},{id:'fund',kind:'supply',eventId:'incident',sourceId:'b',region:'farm',targetId:'office',name:'供託所',observation:'納品簿が置いてある。',initial:{},required:{supplies:1,gold:20}}]};}
@@ -32,4 +34,30 @@ test('a conditional downstream threat does not fail when its physical prerequisi
  const r=new WorldReplay(c);assert(prepare(r,{items:{timber:2,rope:1},skills:['crafting']}).prepared);act(r,'machine','drive/inspect');act(r,'machine','drive/isolate');act(r,'machine','drive/repair');assert.equal(r.state.events.incident.status,'latent');
  for(let i=0;i<2;i++)assert(!performAt(r,target(r,'inn'),'rest').error);
  assert.equal(r.state.events.incident.status,'resolved');assert.equal(r.state.processes.downstream.failedAt,undefined);assert.equal(r.state.processes.downstream.powered,true);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('process failure enters shared physical rescue and reopening without deleting the failure',()=>{
+ for(const kind of ['collapse','fire']){
+ const c=fixture(),physical=structuredClone(DEFAULT_PROCESS_STRUCTURES.find(s=>s.failure.kind===kind));
+ Object.assign(physical,{id:'wreck',processId:'drive',region:'farm',targetId:'machine',shelterId:'inn',hazardEventId:'incident'});
+ physical.actions.find(a=>a.id==='shore').requirements={items:{timber:2},skills:['crafting']};
+ c.structures=[physical];c.processes=[{...c.processes[0],structureId:'wreck'}];c.events[0].sourceIds=['a'];c.events[0].startsAt=25300;c.events[0].deadline=27000;
+ c.regions[0].spawn=[-40,0,0];c.regions[0].objects.find(o=>o.id==='inn').position=[-40,0,0];
+ c.npcs=[{id:'worker',name:'現場の住人',role:'作業員',region:'farm',home:[1,0,1],work:[1,0,1],knowledge:[]}];
+ const r=new WorldReplay(c);assert(!performAt(r,target(r,'inn'),'rest').error);assert.equal(r.state.events.incident.status,'failed');assert.equal(r.state.structures.wreck.casualties[0],'worker');assert.equal(r.state.npcs.worker.injury.kind,kind==='fire'?'burn':'crush');
+ assert(prepare(r,{items:{timber:2,rope:2},skills:['crafting']}).prepared);
+ if(kind==='fire')assert(!performAt(r,target(r,'machine'),'maintain',{action:'extinguish'}).error);
+ for(const action of ['shore','clear-rubble'])assert(!performAt(r,target(r,'machine'),'maintain',{action}).error);
+ const split=structuredClone(r.export());assert(!r.state.npcs.worker.entrapment);assert(!performAt(r,target(r,'worker'),'causal',{action:'tend'}).error);assert(!performAt(r,target(r,'worker'),'causal',{action:'escort'}).error);
+ assert(!walk(r,[-40,0,0]).error);for(let i=0;i<40&&r.state.npcs.worker.care.status!=='recovered';i++)r.advance(1);
+ assert.equal(r.state.npcs.worker.care.status,'recovered');assert(!performAt(r,target(r,'machine'),'maintain',{action:'reopen'}).error);assert.equal(r.state.facilities.machine.closed,false);assert.equal(r.state.events.incident.status,'failed');
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.equal(replay(c,split).state.npcs.worker.care.status,'injured');
+ }
+});
+
+test('a patient in another region cannot be observed through matching local coordinates',()=>{
+ const c=fixture();c.regions.push({id:'away',name:'別の土地',size:160,spawn:[0,0,0],objects:[],portals:[],obstacles:[]});
+ c.npcs.push({id:'patient',name:'旅人',region:'away',home:[-1,0,1],work:[-1,0,1],knowledge:[]});
+ c.processes=[{id:'care',kind:'patient',eventId:'incident',sourceId:'a',region:'farm',targetId:'patient',actorId:'patient',name:'容体',observation:'薬の封が破れている。',initial:{treated:false}}];
+ const r=new WorldReplay(c);r.advance(.5);assert(!r.state.npcs.clerk.knowledge.some(k=>k.id==='process-observation:care'));assert(!r.view().perception.directions.some(d=>d.destination.targetId==='patient'));
 });

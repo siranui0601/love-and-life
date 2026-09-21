@@ -1,0 +1,18 @@
+{
+  "replayCompatibleCheckpoint": "dc9002a4d415f3523a47fc2f603480fb739040d7",
+  "scope": "FAILED blind path; replay and durable restore PASS. Not a multi-day completion certificate.",
+  "files": {
+    "content.json.gz": {
+      "sha256": "f5c1b87098d55ab9518b3e569b530bd2a1d3cacd0a9108d5e5fe08afc333e795",
+      "bytes": 171794
+    },
+    "blind-sixth-record.json.gz": {
+      "sha256": "97c4a85c07952b6d44de2ae627165a6b268daa4a97239469488b126ce8522bee",
+      "bytes": 224953
+    },
+    "blind-sixth-intermediate.json.gz": {
+      "sha256": "7968f23e16b7a2af0695daade807d839dadad5ffd9e5c1ae4ac064d65afd9ce6",
+      "bytes": 163975
+    }
+  }
+}

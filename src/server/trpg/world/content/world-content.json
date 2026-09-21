@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-1620f79180c0",
+  "revision": "world-10d-4de4bc7caf72",
   "time": {
     "days": 10,
     "scale": 60,
@@ -24440,6 +24440,275 @@
           }
         }
       ]
+    },
+    {
+      "id": "structure:harbor-chain",
+      "processId": "harbor-chain",
+      "targetId": "LOC_TRADE_SHIPYARD",
+      "region": "trade",
+      "hazardEventId": "harbor",
+      "shelterId": "LOC_TRADE_INN",
+      "initial": {
+        "integrity": 40,
+        "water": 0,
+        "operating": true,
+        "fire": 0,
+        "fuel": false,
+        "blocked": false
+      },
+      "safe": {
+        "integrity": 80,
+        "water": 0,
+        "operating": false,
+        "fire": 0,
+        "blocked": false
+      },
+      "failure": {
+        "kind": "collapse",
+        "traps": true,
+        "exposureRange": 8,
+        "effects": {
+          "integrity": 0,
+          "operating": false,
+          "blocked": true,
+          "fire": 0
+        }
+      },
+      "actions": [
+        {
+          "id": "extinguish",
+          "label": "燃えている機構へ水を運び、消火する",
+          "minutes": 30,
+          "when": {
+            "fire": 100
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "fire": 0
+          }
+        },
+        {
+          "id": "shore",
+          "label": "壊れた固定具と支持部を補修する",
+          "minutes": 30,
+          "when": {
+            "fire": 0
+          },
+          "requirements": {
+            "items": {
+              "timber": 2
+            },
+            "skills": [
+              "crafting"
+            ]
+          },
+          "effects": {
+            "integrity": 100
+          }
+        },
+        {
+          "id": "clear-rubble",
+          "label": "補強した機構の周囲から残骸を取り除く",
+          "minutes": 30,
+          "when": {
+            "fire": 0,
+            "integrity": 100,
+            "blocked": true
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "structure:pilgrim-transfer",
+      "processId": "pilgrim-transfer",
+      "targetId": "LOC_TEMPLE_CORRIDOR",
+      "region": "temple",
+      "hazardEventId": "resonance",
+      "shelterId": "LOC_TEMPLE_REST",
+      "initial": {
+        "integrity": 40,
+        "water": 0,
+        "operating": true,
+        "fire": 0,
+        "fuel": false,
+        "blocked": false
+      },
+      "safe": {
+        "integrity": 80,
+        "water": 0,
+        "operating": false,
+        "fire": 0,
+        "blocked": false
+      },
+      "failure": {
+        "kind": "collapse",
+        "traps": true,
+        "exposureRange": 8,
+        "effects": {
+          "integrity": 0,
+          "operating": false,
+          "blocked": true,
+          "fire": 0
+        }
+      },
+      "actions": [
+        {
+          "id": "extinguish",
+          "label": "燃えている機構へ水を運び、消火する",
+          "minutes": 30,
+          "when": {
+            "fire": 100
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "fire": 0
+          }
+        },
+        {
+          "id": "shore",
+          "label": "壊れた固定具と支持部を補修する",
+          "minutes": 30,
+          "when": {
+            "fire": 0
+          },
+          "requirements": {
+            "items": {
+              "timber": 2,
+              "crystal": 1
+            },
+            "skills": [
+              "magic"
+            ]
+          },
+          "effects": {
+            "integrity": 100
+          }
+        },
+        {
+          "id": "clear-rubble",
+          "label": "補強した機構の周囲から残骸を取り除く",
+          "minutes": 30,
+          "when": {
+            "fire": 0,
+            "integrity": 100,
+            "blocked": true
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "structure:summoning-feed",
+      "processId": "summoning-feed",
+      "targetId": "LOC_CAP_MAGE_TOWER",
+      "region": "capital",
+      "hazardEventId": "resonance",
+      "shelterId": "LOC_CAP_LOWER_INN",
+      "initial": {
+        "integrity": 40,
+        "water": 0,
+        "operating": true,
+        "fire": 0,
+        "fuel": false,
+        "blocked": false
+      },
+      "safe": {
+        "integrity": 80,
+        "water": 0,
+        "operating": false,
+        "fire": 0,
+        "blocked": false
+      },
+      "failure": {
+        "kind": "fire",
+        "traps": false,
+        "exposureRange": 8,
+        "effects": {
+          "integrity": 0,
+          "operating": false,
+          "blocked": true,
+          "fire": 100
+        }
+      },
+      "actions": [
+        {
+          "id": "extinguish",
+          "label": "燃えている機構へ水を運び、消火する",
+          "minutes": 30,
+          "when": {
+            "fire": 100
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "fire": 0
+          }
+        },
+        {
+          "id": "shore",
+          "label": "壊れた固定具と支持部を補修する",
+          "minutes": 30,
+          "when": {
+            "fire": 0
+          },
+          "requirements": {
+            "items": {
+              "timber": 2,
+              "crystal": 1
+            },
+            "skills": [
+              "magic"
+            ]
+          },
+          "effects": {
+            "integrity": 100
+          }
+        },
+        {
+          "id": "clear-rubble",
+          "label": "補強した機構の周囲から残骸を取り除く",
+          "minutes": 30,
+          "when": {
+            "fire": 0,
+            "integrity": 100,
+            "blocked": true
+          },
+          "requirements": {
+            "items": {
+              "rope": 1
+            }
+          },
+          "effects": {
+            "blocked": false
+          }
+        }
+      ]
     }
   ],
   "processes": [
@@ -24477,7 +24746,8 @@
       },
       "aftermath": {
         "closedTarget": "LOC_TEMPLE_CORRIDOR"
-      }
+      },
+      "structureId": "structure:pilgrim-transfer"
     },
     {
       "id": "lord-treatment",
@@ -24707,7 +24977,8 @@
             "value": 0
           }
         ]
-      }
+      },
+      "structureId": "structure:harbor-chain"
     },
     {
       "id": "civic-protection",
@@ -24757,7 +25028,8 @@
       },
       "aftermath": {
         "closedTarget": "LOC_CAP_MAGE_TOWER"
-      }
+      },
+      "structureId": "structure:summoning-feed"
     },
     {
       "id": "colossus-feed",

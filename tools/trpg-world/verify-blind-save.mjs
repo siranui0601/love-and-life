@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import {gunzipSync} from 'node:zlib';
 import {fileURLToPath} from 'node:url';
 import {PersistentWorldService,hashWorldToken} from '../../src/server/trpg/world/service.js';
 import {FileWorldStore} from '../../src/server/trpg/world/store.js';
 import {replay,digest} from './validation/replay.mjs';
 const name=process.argv[2]||'blind-sixth';if(!/^[a-z-]+$/.test(name))throw new Error('Invalid worldline name');
-const root=new URL('./reports/',import.meta.url),content=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
+const root=new URL('./reports/',import.meta.url),contentFile=process.argv[3]||new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),bytes=await fs.readFile(contentFile),content=JSON.parse(String(contentFile).endsWith('.gz')?gunzipSync(bytes):bytes);
 const record=JSON.parse(await fs.readFile(new URL(name+'-record.json',root),'utf8')),split=JSON.parse(await fs.readFile(new URL(name+'-intermediate.json',root),'utf8'));
 assert.equal(digest(split.state),record.operations[split.operationIndex-1].after);
 const directory=await fs.mkdtemp(fileURLToPath(new URL('blind-save-',root))),store=new FileWorldStore({directory}),ownerKey=hashWorldToken('blind-recorded-restart');

@@ -1,6 +1,7 @@
 import {distance,hasLineOfSight} from './navigation.js';
 import {consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {rememberAction} from './relationships.js';
+import {damageStructure} from './aftermath.js';
 
 // Authored bindings run through a small physical/resource/institution vocabulary.
 // Neither a command nor a narrative provider can assign an event outcome.
@@ -19,9 +20,13 @@ function allowed(state,condition){
  let value=state;for(const key of condition.path)value=value?.[key];
  return condition.op==='lte'?Number.isFinite(value)&&value<=condition.value:condition.op==='gte'?Number.isFinite(value)&&value>=condition.value:value===condition.value;
 }
+const linkedStructure=(state,spec)=>{const s=spec.structureId&&state.structures?.[spec.structureId];return s&&!s.legacyDormant?s:null;};
 export function processSafe(state,spec){
  const p=state.processes[spec.id];
- if(spec.kind==='device')return !p.powered&&p.integrity>=80;
+ if(spec.kind==='device'){
+  const physical=linkedStructure(state,spec);
+  return !p.powered&&(physical?physical.integrity>=80&&!physical.blocked&&!(physical.fire>0):p.integrity>=80);
+ }
  if(spec.kind==='supply')return Object.entries(spec.required).every(([id,n])=>((p.receipts||p.stock)[id]||0)>=n);
  if(spec.kind==='inquiry')return p.order?.status==='issued'&&!!state.institutionalOrders?.[p.order.factId];
  if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
@@ -35,8 +40,8 @@ function satisfied(state,spec,event){
  return processSafe(state,spec)||!!spec.activation&&state.time>=(spec.deadline??event.deadline)&&!allowed(state,spec.activation)&&state.processes[spec.id].failedAt===undefined;
 }
 export function processDescription(state,spec){
- const p=state.processes[spec.id];
- const physical=spec.kind==='device'?`${p.powered?'機構へ動力が流れ続けている。':'動力線は切り離されている。'}${p.integrity<80?'固定具は傷んでいる。':'固定具は補修されている。'}`:
+ const p=state.processes[spec.id],structure=linkedStructure(state,spec),integrity=structure?.integrity??p.integrity;
+ const physical=spec.kind==='device'?`${p.powered?'機構へ動力が流れ続けている。':'動力線は切り離されている。'}${integrity<80?'固定具は傷んでいる。':'固定具は補修されている。'}`:
  spec.kind==='supply'?`保管と受領の記録：${Object.entries(spec.required).map(([id,n])=>`${spec.resourceNames?.[id]||id} ${Math.min(n,p.stock[id]||0)}/${n}`).join('、')}。`:
  spec.kind==='patient'?(state.npcs[spec.actorId]?.hp<=0?'呼吸がなく、呼びかけにも反応しない。':p.treated?'処置を受け、呼吸が落ち着いている。':p.exposed?'顔色が悪く、手足が震えている。':'飲食物の封には傷があり、異臭がする。'):
  p.order?.status==='issued'?'提出された記録の審理が終わり、是正命令が交付されている。':p.documents.length?'提出された書類は担当者の審理を待っている。':'照合する原本と証言の提出を窓口で受け付けている。';
@@ -48,7 +53,8 @@ function note(state,content,spec,observer){
  if(!point||observer.region!==spec.region||observer.hp<=0||observer.travel||distance(observer.position,point.position)>18||!hasLineOfSight(region,observer.position,point.position))return;
  const p=state.processes[spec.id],id=`process-observation:${spec.id}`,text=processDescription(state,spec),knowledge=observer.id==='player'?state.knowledge:observer.knowledge;
  const previous=knowledge.find(k=>k.id===id);
- if(previous?.text===text&&distance(previous.destination.position,point.position)<4)return;
+ if(spec.kind==='patient'&&(point.region!==observer.region||point.travel))return;
+ if(previous?.text===text&&previous.destination&&distance(previous.destination.position,point.position)<4)return;
  const fact={id,kind:'site-observation',topicLabel:spec.name,text,destination:{region:spec.region,targetId:spec.targetId,position:[...point.position]},observedAt:state.time,source:{type:'seen',observerId:observer.id||'player'}};
  const old=knowledge.find(k=>k.id===id);if(old)Object.assign(old,fact);else knowledge.push(fact);
  observer.nextDecision=0;
@@ -65,7 +71,7 @@ function operations(state,spec){
  const p=state.processes[spec.id];
  if(spec.kind==='device')return [
   ...(p.powered?[{verb:'isolate',label:'動力弁を閉じ、送出線を切り離す',minutes:15,requirements:{items:{rope:1}}}]:[]),
-  ...(p.integrity<80?[{verb:'repair',label:'傷んだ固定具を交換して補修する',minutes:30,requirements:{items:{timber:2,...(spec.magical?{crystal:1}:{})},skills:spec.magical?['magic']:['crafting']}}]:[])];
+  ...(!linkedStructure(state,spec)&&p.integrity<80?[{verb:'repair',label:'傷んだ固定具を交換して補修する',minutes:30,requirements:{items:{timber:2,...(spec.magical?{crystal:1}:{})},skills:spec.magical?['magic']:['crafting']}}]:[])];
  if(spec.kind==='supply')return Object.entries(spec.required).filter(([id,n])=>(p.stock[id]||0)<n).map(([id,n])=>({verb:`deliver-${id}`,label:`${spec.resourceNames?.[id]||id}を受領窓口へ届ける`,minutes:15,requirements:id==='gold'?{gold:Math.min(n-(p.stock[id]||0),20)}:{items:{[id]:1}}}));
  if(spec.kind==='patient')return !p.treated&&state.npcs[spec.actorId]?.hp>0?[{verb:'treat',label:'本人の薬を交換し、解毒処置を行う',minutes:15,requirements:{items:{antidote:1}}}]:[];
  if(spec.kind==='inquiry')return !p.order&&spec.documents.some(d=>state.knowledge.some(k=>k.documentId===d.id)&&!p.documents.includes(d.id))?[{verb:'submit',label:'読んだ原本の写しを審理窓口へ提出する',minutes:5,requirements:{}}]:[];
@@ -95,7 +101,7 @@ export function startProcessWork(state,content,target,action){
 }
 export function finishProcessWork(state,content,{spec,op}){
  const p=state.processes[spec.id];
- if(op.verb==='isolate')p.powered=false;
+ if(op.verb==='isolate'){p.powered=false;if(linkedStructure(state,spec))state.structures[spec.structureId].operating=false;}
  if(op.verb==='repair')p.integrity=100;
  if(op.verb.startsWith('deliver-')){const id=op.verb.slice(8);p.stock[id]=(p.stock[id]||0)+(id==='gold'?op.requirements.gold:1);}
  if(op.verb==='treat'){const npc=state.npcs[spec.actorId];if(!npc||npc.hp<=0){recordMilestone(state,p,'treatment-failed-patient-died');return;}p.treated=true;npc.hp=Math.max(npc.hp,40);if(npc.injury?.kind==='poison')npc.injury.treated=true;}
@@ -133,12 +139,16 @@ export function advanceProcesses(state,content,seconds){
   if(safe&&p.safeAt===undefined)p.safeAt=state.time;
   if(active&&!safe&&state.time>=(spec.deadline??event.deadline)&&p.failedAt===undefined){
    p.failedAt=state.time;
-   if(spec.kind==='device'){p.integrity=0;p.powered=false;}
+   if(spec.kind==='device'){
+    p.integrity=0;p.powered=false;
+    const structure=linkedStructure(state,spec)&&(content.structures||[]).find(s=>s.id===spec.structureId);
+    if(structure)damageStructure(state,content,structure);
+   }
    if(spec.aftermath?.closedTarget){state.facilities[spec.aftermath.closedTarget]={...state.facilities[spec.aftermath.closedTarget],closed:true};}
    if(spec.aftermath?.displaceTarget){const shelter=site(content,spec.aftermath.shelterId);if(shelter)for(const n of Object.values(state.npcs))if(n.hp>0&&n.region===spec.region&&distance(n.position,point.position)<18){n.displacedHome=[...shelter.position];n.nextDecision=0;}}
    p.aftermath={at:state.time,...copy(spec.aftermath||{})};
   }
-  if(safe&&p.failedAt!==undefined&&!p.recoveredAt){p.recoveredAt=state.time;if(spec.aftermath?.closedTarget)state.facilities[spec.aftermath.closedTarget]={...state.facilities[spec.aftermath.closedTarget],closed:false};}
+  if(safe&&p.failedAt!==undefined&&!p.recoveredAt){p.recoveredAt=state.time;if(spec.aftermath?.closedTarget&&!linkedStructure(state,spec))state.facilities[spec.aftermath.closedTarget]={...state.facilities[spec.aftermath.closedTarget],closed:false};}
   // Observation is local. It does not identify the author of an unseen cause.
   for(const npc of Object.values(state.npcs))if(npc.goal!=='sleep')note(state,content,spec,npc);
  }

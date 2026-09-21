@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "diskRoundTrips": 2,
+  "offlineCalendarAdvance": 0,
+  "sourceOperation": 3138,
+  "suffixOperations": 1836,
+  "finalHash": "e65a914b5e56e5b2ea06263d16f6b16f1023d3e0e6d08cd1ae7798d9e3d53ad7",
+  "scope": "Actual blind-play intermediate state, FileWorldStore and service restore, then exact shared-runtime command continuation. Not browser/HTTP timing equivalence."
+}

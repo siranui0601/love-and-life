@@ -1,0 +1,149 @@
+{
+  "seed": 17,
+  "stopped": "DUPLICATE_DESTINATION_LOOP",
+  "day": 2,
+  "clock": "14:12",
+  "hp": 105,
+  "operations": 4974,
+  "decisions": 981,
+  "outcomes": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "latent"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "latent"
+    },
+    "harbor": {
+      "status": "latent"
+    },
+    "lost-road": {
+      "status": "critical"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active"
+    }
+  },
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 4974,
+    "simulationAdvances": 2415,
+    "movementInputs": 2089,
+    "meaningfulPlayerDecisions": 467,
+    "travelSegments": 108,
+    "investigations": 77,
+    "conversationTurns": 121,
+    "preparationActions": 9,
+    "combatActions": 107,
+    "otherDecisions": 45
+  },
+  "conversationDiscoveries": 31,
+  "verification": {
+    "replay": true
+  },
+  "lastDecisions": [
+    {
+      "index": 4854,
+      "day": 2,
+      "clock": "13:50",
+      "region": "交易都市",
+      "decision": {
+        "action": "8636c7344542f2453b52",
+        "reason": "話を終えて立ち去る"
+      },
+      "result": {
+        "result": {
+          "message": "話を終えた。",
+          "conversation": {
+            "id": "conversation:8816",
+            "turn": 2,
+            "status": "ended",
+            "speaker": "NPC077",
+            "utterance": "話を終えた。",
+            "choices": []
+          }
+        }
+      }
+    },
+    {
+      "index": 4930,
+      "day": 2,
+      "clock": "13:50",
+      "region": "交易都市",
+      "decision": {
+        "walk": [
+          -18.451134802093307,
+          0,
+          9.337038753774925
+        ],
+        "target": "entity:96da8b8da8925b21",
+        "reason": "見聞きした場所へ歩く：本人の手元の薬に沈殿があり、処方の封が破れている。 飲食物の封には傷があり、異臭がする。"
+      },
+      "result": {
+        "arrived": true
+      }
+    },
+    {
+      "index": 4970,
+      "day": 2,
+      "clock": "14:04",
+      "region": "交易都市",
+      "decision": {
+        "walk": [
+          -49,
+          0,
+          0
+        ],
+        "target": "entity:261be853dd33f1b7",
+        "reason": "見聞きした場所へ歩く：犯罪都市への街道"
+      },
+      "result": {
+        "arrived": true
+      }
+    },
+    {
+      "index": 4972,
+      "day": 2,
+      "clock": "14:12",
+      "region": "交易都市",
+      "decision": {
+        "walk": [
+          -49,
+          0,
+          0
+        ],
+        "target": "entity:261be853dd33f1b7",
+        "reason": "見聞きした場所へ歩く：犯罪都市への街道"
+      },
+      "result": {
+        "arrived": true
+      }
+    },
+    {
+      "index": 4974,
+      "day": 2,
+      "clock": "14:12",
+      "region": "交易都市",
+      "decision": {
+        "walk": [
+          -49,
+          0,
+          0
+        ],
+        "target": "entity:261be853dd33f1b7",
+        "reason": "見聞きした場所へ歩く：犯罪都市への街道"
+      },
+      "result": {
+        "arrived": true
+      }
+    }
+  ]
+}

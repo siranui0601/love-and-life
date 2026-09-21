@@ -90,7 +90,7 @@ test('actual recorded v2 migration retires leaked generated knowledge while pres
  const ownerKey=hashWorldToken('actual-aftermath-source-migration'),store=new MemoryWorldStore(),saved={schemaVersion:2,id:'real-recorded-state',ownerKey,contentRevision:state.contentRevision,contentHash:'095e3f7e79de4ae8d7e86d0bbd405afa0203dfbd70ded2bb78db867697cca388',state,advancedAtMs:1,revision:1,lastSeq:1,receipts:[{seq:1,response:{message:'穀物商に雇われた放火犯'}}]};
  await store.put(ownerKey,saved);const service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>999999999});
  const response=await service.session(ownerKey);assert(!JSON.stringify(response).includes('穀物商に雇われた放火犯'));await service.close();
- const migrated=await store.get(ownerKey);assert(migrated.state.legacySnapshot.invalidGeneratedKnowledge.length>0);assert.deepEqual(migrated.state.socialFacts,state.socialFacts);assert.deepEqual(migrated.state.structures,state.structures);assert.equal(migrated.state.time,state.time);assert.equal(migrated.state.npcs.NPC086.companionOf,state.npcs.NPC086.companionOf);assert.deepEqual(migrated.receipts,[]);assert.equal(migrated.legacyReceipts.length,1);
+ const migrated=await store.get(ownerKey);assert(migrated.state.legacySnapshot.invalidGeneratedKnowledge.length>0);assert.deepEqual(migrated.state.socialFacts,state.socialFacts);for(const [id,structure] of Object.entries(state.structures))assert.deepEqual(migrated.state.structures[id],structure);for(const spec of c.structures.filter(s=>s.processId))assert.equal(migrated.state.structures[spec.id].legacyDormant,true);assert.equal(migrated.state.time,state.time);assert.equal(migrated.state.npcs.NPC086.companionOf,state.npcs.NPC086.companionOf);assert.deepEqual(migrated.receipts,[]);assert.equal(migrated.legacyReceipts.length,1);
 });
 test('combat blocks macro work before calendar advancement or wage and permits work after real combat',()=>{
  const c=content();c.regions[0].spawn=[-49,0,-45];c.regions[0].objects.find(o=>o.id==='board').position=[-49,0,-43];
@@ -105,4 +105,14 @@ test('an emerging nearby threat interrupts an unfinished macro job without award
  const r=new WorldReplay(c),gold=r.state.player.gold;const work=r.options().find(o=>o.command.type==='work');assert(work);r.select(work);
  assert.equal(r.state.player.gold,gold);assert.equal(r.state.player.activity.kind,'combat');assert.equal(r.state.activityHistory.at(-1).completed,false);assert.equal(r.state.activityHistory.at(-1).interruptionReason,'danger');assert(r.state.time<28800);
  const at=r.state.time;r.advance(.1);assert.equal(r.state.time,at);assert(r.state.simulationTime>0);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('real blind Day2 save migrates without retroactive machinery casualties and continues with retained memories',async()=>{
+ const {gunzipSync}=await import('node:zlib'),c=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
+ const {state}=JSON.parse(gunzipSync(await fs.readFile(new URL('../../docs/trpg-world/validation/phase2-2026-09-22/dc9002a4/blind-sixth-intermediate.json.gz',import.meta.url))));
+ const ownerKey=hashWorldToken('blind-physical-migration'),store=new MemoryWorldStore();await store.put(ownerKey,{schemaVersion:2,id:'blind-life',ownerKey,contentRevision:state.contentRevision,contentHash:'2dd4e9662ebc4cbe525776f85a168fa5812bfc7d5c2affe76295b972e996f8d3',state,advancedAtMs:1,revision:0,lastSeq:0,receipts:[]});
+ const service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>999999999});try{assert.equal((await service.session(ownerKey)).view.time,state.time);}finally{await service.close();}
+ const restored=(await store.get(ownerKey)).state;assert.deepEqual(restored.npcs,state.npcs);assert.deepEqual(restored.socialFacts,state.socialFacts);assert.deepEqual(restored.processes,state.processes);assert.deepEqual(restored.player.observedPlaces,state.player.observedPlaces);
+ for(const spec of c.structures.filter(s=>s.processId))assert.equal(restored.structures[spec.id].legacyDormant,true);
+ const run=new WorldReplay(c,{initialState:restored});run.command({type:'resume'});run.advance(1);assert.equal(digest(replay(c,run.export()).state),digest(run.state));
 });

@@ -43,3 +43,20 @@ Object.assign(byId.get('customs-cargo'),{access:{targetId:'LOC_TRADE_WAREHOUSE',
 Object.assign(byId.get('civic-protection'),{access:{targetId:'LOC_CAP_AJIN_QUARTER',closed:false}});
 for(const id of ['colossus-feed','joint-ceasefire'])byId.get(id).activation={path:['events','roots','causal','forestBarrier'],value:false};
 byId.get('harbor-chain').activation={any:[{path:['npcs','NPC009','hp'],op:'lte',value:0},{path:['processes','dock-payroll','failedAt'],op:'gte',value:0}]};
+
+// Machinery failures reuse the same physical exposure, shelter and maintenance
+// model as fires and mine collapses. No new casualty is spawned by these bindings.
+export const DEFAULT_PROCESS_STRUCTURES=[
+ ['harbor-chain','collapse','LOC_TRADE_INN'],
+ ['pilgrim-transfer','collapse','LOC_TEMPLE_REST'],
+ ['summoning-feed','fire','LOC_CAP_LOWER_INN'],
+].map(([id,kind,shelterId])=>{
+ const process=byId.get(id),structureId='structure:'+id;process.structureId=structureId;
+ return {id:structureId,processId:id,targetId:process.targetId,region:process.region,hazardEventId:process.eventId,shelterId,
+ initial:{integrity:40,water:0,operating:true,fire:0,fuel:false,blocked:false},safe:{integrity:80,water:0,operating:false,fire:0,blocked:false},
+ failure:{kind,traps:kind==='collapse',exposureRange:8,effects:{integrity:0,operating:false,blocked:true,fire:kind==='fire'?100:0}},
+ actions:[
+ {id:'extinguish',label:'燃えている機構へ水を運び、消火する',minutes:30,when:{fire:100},requirements:{items:{rope:1}},effects:{fire:0}},
+ {id:'shore',label:'壊れた固定具と支持部を補修する',minutes:30,when:{fire:0},requirements:{items:{timber:2,...(process.magical?{crystal:1}:{})},skills:[process.magical?'magic':'crafting']},effects:{integrity:100}},
+ {id:'clear-rubble',label:'補強した機構の周囲から残骸を取り除く',minutes:30,when:{fire:0,integrity:100,blocked:true},requirements:{items:{rope:1}},effects:{blocked:false}}]};
+});
