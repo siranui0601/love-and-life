@@ -4,6 +4,9 @@ import {distance,hasLineOfSight} from './navigation.js';
 // These are leads, never a route or a promise that an absent person will spawn.
 export function investigationLeads(state,content) {
  const leads=[];
+ // Remembered local work offers are not new remote state. Arrival revalidates.
+ for(const [targetId,inspection] of Object.entries(state.player.inspections||{}))if(inspection.region&&inspection.position)
+  for(const action of inspection.work||[])if(action.type==='process')leads.push({id:'work:'+targetId+':'+action.id,targetId,region:inspection.region,position:[...inspection.position],expectedAction:action.id,label:action.label,requirements:structuredClone(action.requirements||{}),explanation:'現場で確かめた作業。準備を整えて戻り、現在の状況を確認しよう。',sourceInspectionAt:inspection.at});
  for(const fact of state.knowledge.filter(k=>k.kind==='site-observation'&&k.destination)) {
   const destination=observedDestination(state,content,fact),target=destination.targetId;
   if(['not-here','searched-absent'].includes(destination.status))continue;

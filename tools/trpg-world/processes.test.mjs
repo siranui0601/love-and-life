@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
 import {DEFAULT_PROCESS_STRUCTURES} from '../../src/shared/trpg-world/process-content.js';
+import {runBlind} from './validation/blind-run.mjs';
 import {walk} from './validation/journey.mjs';
 import {prepare,performAt} from './validation/action-domain.mjs';
 
@@ -60,4 +61,17 @@ test('a patient in another region cannot be observed through matching local coor
  c.npcs.push({id:'patient',name:'旅人',region:'away',home:[-1,0,1],work:[-1,0,1],knowledge:[]});
  c.processes=[{id:'care',kind:'patient',eventId:'incident',sourceId:'a',region:'farm',targetId:'patient',actorId:'patient',name:'容体',observation:'薬の封が破れている。',initial:{treated:false}}];
  const r=new WorldReplay(c);r.advance(.5);assert(!r.state.npcs.clerk.knowledge.some(k=>k.id==='process-observation:care'));assert(!r.view().perception.directions.some(d=>d.destination.targetId==='patient'));
+});
+
+test('blind preparation returns to an inspected machine after real purchases and lessons',()=>{
+ const c=fixture();c.processes=c.processes.slice(0,1);c.events[0].sourceIds=['a'];c.events[0].startsAt=25201;c.events[0].deadline=25202;
+ c.regions[0].objects.find(o=>o.id==='shop').position=[15,0,0];c.regions[0].objects.find(o=>o.id==='teacher').position=[-15,0,0];
+ const {run,summary}=runBlind(c,{decisions:100,untilDay:2});assert(run.operations.some(o=>o.command?.type==='buy'&&o.command.itemId==='timber'));assert(run.operations.some(o=>o.command?.type==='train'));
+ assert.equal(run.state.processes.drive.integrity,100,JSON.stringify({stop:summary.stopped,last:summary.decisionsLog.slice(-3)}));assert.equal(run.state.events.incident.status,'failed');assert.equal(digest(replay(c,run.export()).state),digest(run.state));
+});
+
+test('an inspected work requirement stays trackable during preparation and completes at the actual destination',()=>{
+ const c=fixture(),r=new WorldReplay(c);act(r,'machine','drive/inspect');const lead=r.view().leads.find(l=>l.expectedAction==='drive/repair');assert(lead);assert.deepEqual(lead.requirements.items,{timber:2});r.command({type:'track',leadId:lead.id});
+ assert(prepare(r,{items:{timber:2},skills:['crafting']}).prepared);const saved=r.fork();assert.equal(saved.view().arrival.id,lead.id);assert(saved.state.player.inspections.machine.work.some(a=>a.id==='drive/repair'));
+ act(r,'machine','drive/repair');assert.equal(r.view().arrival.status,'completed');assert(!r.view().leads.some(l=>l.id===lead.id));assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });

@@ -512,6 +512,13 @@ function advancePlayerAction(state,content) {
  if(elapsed>=a.duration){a.phase='completed';p.lastActionInstance=a;delete p.actionInstance;}
 }
 
+function recordInspection(state,content,target,text){
+ const p=state.player,physical=structureObservation(state,content,target.id),previous=p.inspections?.[target.id];
+ const work=[...causalActions(state,content,target),...processActions(state,content,target),...(physical?.work||[])].filter(a=>!String(a.id).endsWith('/inspect'));
+ p.inspections||={};p.inspections[target.id]={at:state.time,region:p.region,position:[...target.position],name:target.name,kind:target.kind,
+  text:[text||previous?.text||target.description||target.name,physical?.text].filter(Boolean).join('\n'),work};
+ return p.inspections[target.id];
+}
 export function applyCommand(state,content,command) {
   if(!command || typeof command.type!=='string') fail('INVALID_COMMAND','操作が不正です。');
   const p=state.player,idx=index(content);
@@ -519,7 +526,7 @@ export function applyCommand(state,content,command) {
   if(p.collapse?.status==='active'&&!['input','pause','resume','recover'].includes(command.type))fail('COLLAPSED','倒れています。救助を待ってください。',409);
   if(['attack','dodge','defend'].includes(command.type)&&p.activity?.worldTimePolicy==='paused')fail('ACTIVITY_PAUSED','画面を閉じて行動を再開してください。',409);
   if(command.type==='affordance')return performAffordance(state,content,command);
-  if(command.type==='process') {const target=targetAt(state,content,command.targetId),work=startProcessWork(state,content,target,command.action);if(work.inspection){setActivity(state,'inspecting',{targetId:target.id});return {message:work.inspection};}if(!advanceMacro(state,content,'crafting',work.op.minutes*60,{targetId:target.id,operation:command.action}))return {message:'現場の作業を中断した。'};finishProcessWork(state,content,work);advanceCausality(state,content,0);setActivity(state,'inspecting',{targetId:target.id});return {message:inspectProcesses(state,content,target)};}
+  if(command.type==='process') {const target=targetAt(state,content,command.targetId),work=startProcessWork(state,content,target,command.action);if(work.inspection){recordInspection(state,content,target,work.inspection);setActivity(state,'inspecting',{targetId:target.id});return {message:work.inspection};}if(!advanceMacro(state,content,'crafting',work.op.minutes*60,{targetId:target.id,operation:command.action}))return {message:'現場の作業を中断した。'};finishProcessWork(state,content,work);advanceCausality(state,content,0);setActivity(state,'inspecting',{targetId:target.id});return {message:recordInspection(state,content,target,inspectProcesses(state,content,target)).text};}
   if(command.type==='causal') {const target=targetAt(state,content,command.targetId);const result=applyCausalAction(state,content,target,command.action);advanceCausality(state,content,0);if(target.kind!=='npc'){p.inspections||={};p.inspections[target.id]={...p.inspections[target.id],at:state.time,work:causalActions(state,content,target)};}setActivity(state,'inspecting',{targetId:target.id});return result;}
   if(command.type==='converse')return converse(state,content,command);
   if(command.type==='resume') {if(p.collapse?.status==='active')return {message:null};if(state.conversation)state.conversation.status='ended';setActivity(state,'idle');return {message:null};}
@@ -530,7 +537,7 @@ export function applyCommand(state,content,command) {
     const target=targetAt(state,content,command.targetId),work=startStructureWork(state,content,target.id,command.action);
     if(!advanceMacro(state,content,'crafting',work.action.minutes*60,{targetId:target.id,operation:work.action.id}))return {message:'作業を中断した。資材は現場で使った。'};
     finishStructureWork(state,content,work);advanceCausality(state,content,0);setActivity(state,'inspecting',{targetId:target.id});
-    p.inspections||={};p.inspections[target.id]={at:state.time,...structureObservation(state,content,target.id)};
+    recordInspection(state,content,target,structureObservation(state,content,target.id)?.text);
     return {message:p.inspections[target.id].text};
   }
   if(command.type==='recover') {if(p.collapse?.status!=='active')fail('NOT_COLLAPSED','救助待ちではありません。');for(let i=0;i<72&&p.collapse.status==='active';i++)advanceCalendar(state,content,300);return {message:p.collapse.status==='active'?'まだ救助に至っていない。':'手当てを受けて目を覚ました。'};}
@@ -564,7 +571,7 @@ export function applyCommand(state,content,command) {
       // Notices are authored only for local events after their public signal.
       for(const event of content.events || []) if(event.region===p.region&&state.time>=eventStart(event)) learnEvent(state,content,event.id,{type:'read',targetId:target.id,region:p.region});
     }
-    p.inspections||={};p.inspections[target.id]={at:state.time,text:processText||target.description||`${target.name}を調べた。`,work:causalActions(state,content,target),...structureObservation(state,content,target.id)};
+    recordInspection(state,content,target,processText||target.description||`${target.name}を調べた。`);
     if(['shop','stable','trainer','inn','board','job','workshop'].includes(target.kind)) {
       p.knownServices||={};p.knownServices[target.id]={id:target.id,name:target.name,region:p.region,position:clone(target.position),observedAt:state.time,source:{type:'examined',targetId:target.id},offers:actionsFor(state,content,target).filter(a=>['buy','work','train','rest','craft'].includes(a.type)).map(a=>clone(a))};
     }
