@@ -9,6 +9,10 @@ export function observedDestination(state,content,fact){
  const person=state.npcs[remembered.targetId];
  const seen=person&&!person.travel&&!person.entrapment&&person.region===p.region&&distance(person.position,p.position)<90&&hasLineOfSight(region,p.position,person.position);
  if(seen)return {...result,position:[...person.position],status:'visible-now'};
- if(distance(remembered.position,p.position)<4)return {...result,status:'not-here',message:'聞いていた場所には姿が見えない。別の目撃情報を聞くか、周囲を探そう。'};
+ if(distance(remembered.position,p.position)<4){
+  p.siteSearches||={};p.siteSearches[fact.id]={reportObservedAt:fact.observedAt??0,searchedAt:state.time,position:[...remembered.position]};
+  return {...result,status:'not-here',message:'聞いていた場所には姿が見えない。別の目撃情報を聞くか、周囲を探そう。'};
+ }
+ if(p.siteSearches?.[fact.id]?.reportObservedAt>=(fact.observedAt??0))return {...result,status:'searched-absent',message:'その目撃場所は既に探した。新しい目撃情報はまだない。'};
  return result;
 }

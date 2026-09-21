@@ -28,6 +28,12 @@ export function processSafe(state,spec){
  return false;
 }
 function pointFor(state,content,spec){return spec.kind==='patient'?state.npcs[spec.actorId]:site(content,spec.targetId);}
+function satisfied(state,spec,event){
+ // A conditional threat which never acquired its physical prerequisite is not
+ // a failed intervention. Evaluate this only at the authored review horizon;
+ // a temporarily intact upstream system is not an early victory.
+ return processSafe(state,spec)||!!spec.activation&&state.time>=(spec.deadline??event.deadline)&&!allowed(state,spec.activation)&&state.processes[spec.id].failedAt===undefined;
+}
 export function processDescription(state,spec){
  const p=state.processes[spec.id];
  const physical=spec.kind==='device'?`${p.powered?'機構へ動力が流れ続けている。':'動力線は切り離されている。'}${p.integrity<80?'固定具は傷んでいる。':'固定具は補修されている。'}`:
@@ -41,7 +47,8 @@ function note(state,content,spec,observer){
  const point=pointFor(state,content,spec),region=content.regions.find(r=>r.id===spec.region);
  if(!point||observer.region!==spec.region||observer.hp<=0||observer.travel||distance(observer.position,point.position)>18||!hasLineOfSight(region,observer.position,point.position))return;
  const p=state.processes[spec.id],id=`process-observation:${spec.id}`,text=processDescription(state,spec),knowledge=observer.id==='player'?state.knowledge:observer.knowledge;
- if(knowledge.find(k=>k.id===id)?.text===text)return;
+ const previous=knowledge.find(k=>k.id===id);
+ if(previous?.text===text&&distance(previous.destination.position,point.position)<4)return;
  const fact={id,kind:'site-observation',topicLabel:spec.name,text,destination:{region:spec.region,targetId:spec.targetId,position:[...point.position]},observedAt:state.time,source:{type:'seen',observerId:observer.id||'player'}};
  const old=knowledge.find(k=>k.id===id);if(old)Object.assign(old,fact);else knowledge.push(fact);
  observer.nextDecision=0;
@@ -143,7 +150,7 @@ export function advanceProcesses(state,content,seconds){
   for(const spec of specs)current.causal.sources[spec.sourceId]={safe:processSafe(state,spec),failedAt:state.processes[spec.id].failedAt,recoveredAt:state.processes[spec.id].recoveredAt};
   const completed=new Set(current.causal.completedSources||[]);
   if(['resolved','prevented'].includes(current.causal.componentStatus))for(const id of event.causalSourceIds||[])completed.add(id);
-  const covered=(event.sourceIds||[]).every(id=>completed.has(id)||specs.some(s=>s.sourceId===id)&&specs.filter(s=>s.sourceId===id).every(s=>processSafe(state,s)));
+  const covered=(event.sourceIds||[]).every(id=>completed.has(id)||specs.some(s=>s.sourceId===id)&&specs.filter(s=>s.sourceId===id).every(s=>satisfied(state,s,event)));
   if(covered&&!['failed','resolved','prevented'].includes(current.status)){current.status=state.time<event.startsAt?'prevented':'resolved';current.resolvedAt=state.time;recordMilestone(state,current.causal,current.status,specs.map(s=>state.processes[s.id].milestones.at(-1)?.evidence));}
  }
 }

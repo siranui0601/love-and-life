@@ -6,7 +6,7 @@ export function investigationLeads(state,content) {
  const leads=[];
  for(const fact of state.knowledge.filter(k=>k.kind==='site-observation'&&k.destination)) {
   const destination=observedDestination(state,content,fact),target=destination.targetId;
-  if(destination.status==='not-here')continue;
+  if(['not-here','searched-absent'].includes(destination.status))continue;
   if(!state.player.inspections?.[target]||state.player.inspections[target].at<fact.observedAt)leads.push({id:`lead:${fact.id}`,targetId:target,region:fact.destination.region,position:[...destination.position],expectedAction:'inspect',label:'聞いた異変の現場を確かめる',explanation:fact.text,sourceKnowledgeId:fact.id});
  }
  for(const fact of state.knowledge.filter(k=>k.kind==='testimony'&&k.destination&&k.personId))if(state.npcs[fact.personId]?.companionOf==='player')leads.push({id:`lead:${fact.id}:home`,targetId:fact.personId,...(fact.recipientId?{recipientId:fact.recipientId}:{}),region:fact.destination.region,position:[...fact.destination.position],expectedAction:'escort-arrival',label:fact.recipientId?'同行者を家族のもとへ送る':'同行者を休める場所へ送る',explanation:fact.text,sourceKnowledgeId:fact.id});

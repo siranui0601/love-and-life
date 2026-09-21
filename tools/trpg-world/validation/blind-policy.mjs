@@ -56,9 +56,13 @@ export function chooseBlind(o,m){
  // A modest travel reserve, not a target event day. Replenish spent wages.
  if(p.gold<150){const work=find('work');if(work)return act(work);const employer=o.services.find(s=>s.offers.some(a=>a.type==='work'));if(employer)return walk(employer);}
  const unexplored=o.places.filter(t=>!m.visited.includes(t.id)).sort((a,b)=>dist(a.position,p.position)-dist(b.position,p.position))[0];if(unexplored)return walk(unexplored);
- const heard=o.directions.find(d=>d.destination.region===p.region&&d.destination.status!=='not-here'&&!m.visited.includes(d.destination.targetId));if(heard)return walk({...heard,id:heard.destination.targetId,position:heard.destination.position});
+ const heard=o.directions.find(d=>d.destination.region===p.region&&!['not-here','searched-absent'].includes(d.destination.status)&&!m.visited.includes(d.destination.targetId));if(heard)return walk({...heard,id:heard.destination.targetId,position:heard.destination.position});
  const route=o.exits.find(t=>!m.travelled.includes(t.id));if(route){
-  const travel=ready.find(a=>a.type==='travel'&&a.targetId===route.id&&a.mode==='foot');if(travel){m.travelled.push(route.id);return act(travel);}return walk(route);
+  const offers=ready.filter(a=>a.type==='travel'&&a.targetId===route.id);
+  const travel=offers.find(a=>a.mode==='foot')||offers.sort((a,b)=>(a.price||0)-(b.price||0)||(a.minutes||0)-(b.minutes||0))[0];
+  if(travel){m.travelled.push(route.id);return act(travel);}
+  if(dist(route.position,p.position)<1)return {stop:'known-exit-without-affordable-transport'};
+  return walk(route);
  }
  // Explore the visible street direction, never a fetched destination graph.
  m.bearing??=0;const angle=m.bearing++*Math.PI/3,point=[p.position[0]+18*Math.sin(angle),0,p.position[2]+18*Math.cos(angle)];

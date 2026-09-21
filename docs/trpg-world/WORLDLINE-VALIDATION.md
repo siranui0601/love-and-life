@@ -1,3 +1,5 @@
+> Current Phase 2 continuation: [cross-component migration and blind worldlines](PHASE2-CROSS-COMPONENT.md). Earlier results below remain pinned historical certificates.
+
 # Playability and worldline validation — implementation record
 
 Current continuation: [living world causal completion](LIVING-WORLD-CAUSAL-COMPLETION.md), following [ordinary preparation](PREPARED-WORLDLINES.md). The results below remain the historical checkpoint evidence, not the latest test counts.

@@ -1,3 +1,5 @@
+> Current Phase 2 continuation: [cross-component migration and blind worldlines](PHASE2-CROSS-COMPONENT.md). Earlier results below remain pinned historical certificates.
+
 # Ordinary action domain continuation
 
 Current continuation: [living world causal completion](LIVING-WORLD-CAUSAL-COMPLETION.md). The evidence below belongs to the preceding preparation checkpoint.

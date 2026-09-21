@@ -1,3 +1,5 @@
+> Current Phase 2 continuation: [cross-component migration and blind worldlines](PHASE2-CROSS-COMPONENT.md). Earlier results below remain pinned historical certificates.
+
 # Living world causal completion — ongoing implementation
 
 Starting HEAD: `5c640a2dc6ffa72d77d67f69273a004453111ad9`, branch `feat/persistent-world-rpg`; clean and equal to the remote at start. Continues PREPARED-WORLDLINES and WORLDLINE-VALIDATION. No paid/live LLM calls. No user decision required.

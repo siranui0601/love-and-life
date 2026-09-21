@@ -23,7 +23,8 @@ test('10/30/60 seconds during inspection preserve blind semantic choices and cal
 test('a real conversation reports last-seen whereabouts; arriving establishes absence without revealing a remote destination',()=>{
  const c=fixture();c.npcs=[{id:'reporter',name:'住民',region:'farm',home:[1,0,0],work:[1,0,0],knowledge:[{id:'last-seen',kind:'site-observation',text:'この場所で薬を持つ人を見た。',destination:{region:'farm',targetId:'traveller',position:[1,0,0]},source:{type:'seen',observerId:'reporter'},disclosure:{visibility:'public'}}]},{id:'traveller',name:'旅人',region:'other',home:[0,0,0],work:[0,0,0]}];
  const r=new WorldReplay(c);r.advance(.5);r.command({type:'interact',targetId:'reporter',action:'talk'});const ask=r.options().find(o=>o.command.intentId==='ask:last-seen');assert(ask);r.select(ask);
- const direction=r.view().perception.directions[0];assert.equal(direction.destination.status,'not-here');assert.equal(direction.destination.region,'farm');assert(!JSON.stringify(direction).includes('other'));assert.equal(r.view().leads.filter(l=>l.targetId==='traveller').length,0);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+ const direction=r.view().perception.directions[0];assert.equal(direction.destination.status,'not-here');assert.equal(direction.destination.region,'farm');assert(!JSON.stringify(direction).includes('other'));assert.equal(r.view().leads.filter(l=>l.targetId==='traveller').length,0);
+ r.select(r.options().find(o=>o.command.intentId==='leave'));r.command({type:'resume'});r.command({type:'input',x:0,z:1});r.advance(2);r.command({type:'input',x:0,z:0});assert.equal(r.view().perception.directions[0].destination.status,'searched-absent');assert.equal(r.fork().view().perception.directions[0].destination.status,'searched-absent');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
 test('blind action handles use semantics, not rewritten labels or conversation receipt IDs',()=>{
  const r=new WorldReplay(fixture()),a=r.view(),b=structuredClone(a);for(const t of b.interactables)for(const action of t.actions)action.label='別の言い方';
@@ -34,4 +35,17 @@ test('blind action handles use semantics, not rewritten labels or conversation r
 test('retired design inspections are archived without deleting objective history or legitimate reading',()=>{
  const c=fixture();c.regions[0].objects[0].sourceDesignNotes='T02調査';const s={player:{inspections:{notice:{at:1,text:'T02調査'},other:{at:2,text:'実際に読んだ手紙'}}},socialFacts:[{id:'objective',kind:'read'}]};
  retireDesignInspections(s,c);assert(!s.player.inspections.notice);assert.equal(s.player.inspections.other.text,'実際に読んだ手紙');assert.equal(s.legacySnapshot.invalidDesignInspections.notice.text,'T02調査');assert.deepEqual(s.socialFacts,[{id:'objective',kind:'read'}]);
+});
+test('an older account is not offered as a new destination after a more recent account was learned',()=>{
+ const c=fixture(),report=(at,position)=>({id:'moving-person',kind:'site-observation',text:'旅人を見かけた。',observedAt:at,destination:{region:'farm',targetId:'traveller',position},source:{type:'seen'},disclosure:{visibility:'public'}});
+ c.npcs=[{id:'new-witness',name:'新しい目撃者',region:'farm',home:[1,0,0],work:[1,0,0],knowledge:[report(20,[20,0,0])]},{id:'old-witness',name:'以前の目撃者',region:'farm',home:[-1,0,0],work:[-1,0,0],knowledge:[report(10,[10,0,0])]}];
+ const r=new WorldReplay(c);r.advance(.5);r.command({type:'interact',targetId:'new-witness',action:'talk'});r.select(r.options().find(o=>o.command.intentId==='ask:moving-person'));r.select(r.options().find(o=>o.command.intentId==='leave'));r.command({type:'interact',targetId:'old-witness',action:'talk'});
+ assert(!r.options().some(o=>o.command.intentId==='ask:moving-person'));assert.deepEqual(r.state.knowledge.find(k=>k.id==='moving-person').destination.position,[20,0,0]);assert.deepEqual(r.defects,[]);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('blind traveller uses the actual offered ferry, pays fare and advances travel time without a foot-only shortcut',()=>{
+ const c=fixture();c.regions[0].portals[0].position=[1,0,0];c.routes[0].modes=['boat'];c.routes[0].costs={boat:4};const r=new WorldReplay(c),o=blindInput(r.view());
+ const m={visited:o.observation.places.map(p=>p.id),attempted:o.observation.actions.filter(a=>a.type==='interact').map(a=>a.key)};
+ const decision=chooseBlind(o.observation,m),command=o.bindings.get(decision.action);assert.equal(command?.type,'travel');assert.equal(command.mode,'boat');
+ const gold=r.state.player.gold,time=r.state.time;assert(!r.command(command).error);assert.equal(r.state.player.region,'other');assert.equal(r.state.player.gold,gold-4);assert(r.state.time>time);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });

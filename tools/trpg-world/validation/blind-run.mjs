@@ -9,7 +9,7 @@ export function blindInput(view){
   const command=commandForOption(option,targetId,conversation);if(!targetId&&!conversation)delete command.targetId;
   const type=conversation?'conversation':command.type,verb=String(command.action||command.intentId||option.id||'').split('/').at(-1).split(':')[0];
   const key=digest(semanticIdentity(option,conversation?.speaker||targetId,conversation)).slice(0,20);bindings.set(key,command);
-  actions.push({key,type,verb,label:option.label,targetId,available:option.available!==false,requirements:structuredClone(option.requirements||{}),family:option.family,intent:option.intent?.type||option.intent,mode:command.mode,itemId:command.itemId,skillId:command.skillId});
+  actions.push({key,type,verb,label:option.label,targetId,available:option.available!==false,requirements:structuredClone(option.requirements||{}),family:option.family,intent:option.intent?.type||option.intent,mode:command.mode,price:option.price,minutes:option.minutes,itemId:command.itemId,skillId:command.skillId});
  };
  if(view.conversation){observation.conversation={speaker:view.conversation.speaker,text:view.conversation.text};for(const a of view.conversation.choices)add(a,undefined,view.conversation);}
  else {
@@ -60,7 +60,7 @@ export function runBlind(content,{seed=17,decisions=240,untilDay=5,onProgress=()
   decisionsLog.push({index:run.operations.length,day:observation.day,clock:observation.clock,region:observation.region.name,decision,result});
   if(!intermediate&&run.view().day>=2)intermediate={state:JSON.parse(JSON.stringify(run.state)),memory:JSON.parse(JSON.stringify(memory)),operationIndex:run.operations.length};
   if(result?.error||run.defects.length){stopped='FIRST_BAD_DECISION';break;}
-  const last=decisionsLog.slice(-6);if(last.length===6&&last.every(x=>x.decision.walk&&JSON.stringify(x.decision.walk)===JSON.stringify(last[0].decision.walk))&&!last.some(x=>x.result?.interrupted)){stopped='DUPLICATE_DESTINATION_LOOP';break;}
+  let cycle=false;for(let period=1;period<=4;period++){const recent=decisionsLog.slice(-period*3);if(recent.length===period*3&&recent.every((x,j)=>x.decision.walk&&!x.result?.interrupted&&JSON.stringify(x.decision.walk)===JSON.stringify(recent[j%period].decision.walk)))cycle=true;}if(cycle){stopped='DUPLICATE_DESTINATION_LOOP';break;}
  }
  // True state is inspected ONLY after the blind decisions have ended, as an
  // evaluation report. It is never returned to chooseBlind.

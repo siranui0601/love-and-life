@@ -27,3 +27,9 @@ test('copies require actual reading and submission; institutional order requires
 test('patient treatment consumes a real antidote and prevents physical poisoning, never creates a person',()=>{
  const c=fixture();c.events[0].sourceIds=['a'];c.processes=[{id:'illness',kind:'patient',eventId:'incident',sourceId:'a',region:'farm',targetId:'clerk',actorId:'clerk',name:'容体',observation:'薬が変色している。',initial:{treated:false,exposed:false}}];const r=new WorldReplay(c);assert(prepare(r,{items:{antidote:1}}).prepared);act(r,'clerk','illness/inspect');act(r,'clerk','illness/treat');assert.equal(r.state.player.inventory.antidote,0);assert.equal(r.state.processes.illness.treated,true);assert.equal(r.state.events.incident.status,'prevented');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
+test('a conditional downstream threat does not fail when its physical prerequisite was prevented',()=>{
+ const c=fixture();c.events[0].startsAt=50000;c.events[0].deadline=60000;c.processes[1]={...structuredClone(c.processes[0]),id:'downstream',sourceId:'b',targetId:'office',activation:{path:['processes','drive','powered'],value:true}};
+ const r=new WorldReplay(c);assert(prepare(r,{items:{timber:2,rope:1},skills:['crafting']}).prepared);act(r,'machine','drive/inspect');act(r,'machine','drive/isolate');act(r,'machine','drive/repair');assert.equal(r.state.events.incident.status,'latent');
+ for(let i=0;i<2;i++)assert(!performAt(r,target(r,'inn'),'rest').error);
+ assert.equal(r.state.events.incident.status,'resolved');assert.equal(r.state.processes.downstream.failedAt,undefined);assert.equal(r.state.processes.downstream.powered,true);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
