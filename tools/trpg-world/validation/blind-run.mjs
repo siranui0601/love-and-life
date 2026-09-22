@@ -18,7 +18,7 @@ export function blindInput(view){
  }
  const alias=id=>id?'entity:'+digest(id).slice(0,16):id;
  for(const list of [observation.places,observation.people,observation.monsters,observation.exits,observation.services,observation.inspections])for(const entry of list)entry.id=alias(entry.id);
- for(const direction of observation.directions){direction.destination.targetId=alias(direction.destination.targetId);direction.source={type:direction.source?.type};}
+ for(const direction of observation.directions){direction.destination.targetId=alias(direction.destination.targetId);if(direction.personId)direction.personId=alias(direction.personId);direction.source={type:direction.source?.type};}
  for(const action of actions)action.targetId=alias(action.targetId);
  observation.actions=actions;return {observation,bindings};
 }
@@ -73,7 +73,7 @@ export function runBlind(content,{seed=17,decisions=240,untilDay=5,onProgress=()
  }
  // True state is inspected ONLY after the blind decisions have ended, as an
  // evaluation report. It is never returned to chooseBlind.
- return {run,intermediate,summary:{seed,stopped,day:run.view().day,clock:run.view().clock,hp:run.view().player.hp,operations:run.operations.length,decisions:decisionsLog.length,decisionsLog,
+ return {run,memory,intermediate,summary:{seed,stopped,day:run.view().day,clock:run.view().clock,hp:run.view().player.hp,operations:run.operations.length,decisions:decisionsLog.length,decisionsLog,
   outcomes:Object.fromEntries(Object.entries(run.state.events).map(([id,e])=>[id,{status:e.status,components:e.causal.componentStatus}])),defects:run.defects}};
 }
 export function verifyBlindRecord(content,result){

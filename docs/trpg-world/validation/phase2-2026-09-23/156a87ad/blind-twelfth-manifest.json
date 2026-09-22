@@ -1,0 +1,20 @@
+{
+  "sourceCheckpoint": "156a87add1178cca372c862b64b5e167a02dc679",
+  "sourceQualification": "Exact runtime and blind policy checkpoint",
+  "contentFile": "../../phase2-2026-09-22/a3b42001/content.json.gz",
+  "fullReplay": true,
+  "files": {
+    "blind-twelfth-record.json.gz": {
+      "sha256": "c2e484340b5f251688875ff19d591321072f3e274ec86ef713a03e7391aa14de",
+      "bytes": 387032
+    },
+    "blind-twelfth-intermediate.json.gz": {
+      "sha256": "934c1f365bda45f715d43425f3ff742939423b2e4f73e5e8dfdbc0f9f4b8e8b5",
+      "bytes": 175810
+    },
+    "blind-twelfth-summary.json.gz": {
+      "sha256": "aa85258c25b62694a635a8833a2cfcae47185d79b55b6de0e05ac5ba969a8dac",
+      "bytes": 43812
+    }
+  }
+}

@@ -84,6 +84,7 @@ export function advanceCausality(state,content,seconds) {
         }
         if((!person.injury||person.injury.treated)&&conditionHolds(state,content,{type:'co-located',actorId:person.id,targetId:family.id,range:3})) {
           const fact=rememberAction(state,content,'family-reunion',{actorId:person.id,targetId:family.id,payload:{escortId:'player',recipientPosition:[...family.position]}});
+          const account=state.knowledge.find(k=>k.id===`escort:${person.id}`);if(account&&distance(state.player.position,person.position)<45&&hasLineOfSight(region,state.player.position,person.position)){account.completedAt=state.time;account.completionFactId=fact.id;}
           causal.phase='reunited';delete person.companionOf;delete person.causalAssignment;delete family.causalAssignment;delete family.reunionObservation;
           settle(state,event,'resolved',fact.id);
         }
@@ -167,9 +168,9 @@ export function applyCausalAction(state,content,target,id) {
   else if(id==='escort') {
     npc.companionOf='player';
     const definition=causalDefinitions(content).find(d=>d.type==='return-person'&&d.personId===npc.id),family=content.npcs.find(n=>n.id===definition?.familyId);
-    if(family&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:`家まで一緒に来てほしい。家族の${family.name}に引き渡してほしい。`,personId:npc.id,recipientId:family.id,destination:{region:family.region,position:[...family.home]},source:{type:'told',actorId:npc.id},observedAt:state.time});
+    if(family&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',purpose:'escort',text:`家まで一緒に来てほしい。家族の${family.name}に引き渡してほしい。`,personId:npc.id,recipientId:family.id,destination:{region:family.region,targetId:family.id,position:[...family.home]},source:{type:'told',actorId:npc.id},observedAt:state.time});
     const shelter=content.regions.find(r=>r.id===npc.region)?.objects.find(o=>o.id===npc.care?.destination);
-    if(shelter&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',text:`${shelter.name}まで付き添ってほしい。そこで休める。`,personId:npc.id,destination:{region:npc.region,position:[...shelter.position]},source:{type:'told',actorId:npc.id},observedAt:state.time});
+    if(shelter&&!state.knowledge.some(k=>k.id===`escort:${npc.id}`))state.knowledge.push({id:`escort:${npc.id}`,kind:'testimony',purpose:'escort',text:`${shelter.name}まで付き添ってほしい。そこで休める。`,personId:npc.id,destination:{region:npc.region,targetId:shelter.id,position:[...shelter.position]},source:{type:'told',actorId:npc.id},observedAt:state.time});
   }
   else if(id==='release')delete npc.companionOf;
   else {

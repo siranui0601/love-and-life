@@ -5,6 +5,7 @@ function rememberedExit(memory,from,to){const queue=[{region:from,first:null}],s
 const dist=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 export function chooseBlind(o,m){
  m.visited||=[];m.asked||=[];m.attempted||=[];m.travelled||=[];
+ for(const inspection of o.inspections)if(!m.visited.includes(inspection.id))m.visited.push(inspection.id);
  const p=o.self,actions=o.actions,act=a=>({action:a.key,reason:a.label}),walk=t=>({walk:t.position,target:t.id,reason:`見聞きした場所へ歩く：${t.name||t.text||'現場'}`});
  const groundKey=point=>`${p.region}:${Math.round(point[0]/6)},${Math.round(point[2]/6)}`;
  m.walkedGround||={};m.walkedGround[groundKey(p.position)]=true;
@@ -33,10 +34,16 @@ export function chooseBlind(o,m){
  if(p.hunger>55){const eat=find('eat');if(eat)return act(eat);m.need={items:{supplies:2}};}
  if(p.fatigue>65||hour>=22||hour<6){const rest=find('rest');if(rest)return act(rest);const inn=o.places.find(t=>t.kind==='inn');if(inn)return walk(inn);const lodging=knownService(a=>a.type==='rest');if(lodging)return visit(lodging);}
  // An observed injured person takes priority over wages. No hidden person list.
- const tend=find('causal','tend');if(tend)return act(tend);
+ const untreated=actions.find(a=>a.type==='causal'&&a.verb==='tend'&&!a.available);
+ if(untreated&&!m.task){const person=o.people.find(n=>n.id===untreated.targetId);if(person)m.task={key:untreated.key,requirements:structuredClone(untreated.requirements),target:{...person,region:p.region}};}
+ const tend=find('causal','tend');if(tend){if(m.task?.key===tend.key){m.task=null;m.need=null;}return act(tend);}
  const escort=ready.find(a=>a.type==='causal'&&a.verb==='escort'&&!m.attempted.includes(a.key));if(escort){m.attempted.push(escort.key);return act(escort);}
- const home=o.directions.find(d=>/送り|家族|帰|休め/.test(d.text));if(home&&home.destination.region===p.region&&!m.visited.includes('delivery:'+home.destination.targetId)){
-  if(dist(home.destination.position,p.position)>3)return walk({...home,id:home.destination.targetId,position:home.destination.position});m.visited.push('delivery:'+home.destination.targetId);
+ const home=o.directions.find(d=>d.purpose==='escort'&&!d.completed);if(home&&home.destination.region===p.region){
+  if(dist(home.destination.position,p.position)>3)return walk({...home,id:home.destination.targetId,position:home.destination.position});
+  const companion=o.people.find(n=>n.id===home.personId);
+  if(companion&&dist(companion.position,p.position)>3){if(p.activity.worldTimePolicy==='paused')return {resume:true};return {seconds:1,reason:'付き添い相手が追いつくのを、その場で見守る'};}
+  if(companion){if(p.activity.worldTimePolicy==='paused')return {resume:true};return {seconds:1,reason:'相手と一緒に引き渡しを確かめる'};}
+  return {stop:'escort-person-not-visible-at-destination'};
  }
  // Work on an observed problem, and decompose its publicly offered requirements.
  // One traveller's priorities: help people and fix failures, but leave intact
@@ -44,7 +51,7 @@ export function chooseBlind(o,m){
  const knownDamage=targetId=>o.inspections.some(i=>i.id===targetId&&/燃えて|炎|崩落|閉鎖|後始末/.test(i.text))||o.places.some(t=>t.id===targetId&&t.appearance?.length);
  const job=actions.find(a=>(!m.task||m.task.key===a.key)&&(
   a.type==='process'&&a.verb!=='inspect'&&(knownDamage(a.targetId)||a.verb==='treat'||a.verb==='submit')||
-  a.type==='maintain'&&knownDamage(a.targetId)||a.type==='causal'&&['divert','seal','submit'].includes(a.verb)));
+  a.type==='maintain'&&knownDamage(a.targetId)||a.type==='causal'&&['tend','divert','seal','submit'].includes(a.verb)));
  if(job){if(job.available){m.attempted.push(job.key);m.need=null;m.task=null;return act(job);}const target=[...o.people,...o.places].find(t=>t.id===job.targetId);if(target)m.task={key:job.key,requirements:structuredClone(job.requirements),target:{...target,region:p.region}};}
  if(m.task&&p.hunger<=55)m.need=m.task.requirements;
  if(m.need){

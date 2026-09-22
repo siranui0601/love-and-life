@@ -9,6 +9,31 @@ import {prepare,performAt} from './validation/action-domain.mjs';
 function fixture(){return {revision:'process-contract',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'村',size:160,spawn:[0,0,0],obstacles:[],portals:[],objects:[{id:'shop',kind:'shop',name:'店',position:[0,0,2]},{id:'teacher',kind:'trainer',name:'師匠',skills:['crafting'],position:[2,0,0]},{id:'board',kind:'board',name:'仕事場',position:[-2,0,0]},{id:'inn',kind:'inn',name:'宿',position:[0,0,-2]},{id:'machine',kind:'landmark',name:'機械',position:[1,0,1]},{id:'office',kind:'landmark',name:'審理窓口',position:[-1,0,1]}]}],npcs:[{id:'clerk',name:'係員',region:'farm',home:[-1,0,1],work:[-1,0,1],workFacilityId:'office'}],events:[{id:'incident',name:'異変',region:'farm',position:[0,0,3],startsAt:100000,deadline:200000,sourceIds:['a','b']}],causalScenarios:[],routes:[],items:[{id:'timber',name:'木材',price:2},{id:'rope',name:'縄',price:2},{id:'supplies',name:'携帯食',price:5,kind:'food'},{id:'antidote',name:'解毒薬',price:3}],skills:[{id:'crafting',name:'工作',goldCost:2,cost:1}],jobs:[{id:'labor',name:'荷運び',region:'farm',facilityId:'board',minutes:30,pay:45,xp:32}],equipment:[],monsters:[],processes:[{id:'drive',kind:'device',eventId:'incident',sourceId:'a',region:'farm',targetId:'machine',name:'送出機',observation:'留め具に傷がある。',initial:{powered:true,integrity:40},aftermath:{closedTarget:'machine'}},{id:'fund',kind:'supply',eventId:'incident',sourceId:'b',region:'farm',targetId:'office',name:'供託所',observation:'納品簿が置いてある。',initial:{},required:{supplies:1,gold:20}}]};}
 const target=(r,id)=>r.view().region.objects.find(o=>o.id===id)||r.view().npcs.find(n=>n.id===id);
 const act=(r,id,action)=>{const result=performAt(r,target(r,id),'process',{action});assert(!result.error,JSON.stringify(result));};
+test('blind ordinary life discovers structural aftermath, prepares, rescues and continues without outcome injection',()=>{
+ const c=fixture(),physical=structuredClone(DEFAULT_PROCESS_STRUCTURES.find(s=>s.failure.kind==='collapse'));
+ Object.assign(physical,{id:'wreck',processId:'drive',region:'farm',targetId:'machine',shelterId:'inn',hazardEventId:'incident'});
+ c.time.startSeconds=22*3600;c.regions[0].spawn=[0,0,-20];
+ c.regions[0].objects.find(o=>o.id==='inn').position=[0,0,-20];
+ c.regions[0].objects.find(o=>o.id==='machine').position=[25,0,0];
+ c.structures=[physical];c.processes=[{...c.processes[0],structureId:'wreck'}];c.events[0].sourceIds=['a'];c.events[0].startsAt=22*3600+60;c.events[0].deadline=22*3600+120;
+ c.items.push({id:'medicine',name:'傷薬',price:2});
+ c.npcs=['worker','coworker','visitor'].map((id,i)=>({id,name:`現場の住人${i+1}`,role:'作業員',region:'farm',home:[25+i,0,0],work:[25+i,0,0],knowledge:[]}));
+ const {run,summary}=runBlind(c,{decisions:200,untilDay:4});
+ const diagnostic=()=>JSON.stringify({stop:summary.stopped,care:Object.values(run.state.npcs).map(n=>({id:n.id,care:n.care,position:n.position})),structure:run.state.structures.wreck,tail:summary.decisionsLog.slice(-5)});
+ assert.equal(run.state.events.incident.status,'failed',diagnostic());
+ assert.equal(run.state.npcs.worker.care?.status,'recovered',diagnostic());
+ assert(Object.values(run.state.npcs).every(n=>n.care?.status==='recovered'),diagnostic());
+ assert(run.operations.some(o=>o.command?.type==='buy'&&o.command.itemId==='medicine'));
+ assert(run.operations.some(o=>o.command?.type==='buy'&&o.command.itemId==='timber'));
+ assert(run.operations.some(o=>o.command?.type==='train'));
+ assert(run.operations.some(o=>o.command?.type==='causal'&&o.command.action==='escort'));
+ assert(run.state.structures.wreck.recoveries.some(r=>r.personId==='worker'));
+ assert.deepEqual(run.defects,[]);assert(!['FIRST_BAD_DECISION','DUPLICATE_DESTINATION_LOOP','prepared-intent-unavailable-at-observed-location'].includes(summary.stopped),diagnostic());
+ const record=run.export(),cut=record.operations.findIndex(o=>o.command?.type==='causal'&&o.command.action==='escort')+1;
+ const mid=replay(c,{...record,operations:record.operations.slice(0,cut)}).fork();
+ assert(Object.values(mid.state.npcs).some(n=>n.companionOf==='player'));
+ assert.equal(digest(replay(c,{...record,initialState:mid.state,operations:record.operations.slice(cut)}).state),digest(run.state));
+});
 test('shared process work consumes actual preparations; merged sources require every endpoint; save replay is exact',()=>{
  const c=fixture(),r=new WorldReplay(c);assert(prepare(r,{items:{timber:2,rope:1,supplies:2},skills:['crafting']}).prepared);
  act(r,'machine','drive/inspect');act(r,'machine','drive/isolate');const saved=JSON.parse(JSON.stringify(r.export()));act(r,'machine','drive/repair');

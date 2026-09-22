@@ -9,6 +9,7 @@ const siteOf=(content,spec)=>content.regions.find(r=>r.id===spec.region)?.object
 function recoverAtShelter(state,content,s,npc,shelter,helperId) {
  if(npc.care.status==='recovered')return;
  const fact=rememberAction(state,content,'rescue',{actorId:helperId,targetId:npc.id,payload:{shelterId:shelter.id,sourceFactId:s.damageFactId}});
+ if(helperId==='player'){const account=state.knowledge.find(k=>k.id===`escort:${npc.id}`);if(account){account.completedAt=state.time;account.completionFactId=fact.id;}}
  npc.care.status='recovered';npc.care.recoveryFactId=fact.id;npc.displacedHome=[...shelter.position];npc.displacementCause=s.damageFactId;npc.hp=Math.max(npc.hp,50);delete npc.companionOf;delete npc.plan;
  s.recoveries.push({personId:npc.id,factId:fact.id,at:state.time});
 }

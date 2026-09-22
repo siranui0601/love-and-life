@@ -35,7 +35,9 @@ export function playerPerception(state,content,view){
   // snapshot when leaving town so ordinary preparation can include a return.
   services:structuredClone(view.services),notes:structuredClone(view.notes),
   inspections:Object.entries(p.inspections||{}).filter(([id])=>places.some(o=>o.id===id)).map(([id,entry])=>({id,text:entry.text})),
-  directions:state.knowledge.filter(k=>['site-observation','testimony'].includes(k.kind)&&k.destination).map(k=>({text:k.text,destination:observedDestination(state,content,k),source:structuredClone(k.source)})),
+  directions:state.knowledge.filter(k=>['site-observation','testimony'].includes(k.kind)&&k.destination).map(k=>({text:k.text,destination:observedDestination(state,content,k),source:structuredClone(k.source),
+   // A request heard by the player, not access to another person's care plan.
+   ...(k.purpose==='escort'||k.id===`escort:${k.personId}`?{purpose:'escort',personId:k.personId,completed:k.completedAt!==undefined}:{})})),
   // Local geometry may guide footsteps around walls already within sight range;
   // it contains no regional edges, future scenes or event solution positions.
   obstacles:Object.keys(geometry).sort().map(id=>({...geometry[id]}))};
