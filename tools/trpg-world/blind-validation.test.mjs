@@ -5,6 +5,7 @@ import {blindInput,runBlind,repeatedDestinations} from './validation/blind-run.m
 import {readFileSync} from 'node:fs';
 import {chooseBlind} from './validation/blind-policy.mjs';
 import {retireDesignInspections} from '../../src/shared/trpg-world/knowledge-migration.js';
+import {walk} from './validation/journey.mjs';
 
 function fixture(){return {revision:'blind-contract',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'村',size:160,spawn:[0,0,0],obstacles:[],objects:[{id:'notice',kind:'landmark',name:'掲示',position:[1,0,0]},{id:'unseen',kind:'landmark',name:'HIDDEN_SITE',position:[70,0,70]}],portals:[{id:'remote-exit',routeId:'road',to:'other',position:[70,0,-70]}]},{id:'other',name:'HIDDEN_TOWN',size:160,spawn:[0,0,0],objects:[],portals:[],obstacles:[]}],routes:[{id:'road',from:'farm',to:'other',minutes:30,modes:['foot']}],npcs:[],events:[{id:'secret',name:'HIDDEN_EVENT',description:'HIDDEN_CAUSE',region:'other',position:[0,0,0],startsAt:100000,deadline:200000}],causalScenarios:[],items:[],skills:[],jobs:[],equipment:[],monsters:[]};}
 test('blind boundary omits hidden places, region graph, events and deadlines; hidden-state changes cannot alter choices',()=>{
@@ -96,4 +97,31 @@ test('six-heading exploration cycles cannot evade semantic loop detection throug
  const loop=Array.from({length:18},(_,i)=>({decision:{walk:[Math.sin(i%6)*18+i*1e-12,0,Math.cos(i%6)*18]},result:{arrived:true}}));assert(repeatedDestinations(loop));
  const progressing=structuredClone(loop);progressing[12].decision.walk[0]+=3;assert(!repeatedDestinations(progressing));
  const purposeful=structuredClone(loop);purposeful[12]={decision:{action:'actually-eat'},result:{}};assert(!repeatedDestinations(purposeful));
+});
+
+const account=(at,x)=>({id:'whereabouts',kind:'site-observation',topicLabel:'旅人の所在',text:'旅人を見かけた。',observedAt:at,destination:{region:'farm',targetId:'traveller',position:[x,0,0]},source:{type:'seen'},disclosure:{visibility:'public'}});
+test('a newer eyewitness account travels by face-to-face contact and conversation; distant listeners keep their old account',()=>{
+ const c=fixture();c.npcs=[{id:'reporter',name:'目撃者',region:'farm',home:[1,0,0],work:[1,0,0],knowledge:[account(20,36)]},{id:'listener',name:'聞き手',region:'farm',home:[2,0,0],work:[2,0,0],knowledge:[account(10,12)]},{id:'remote',name:'遠方の人',region:'other',home:[2,0,0],work:[2,0,0],knowledge:[account(10,12)]}];
+ const r=new WorldReplay(c);r.advance(.5);const learned=r.state.npcs.listener.knowledge.find(k=>k.id==='whereabouts');assert.deepEqual(learned.destination.position,[36,0,0]);assert.equal(learned.source.type,'heard');assert.equal(learned.source.actorId,'reporter');assert.equal(learned.transmissions.at(-1).to,'listener');
+ assert.deepEqual(r.state.npcs.remote.knowledge.find(k=>k.id==='whereabouts').destination.position,[12,0,0]);
+ r.command({type:'interact',targetId:'listener',action:'talk'});r.select(r.options().find(o=>o.command.intentId==='ask:whereabouts'));
+ assert.equal(r.state.knowledge.find(k=>k.id==='whereabouts').source.previous.actorId,'reporter');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('changed factual topics get new semantic handles; player can relay a correction without duplicating knowledge',()=>{
+ const c=fixture();c.npcs=[{id:'old',name:'以前の目撃者',region:'farm',home:[1,0,0],work:[1,0,0],knowledge:[account(10,12)]},{id:'new',name:'新しい目撃者',region:'farm',home:[24,0,0],work:[24,0,0],knowledge:[account(20,36)]}];const r=new WorldReplay(c);r.advance(.5);
+ r.command({type:'interact',targetId:'old',action:'talk'});const first=blindInput(r.view()).observation.actions.find(a=>a.family==='ask');r.select(r.options().find(o=>o.command.intentId==='ask:whereabouts'));r.select(r.options().find(o=>o.command.intentId==='leave'));
+ assert(!walk(r,[24,0,0]).error);r.command({type:'interact',targetId:'new',action:'talk'});const second=blindInput(r.view()).observation.actions.find(a=>a.family==='ask');assert.notEqual(second.key,first.key);
+ const memory={asked:[first.key]};assert.equal(chooseBlind(blindInput(r.view()).observation,memory).action,second.key);r.select(r.options().find(o=>o.command.intentId==='ask:whereabouts'));r.select(r.options().find(o=>o.command.intentId==='leave'));
+ assert(!walk(r,[1,0,0]).error);r.command({type:'interact',targetId:'old',action:'talk'});
+ for(let page=0;page<3&&!r.options().some(o=>o.command.intentId==='share:whereabouts');page++)r.select(r.options().find(o=>o.command.intentId==='change-topic'));
+ const share=r.options().find(o=>o.command.intentId==='share:whereabouts');assert(share);r.select(share);
+ const received=r.state.npcs.old.knowledge.filter(k=>k.id==='whereabouts');assert.equal(received.length,1);assert.deepEqual(received[0].destination.position,[36,0,0]);assert.equal(received[0].source.actorId,'player');
+ assert.deepEqual(r.defects,[]);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('blind free exploration remembers actual ground visited instead of circling the same six destinations',()=>{
+ const c=fixture();c.events=[];c.regions=c.regions.slice(0,1);c.regions[0].objects=[];c.regions[0].portals=[];c.routes=[];
+ const {run,summary}=runBlind(c,{decisions:24});const destinations=summary.decisionsLog.filter(d=>d.decision.walk).map(d=>d.decision.walk.map(n=>Math.round(n/6)).join(','));
+ assert(destinations.length>=10);assert.equal(new Set(destinations).size,destinations.length);assert(!repeatedDestinations(summary.decisionsLog));assert.equal(digest(replay(c,run.export()).state),digest(run.state));
 });

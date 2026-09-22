@@ -3,7 +3,7 @@ import {recalled,testimony,hearTestimony} from './memory.js';
 import {setActivity} from './activity.js';
 import {rememberAction,willingToCooperate,initializeRelationships,deliverSupplies} from './relationships.js';
 import {distance,hasLineOfSight} from './navigation.js';
-import {knowledgeMeaning,stableString} from './semantic.js';
+import {newerAccount,topicVersion} from './semantic.js';
 
 const reject=(code,message)=>{throw Object.assign(new Error(message),{code,status:409});};
 export function visibleTopics(state,npc) {
@@ -14,15 +14,15 @@ export function visibleTopics(state,npc) {
 }
 function choices(state,npc,session) {
   const legal=legalChoices(state,npc);
-  const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id)&&!state.knowledge.some(k=>k.id===f.id&&(stableString(knowledgeMeaning(k))===stableString(knowledgeMeaning(f))||(k.observedAt??0)>=(f.observedAt??0)))).sort((a,b)=>Number(b.kind==='site-observation')-Number(a.kind==='site-observation')||a.id.localeCompare(b.id,'en'));
-  const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,label:`「${f.topicLabel||f.title||f.text.slice(0,24)}${!f.topicLabel&&!f.title&&f.text.length>24?'…':''}」について聞く`,preview:f.text}));
+  const facts=visibleTopics(state,npc).filter(f=>!session.factsLearned.includes(f.id)&&newerAccount(state.knowledge,f)).sort((a,b)=>Number(b.kind==='site-observation')-Number(a.kind==='site-observation')||a.id.localeCompare(b.id,'en'));
+  const options=facts.slice(0,1).map(f=>({id:`ask:${f.id}`,family:'ask',intent:'ASK_ABOUT',factId:f.id,topicVersion:topicVersion(f),label:`「${f.topicLabel||f.title||f.text.slice(0,24)}${!f.topicLabel&&!f.title&&f.text.length>24?'…':''}」について聞く`,preview:f.text}));
   if(!session.history.some(h=>h.intentId==='daily-plan'))options.push({id:'daily-plan',intent:'ASK_ABOUT',family:'social',label:'今日は何をする予定か聞く'});
   if(!session.history.some(h=>h.intentId==='promise-supplies')&&!state.promises.some(p=>p.to===npc.id&&p.status==='open'))
     options.push({id:'promise-supplies',intent:'MAKE_PROMISE',family:'promise',label:'日暮れまでに生活物資を一つ届けると約束する'});
   if(options.length<4&&!session.history.some(h=>h.intentId==='joke'))options.push({id:'joke',family:'play',label:'旅先で迷った話を冗談にする'});
 
-  const share=[...state.knowledge].sort((a,b)=>Number(b.kind==='workplace-status')-Number(a.kind==='workplace-status')||(a.kind==='workplace-status'&&b.kind==='workplace-status'?(b.observedAt||0)-(a.observedAt||0):0)||a.id.localeCompare(b.id,'en')).find(k=>!npc.knowledge.some(n=>n.id===k.id));
-  if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,label:share.kind==='workplace-status'?`「${share.text}」と伝える`:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
+  const share=[...state.knowledge].sort((a,b)=>Number(b.kind==='workplace-status')-Number(a.kind==='workplace-status')||(a.kind==='workplace-status'&&b.kind==='workplace-status'?(b.observedAt||0)-(a.observedAt||0):0)||a.id.localeCompare(b.id,'en')).find(k=>newerAccount(npc.knowledge,k));
+  if(share)options.push({id:`share:${share.id}`,intent:share.kind==='event'?'WARN':'SHARE_INFORMATION',family:'share',factId:share.id,topicVersion:topicVersion(share),label:share.kind==='workplace-status'?`「${share.text}」と伝える`:share.kind==='event'?'見聞きした危険を伝える':'知っている話を伝える'});
   if(state.player.inventory.supplies>0&&npc.hunger>60)options.push({id:'offer-food',intent:'OFFER_HELP',family:'offer',label:'持っている食料を渡す'});
   if(state.player.inventory.medicine>0&&visibleTopics(state,npc).some(k=>k.kind==='site-observation'))options.push({id:'offer-medicine',intent:'OFFER_HELP',family:'medical-supplies',label:'手当てに使える傷薬を一つ渡す'});
   if(npc.possessions.supplies>0&&state.player.hunger>50)options.push({id:'request-food',intent:'REQUEST_HELP',family:'request',label:'食べ物を分けてもらえないか頼む'});
@@ -75,7 +75,8 @@ export function converse(state,content,command) {
   } else if(choice.family==='topic') {session.topicCursor=(session.topicCursor||0)+3;if(!choices(state,npc,session).some(c=>!['topic','leave'].includes(c.family)))session.topicCursor=0;session.utterance='ほかには？';}
   else if(choice.family==='share') {
     const known=state.knowledge.find(k=>k.id===choice.factId);
-    npc.knowledge.push({...structuredClone(known),receivedAt:state.time,source:{type:'heard',actorId:'player',previous:structuredClone(known.source)}});
+    const learned={...structuredClone(known),receivedAt:state.time,source:{type:'heard',actorId:'player',previous:structuredClone(known.source)}};
+    const old=npc.knowledge.find(k=>k.id===known.id);if(old)Object.assign(old,learned);else npc.knowledge.push(learned);
     if(known.testimony)hearTestimony(state,npc,{id:'player'},known.testimony);
     session.disclosures.push({factId:known.id,from:'player',to:npc.id,at:state.time});npc.nextDecision=0;session.utterance='分かった。自分でも気をつけて確かめよう。';
   } else if(choice.family==='medical-supplies') {state.player.inventory.medicine--;npc.possessions.medicine=(npc.possessions.medicine||0)+1;rememberAction(state,content,'gift',{targetId:npc.id,payload:{itemId:'medicine',quantity:1,purpose:'medical-response'}});npc.nextDecision=0;session.utterance='傷薬を受け取った。手当てが必要な人のために使おう。';}

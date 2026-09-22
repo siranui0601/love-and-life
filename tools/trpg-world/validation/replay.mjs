@@ -21,7 +21,7 @@ export function meaningfulState(state) {
   properties:state.properties,facilities:state.facilities,processes:state.processes,structures:state.structures});
 }
 function progressState(state) {
- return {knowledge:state.knowledge.map(knowledgeMeaning).sort((a,b)=>a.id.localeCompare(b.id,'en')),inventory:state.player.inventory,npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{injury:n.injury,companionOf:n.companionOf}])),
+ return {knowledge:state.knowledge.map(knowledgeMeaning).sort((a,b)=>a.id.localeCompare(b.id,'en')),inventory:state.player.inventory,npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{injury:n.injury,companionOf:n.companionOf,knowledge:n.knowledge.map(knowledgeMeaning)}])),
   properties:state.properties,processes:state.processes,structures:state.structures,events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}]))};
 }
 export function changedDomains(before,after) {return [...new Set([...Object.keys(before),...Object.keys(after)])].filter(k=>stableString(before[k])!==stableString(after[k]));}

@@ -17,8 +17,18 @@ export function commandForOption(option,targetId,session) {
 export function semanticIdentity(option,targetId,session) {
  const command=commandForOption(option,targetId,session);
  return stableString({verb:option.intent||command.type,action:session?option.id:command.action,target:targetId||option.targetId||'self',
+  ...(option.topicVersion?{topicVersion:option.topicVersion}:{}),
   parameters:Object.fromEntries(parameters.filter(k=>command[k]!==undefined).map(k=>[k,command[k]]))});
 }
 export function knowledgeMeaning(fact) {
  return canonical({id:fact.id,kind:fact.kind,text:fact.text,status:fact.status,documentId:fact.documentId,destination:fact.destination,deadlineClaim:fact.deadlineClaim,belief:fact.belief&&{claim:fact.belief.claim,about:fact.belief.about,source:fact.belief.source}});
+}
+export function newerAccount(knowledge,fact){
+ const old=knowledge.find(k=>k.id===fact.id);
+ return !old||(fact.observedAt??0)>(old.observedAt??0)&&stableString(knowledgeMeaning(old))!==stableString(knowledgeMeaning(fact));
+}
+export function topicVersion(fact){
+ // Opaque semantic identity, not the hidden answer or its changing timestamp.
+ let hash=0xcbf29ce484222325n;for(const character of stableString(knowledgeMeaning(fact)))hash=BigInt.asUintN(64,(hash^BigInt(character.codePointAt(0)))*0x100000001b3n);
+ return hash.toString(16).padStart(16,'0');
 }

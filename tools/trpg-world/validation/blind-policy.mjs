@@ -6,6 +6,8 @@ const dist=(a,b)=>Math.hypot(a[0]-b[0],a[2]-b[2]);
 export function chooseBlind(o,m){
  m.visited||=[];m.asked||=[];m.attempted||=[];m.travelled||=[];
  const p=o.self,actions=o.actions,act=a=>({action:a.key,reason:a.label}),walk=t=>({walk:t.position,target:t.id,reason:`見聞きした場所へ歩く：${t.name||t.text||'現場'}`});
+ const groundKey=point=>`${p.region}:${Math.round(point[0]/6)},${Math.round(point[2]/6)}`;
+ m.walkedGround||={};m.walkedGround[groundKey(p.position)]=true;
  m.roads||=[];if(m.departure&&m.departure.from!==p.region){m.roads.push({...m.departure,to:p.region});delete m.departure;}
  const travelVia=route=>{const offers=actions.filter(a=>a.available&&a.type==='travel'&&a.targetId===route.id),travel=offers.find(a=>a.mode==='foot')||offers.sort((a,b)=>(a.price||0)-(b.price||0)||(a.minutes||0)-(b.minutes||0))[0];if(travel){m.travelled.push(route.id);m.departure={from:p.region,exit:structuredClone(route)};return act(travel);}return dist(route.position,p.position)<1?{stop:'known-exit-without-affordable-transport'}:walk(route);};
  const knownService=predicate=>o.services.filter(s=>s.offers.some(predicate)&&(s.region===p.region||rememberedExit(m,p.region,s.region))).sort((a,b)=>(a.region!==p.region)-(b.region!==p.region))[0];
@@ -74,10 +76,10 @@ export function chooseBlind(o,m){
  const route=o.exits.find(t=>!m.travelled.includes(t.id));if(route)return travelVia(route);
  // Explore the visible street direction, never a fetched destination graph.
  m.bearing??=0;
- for(let direction=0;direction<6;direction++){
-  const angle=m.bearing++*Math.PI/3,point=[p.position[0]+18*Math.sin(angle),0,p.position[2]+18*Math.cos(angle)];
+ for(const reach of [18,36])for(let direction=0;direction<6;direction++){
+  const angle=m.bearing++*Math.PI/3,point=[p.position[0]+reach*Math.sin(angle),0,p.position[2]+reach*Math.cos(angle)];
   const occupied=o.obstacles.some(b=>Math.abs(point[0]-b.x)<b.width/2+.45&&Math.abs(point[2]-b.z)<b.depth/2+.45);
-  if(!occupied&&Math.abs(point[0])<o.region.size/2-3&&Math.abs(point[2])<o.region.size/2-3)return {walk:point,reason:'見えている障害物を避け、まだ歩いていない通りを見て回る'};
+  if(!occupied&&!m.walkedGround[groundKey(point)]&&Math.abs(point[0])<o.region.size/2-3&&Math.abs(point[2])<o.region.size/2-3)return {walk:point,reason:'見えている障害物を避け、まだ歩いていない通りを見て回る'};
  }
  const work=find('work');if(work)return act(work);return {stop:'no-known-purpose-or-safe-direction'};
 }

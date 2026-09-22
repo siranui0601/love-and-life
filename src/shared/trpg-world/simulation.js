@@ -3,7 +3,7 @@ import {encounterEligible,encounterSourceIds} from './encounter-sources.js';
 import {playerPerception} from './perception.js';
 import {processActions,inspectProcesses,startProcessWork,finishProcessWork} from './processes.js';
 import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
-import {orderedValues} from './semantic.js';
+import {orderedValues,newerAccount} from './semantic.js';
 import {retireGeneratedBiographies} from './knowledge-migration.js';
 import {knownWorkplaceClosed,observeWorkplace} from './world-semantics.js';
 import {knownTiming,readNotices} from './public-knowledge.js';
@@ -282,9 +282,10 @@ function socialTick(state,content) {
     const a=npcs[i],b=npcs[j]; if(a.region!==b.region||distance(a.position,b.position)>7||!hasLineOfSight(index(content).regions.get(a.region),a.position,b.position)) continue;
     for (const [speaker,listener] of [[a,b],[b,a]]) {
       exchangeCrimeMemories(state,speaker,listener);
-      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&(!k.belief?.factId||!speaker.memories.some(m=>m.factId===k.belief.factId&&m.status==='forgotten'))&&!listener.knowledge.some(l=>l.id===k.id)); if(!fact) continue;
+      const fact=speaker.knowledge.find(k=>k.kind!=='secret'&&k.disclosure?.visibility!=='private'&&(!k.belief?.factId||!speaker.memories.some(m=>m.factId===k.belief.factId&&m.status==='forgotten'))&&newerAccount(listener.knowledge,k)); if(!fact) continue;
       const transmission={from:speaker.id,to:listener.id,at:state.time,region:speaker.region,position:[...speaker.position]};
-      listener.knowledge.push({...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,(fact.confidence??1)*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}});
+      const learned={...clone(fact),receivedAt:state.time,transmissions:[...(fact.transmissions||[]),transmission].slice(-16),confidence:Math.max(.35,(fact.confidence??1)*.85),source:{type:'heard',actorId:speaker.id,origin:fact.source?.origin||fact.source}};
+      const old=listener.knowledge.find(k=>k.id===fact.id);if(old)Object.assign(old,learned);else listener.knowledge.push(learned);
       const memory=recalled(speaker,fact.belief?.factId||fact.id);if(memory)hearTestimony(state,listener,speaker,testimony(state,speaker,memory));
       if(fact.kind==='workplace-status')listener.nextDecision=0;
       if(fact.belief&&!listener.beliefs.some(b=>b.id===fact.belief.id)){listener.beliefs.push({...clone(fact.belief),confidence:Math.max(.2,fact.belief.confidence*.85),source:{type:'heard',actorId:speaker.id,previous:clone(fact.belief.source)},receivedAt:state.time});listener.nextDecision=0;}
