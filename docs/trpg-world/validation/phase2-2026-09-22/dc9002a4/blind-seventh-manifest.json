@@ -1,0 +1,23 @@
+{
+  "sourceCheckpoint": "dc9002a4",
+  "contentHash": "d46e5536eeb59176b443ca56982e6ba7a4bb718809c1d22be541acb730dd8445",
+  "finalHash": "db01327f591d556ae71d5fd1993edc1a08ee7fb9c494a4a3d16671cc91ccb8ed",
+  "fullReplay": true,
+  "status": "natural-day-boundary",
+  "sharedDay2SnapshotWithSixth": true,
+  "scope": "Day5 ordinary life and non-intervention, not an intervention completion certificate",
+  "files": {
+    "blind-seventh-record.json.gz": {
+      "sha256": "43240c022d8485f317ab40a5a8dc22859c88e7f41c6fe7a42318029b9af89e66",
+      "bytes": 387661
+    },
+    "blind-seventh-intermediate.json.gz": {
+      "sha256": "7968f23e16b7a2af0695daade807d839dadad5ffd9e5c1ae4ac064d65afd9ce6",
+      "bytes": 163975
+    },
+    "blind-seventh-summary.json.gz": {
+      "sha256": "781c84e19d690941d1fb58f8e4921e69f9f24ba76b1095bd997fa8dc3ad8f3b0",
+      "bytes": 47693
+    }
+  }
+}

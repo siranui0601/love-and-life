@@ -115,3 +115,13 @@ test('an evacuated worker hears the actual reopening, then returns to work inste
  assert.equal(r.state.npcs.worker.goal,'work');assert(r.state.npcs.worker.position[0]>5);assert.equal(r.state.events.hazard.status,'failed');
  assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
+
+test('returning after a fire reveals exterior change and permits fresh inspection without remote updates',()=>{
+ const c=aftermathFixture('fire');c.regions[0].spawn=[-65,0,0];c.regions[0].objects.find(o=>o.id==='inn').position=[-65,0,0];const r=new WorldReplay(c),site=r.view().region.objects.find(o=>o.id==='site');
+ ok(performAt(r,site,'interact',{action:'inspect'}));assert(r.options().some(o=>o.command.targetId==='site'&&o.command.action==='review'));
+ ok(performAt(r,r.view().region.objects.find(o=>o.id==='inn'),'rest'));const distant=r.view().perception.places.find(o=>o.id==='site');assert.deepEqual(distant.appearance,[]);assert.equal(distant.changedSinceInspection,false);
+ ok(walk(r,[-35,0,0]));const visible=r.view().perception.places.find(o=>o.id==='site');assert(visible.appearance.includes('炎と煙が上がっている'));assert.equal(visible.changedSinceInspection,true);assert(!JSON.stringify(visible).includes('deadline'));
+ ok(walk(r,[0,0,0]));const fresh=r.view().interactables.find(o=>o.id==='site').actions.find(a=>a.id==='inspect');assert.equal(fresh.renewed,true);ok(r.command({type:'interact',targetId:'site',action:'inspect'}));assert(r.state.player.inspections.site.text.includes('炎と煙'));assert.equal(r.view().perception.places.find(o=>o.id==='site').changedSinceInspection,false);
+ const options=r.options();for(const seconds of [10,30,60]){const fork=r.fork();fork.advance(seconds);assert.deepEqual(fork.options(),options);}
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});

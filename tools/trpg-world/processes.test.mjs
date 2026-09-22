@@ -75,3 +75,10 @@ test('an inspected work requirement stays trackable during preparation and compl
  assert(prepare(r,{items:{timber:2},skills:['crafting']}).prepared);const saved=r.fork();assert.equal(saved.view().arrival.id,lead.id);assert(saved.state.player.inspections.machine.work.some(a=>a.id==='drive/repair'));
  act(r,'machine','drive/repair');assert.equal(r.view().arrival.status,'completed');assert(!r.view().leads.some(l=>l.id===lead.id));assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
+
+test('ordinary repeated deliveries change actual stock; completed distribution preserves receipts and closes the offer',()=>{
+ const c=fixture();c.processes=[{...c.processes[1],required:{supplies:3,gold:60}}];c.events[0].sourceIds=['b'];const r=new WorldReplay(c);assert(prepare(r,{items:{supplies:3}}).prepared);act(r,'office','fund/inspect');const money=r.state.player.gold;
+ for(let i=0;i<3;i++)act(r,'office','fund/deliver-gold');for(let i=0;i<3;i++)act(r,'office','fund/deliver-supplies');
+ assert.equal(r.state.player.gold,money-60);assert.deepEqual(r.state.processes.fund.receipts,{gold:60,supplies:3});assert(r.state.processes.fund.distributions.includes('clerk'));assert(!r.options().some(o=>o.command.action?.startsWith('fund/deliver')));
+ assert(r.state.player.inspections.office.text.includes('3/3'));assert(r.state.player.inspections.office.text.includes('60/60'));assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.deepEqual(r.defects,[]);
+});

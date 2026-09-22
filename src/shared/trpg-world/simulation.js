@@ -1,3 +1,4 @@
+import {siteAppearance} from './site-appearance.js';
 import {playerPerception} from './perception.js';
 import {processActions,inspectProcesses,startProcessWork,finishProcessWork} from './processes.js';
 import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
@@ -515,7 +516,7 @@ function advancePlayerAction(state,content) {
 function recordInspection(state,content,target,text){
  const p=state.player,physical=structureObservation(state,content,target.id),previous=p.inspections?.[target.id];
  const work=[...causalActions(state,content,target),...processActions(state,content,target),...(physical?.work||[])].filter(a=>!String(a.id).endsWith('/inspect'));
- p.inspections||={};p.inspections[target.id]={at:state.time,region:p.region,position:[...target.position],name:target.name,kind:target.kind,
+ p.inspections||={};p.inspections[target.id]={at:state.time,region:p.region,position:[...target.position],name:target.name,kind:target.kind,appearance:siteAppearance(state,content,target.id),
   text:[text||previous?.text||target.description||target.name,physical?.text].filter(Boolean).join('\n'),work};
  return p.inspections[target.id];
 }
@@ -752,8 +753,9 @@ function actionsFor(state,content,target) {
   if(target.kind==='npc') actions.push({id:'talk',label:'話す'},{id:'help',label:'生活物資を一つ手渡す',type:'interact'});
   else {
     const freshBoard=target.kind==='board'&&(content.events||[]).some(e=>e.region===p.region&&state.time>=eventStart(e)&&!state.knowledge.some(k=>k.eventId===e.id&&k.status===state.events[e.id].status));
-    const checked=p.inspections?.[target.id]&&!freshBoard;
-    actions.push({id:checked?'review':'inspect',label:checked?'確かめた内容を読み返す':target.kind==='evidence'?'調べる':'見る'});
+    const renewed=!!p.inspections?.[target.id]&&JSON.stringify(p.inspections[target.id].appearance||[])!==JSON.stringify(siteAppearance(state,content,target.id));
+    const checked=p.inspections?.[target.id]&&!freshBoard&&!renewed;
+    actions.push({id:checked?'review':'inspect',...(renewed?{renewed:true}:{}),label:renewed?'変わった現場の様子を確かめる':checked?'確かめた内容を読み返す':target.kind==='evidence'?'調べる':'見る'});
   }
   if(['inn','camp','bench'].includes(target.kind))for(const item of content.items||[])if((item.kind==='food'||['food','supplies'].includes(item.id))&&p.inventory[item.id]>0)actions.push({id:`eat:${item.id}`,type:'eat',itemId:item.id,label:`${item.name}を食べる · 15分`});
   if(target.kind==='inn') actions.push({id:'rest',label:'6時間泊まる · 8G',type:'rest',hours:6,requirements:{gold:8},available:p.gold>=8,missing:p.gold>=8?[]:['宿代8G']});

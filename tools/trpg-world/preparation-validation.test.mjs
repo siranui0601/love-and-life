@@ -112,7 +112,7 @@ test('real blind Day2 save migrates without retroactive machinery casualties and
  const {state}=JSON.parse(gunzipSync(await fs.readFile(new URL('../../docs/trpg-world/validation/phase2-2026-09-22/dc9002a4/blind-sixth-intermediate.json.gz',import.meta.url))));
  const ownerKey=hashWorldToken('blind-physical-migration'),store=new MemoryWorldStore();await store.put(ownerKey,{schemaVersion:2,id:'blind-life',ownerKey,contentRevision:state.contentRevision,contentHash:'2dd4e9662ebc4cbe525776f85a168fa5812bfc7d5c2affe76295b972e996f8d3',state,advancedAtMs:1,revision:0,lastSeq:0,receipts:[]});
  const service=new PersistentWorldService({content:c,store,autoStart:false,now:()=>999999999});try{assert.equal((await service.session(ownerKey)).view.time,state.time);}finally{await service.close();}
- const restored=(await store.get(ownerKey)).state;assert.deepEqual(restored.npcs,state.npcs);assert.deepEqual(restored.socialFacts,state.socialFacts);assert.deepEqual(restored.processes,state.processes);assert.deepEqual(restored.player.observedPlaces,state.player.observedPlaces);
+ const restored=(await store.get(ownerKey)).state;assert.deepEqual(restored.npcs,state.npcs);assert.deepEqual(restored.socialFacts,state.socialFacts);assert.deepEqual(restored.processes,state.processes);for(const [id,place] of Object.entries(state.player.observedPlaces)){const {appearance,...priorShape}=restored.player.observedPlaces[id];assert.deepEqual(priorShape,place);}
  for(const spec of c.structures.filter(s=>s.processId))assert.equal(restored.structures[spec.id].legacyDormant,true);
  const run=new WorldReplay(c,{initialState:restored});run.command({type:'resume'});run.advance(1);assert.equal(digest(replay(c,run.export()).state),digest(run.state));
 });

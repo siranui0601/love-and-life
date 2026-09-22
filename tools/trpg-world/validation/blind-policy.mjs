@@ -37,10 +37,10 @@ export function chooseBlind(o,m){
  // Work on an observed problem, and decompose its publicly offered requirements.
  // One traveller's priorities: help people and fix failures, but leave intact
  // machinery alone. This may miss a preventable crisis; no hidden deadline.
- const knownDamage=o.inspections.some(i=>/燃えて|炎|崩落|閉鎖|後始末/.test(i.text));
- const job=actions.find(a=>(!m.task||m.task.key===a.key)&&!m.attempted.includes(a.key)&&(
-  a.type==='process'&&a.verb!=='inspect'&&(knownDamage||a.verb==='treat'||a.verb==='submit')||
-  a.type==='maintain'&&knownDamage||a.type==='causal'&&['divert','seal','submit'].includes(a.verb)));
+ const knownDamage=targetId=>o.inspections.some(i=>i.id===targetId&&/燃えて|炎|崩落|閉鎖|後始末/.test(i.text))||o.places.some(t=>t.id===targetId&&t.appearance?.length);
+ const job=actions.find(a=>(!m.task||m.task.key===a.key)&&(
+  a.type==='process'&&a.verb!=='inspect'&&(knownDamage(a.targetId)||a.verb==='treat'||a.verb==='submit')||
+  a.type==='maintain'&&knownDamage(a.targetId)||a.type==='causal'&&['divert','seal','submit'].includes(a.verb)));
  if(job){if(job.available){m.attempted.push(job.key);m.need=null;m.task=null;return act(job);}const target=[...o.people,...o.places].find(t=>t.id===job.targetId);if(target)m.task={key:job.key,requirements:structuredClone(job.requirements),target:{...target,region:p.region}};}
  if(m.task&&p.hunger<=55)m.need=m.task.requirements;
  if(m.need){
@@ -60,17 +60,22 @@ export function chooseBlind(o,m){
   if(m.task.target.region===p.region){const destination=o.people.find(n=>n.id===m.task.target.id)||m.task.target;if(dist(destination.position,p.position)>3)return walk(destination);return {stop:'prepared-intent-unavailable-at-observed-location'};}
   const exit=rememberedExit(m,p.region,m.task.target.region);if(exit)return travelVia(exit);
  }
- const inspect=ready.find(a=>a.type==='interact'&&a.verb==='inspect'&&!m.visited.includes(a.targetId));
+ const inspect=ready.find(a=>a.type==='interact'&&a.verb==='inspect'&&(a.renewed||!m.visited.includes(a.targetId)));
  if(inspect){m.visited.push(inspect.targetId);return act(inspect);}
  const processInspect=ready.find(a=>a.type==='process'&&a.verb==='inspect'&&!m.attempted.includes(a.key));if(processInspect){m.attempted.push(processInspect.key);return act(processInspect);}
  const talk=ready.find(a=>a.type==='interact'&&a.verb==='talk'&&!m.attempted.includes(a.key));if(talk){m.attempted.push(talk.key);return act(talk);}
  // A modest travel reserve, not a target event day. Replenish spent wages.
  if(p.gold<150){const work=find('work');if(work)return act(work);const employer=o.services.find(s=>s.offers.some(a=>a.type==='work'));if(employer)return walk(employer);}
+ const changed=o.places.filter(t=>t.changedSinceInspection).sort((a,b)=>dist(a.position,p.position)-dist(b.position,p.position))[0];if(changed)return walk(changed);
  const unexplored=o.places.filter(t=>!m.visited.includes(t.id)).sort((a,b)=>dist(a.position,p.position)-dist(b.position,p.position))[0];if(unexplored)return walk(unexplored);
  const heard=o.directions.find(d=>d.destination.region===p.region&&!['not-here','searched-absent'].includes(d.destination.status)&&!m.visited.includes(d.destination.targetId));if(heard)return walk({...heard,id:heard.destination.targetId,position:heard.destination.position});
  const route=o.exits.find(t=>!m.travelled.includes(t.id));if(route)return travelVia(route);
  // Explore the visible street direction, never a fetched destination graph.
- m.bearing??=0;const angle=m.bearing++*Math.PI/3,point=[p.position[0]+18*Math.sin(angle),0,p.position[2]+18*Math.cos(angle)];
- if(Math.abs(point[0])<o.region.size/2-3&&Math.abs(point[2])<o.region.size/2-3)return {walk:point,reason:'まだ歩いていない通りを見て回る'};
+ m.bearing??=0;
+ for(let direction=0;direction<6;direction++){
+  const angle=m.bearing++*Math.PI/3,point=[p.position[0]+18*Math.sin(angle),0,p.position[2]+18*Math.cos(angle)];
+  const occupied=o.obstacles.some(b=>Math.abs(point[0]-b.x)<b.width/2+.45&&Math.abs(point[2]-b.z)<b.depth/2+.45);
+  if(!occupied&&Math.abs(point[0])<o.region.size/2-3&&Math.abs(point[2])<o.region.size/2-3)return {walk:point,reason:'見えている障害物を避け、まだ歩いていない通りを見て回る'};
+ }
  const work=find('work');if(work)return act(work);return {stop:'no-known-purpose-or-safe-direction'};
 }

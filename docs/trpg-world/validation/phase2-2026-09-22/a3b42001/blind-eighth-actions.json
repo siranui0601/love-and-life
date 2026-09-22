@@ -1,0 +1,125 @@
+[
+  {
+    "index": 236,
+    "command": {
+      "type": "work",
+      "targetId": "LOC_FARM_GRANARY",
+      "action": "work:JOB-FARM-02",
+      "jobId": "JOB-FARM-02"
+    }
+  },
+  {
+    "index": 242,
+    "command": {
+      "type": "work",
+      "targetId": "LOC_FARM_GRANARY",
+      "action": "work:JOB-FARM-02",
+      "jobId": "JOB-FARM-02"
+    }
+  },
+  {
+    "index": 243,
+    "command": {
+      "type": "work",
+      "targetId": "LOC_FARM_GRANARY",
+      "action": "work:JOB-FARM-02",
+      "jobId": "JOB-FARM-02"
+    }
+  },
+  {
+    "index": 3163,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_FOREST_RIVER",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 4103,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_CAP_APOTHECARY",
+      "action": "buy:timber",
+      "itemId": "timber"
+    }
+  },
+  {
+    "index": 4104,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_CAP_APOTHECARY",
+      "action": "buy:timber",
+      "itemId": "timber"
+    }
+  },
+  {
+    "index": 4208,
+    "command": {
+      "type": "causal",
+      "targetId": "LOC_FOREST_RIVER",
+      "action": "divert:roots"
+    }
+  },
+  {
+    "index": 4411,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_BLACKRIDGE_MARKET",
+      "action": "buy:crystal",
+      "itemId": "crystal"
+    }
+  },
+  {
+    "index": 4466,
+    "command": {
+      "type": "train",
+      "targetId": "blackridge:trainer",
+      "action": "train:magic",
+      "skillId": "magic"
+    }
+  },
+  {
+    "index": 4467,
+    "command": {
+      "type": "train",
+      "targetId": "blackridge:trainer",
+      "action": "train:magic",
+      "skillId": "magic"
+    }
+  },
+  {
+    "index": 5220,
+    "command": {
+      "type": "causal",
+      "targetId": "LOC_FOREST_RIVER",
+      "action": "seal:roots"
+    }
+  },
+  {
+    "index": 5431,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_FOREST_RIVER",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 5433,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_FOREST_RIVER",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 5833,
+    "command": {
+      "type": "process",
+      "targetId": "LOC_ELF_COUNCIL",
+      "action": "forest-passage/submit"
+    }
+  }
+]

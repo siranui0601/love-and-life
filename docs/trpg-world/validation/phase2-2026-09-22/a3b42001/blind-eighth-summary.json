@@ -1,0 +1,111 @@
+{
+  "seed": 17,
+  "stopped": "FIRST_BAD_DECISION",
+  "day": 3,
+  "clock": "20:15",
+  "hp": 148,
+  "operations": 8454,
+  "decisions": 1100,
+  "outcomes": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active",
+      "components": "resolved"
+    }
+  },
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 8454,
+    "simulationAdvances": 4059,
+    "movementInputs": 3808,
+    "meaningfulPlayerDecisions": 586,
+    "travelSegments": 203,
+    "investigations": 87,
+    "conversationTurns": 123,
+    "preparationActions": 15,
+    "combatActions": 106,
+    "otherDecisions": 52
+  },
+  "conversationDiscoveries": 25,
+  "verification": {
+    "replay": true
+  },
+  "lastDecisions": [
+    {
+      "index": 8441,
+      "day": 3,
+      "clock": "20:13",
+      "region": "森",
+      "decision": {
+        "seconds": 0.2,
+        "reason": "既に始めた攻撃動作を続ける"
+      },
+      "result": {
+        "simulationSeconds": 0.2
+      }
+    },
+    {
+      "index": 8442,
+      "day": 3,
+      "clock": "20:13",
+      "region": "森",
+      "decision": {
+        "seconds": 0.2,
+        "reason": "既に始めた攻撃動作を続ける"
+      },
+      "result": {
+        "simulationSeconds": 0.2
+      }
+    },
+    {
+      "index": 8443,
+      "day": 3,
+      "clock": "20:13",
+      "region": "森",
+      "decision": {
+        "seconds": 0.2,
+        "reason": "既に始めた攻撃動作を続ける"
+      },
+      "result": {
+        "simulationSeconds": 0.2
+      }
+    },
+    {
+      "index": 8454,
+      "day": 3,
+      "clock": "20:13",
+      "region": "森",
+      "decision": {
+        "walk": [
+          21.89290031510994,
+          0,
+          -0.6123045344363742
+        ],
+        "reason": "まだ歩いていない通りを見て回る"
+      },
+      "result": {
+        "error": "no-path-through-observed-geometry"
+      }
+    }
+  ]
+}

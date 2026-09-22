@@ -42,7 +42,7 @@ function satisfied(state,spec,event){
 export function processDescription(state,spec){
  const p=state.processes[spec.id],structure=linkedStructure(state,spec),integrity=structure?.integrity??p.integrity;
  const physical=spec.kind==='device'?`${p.powered?'機構へ動力が流れ続けている。':'動力線は切り離されている。'}${integrity<80?'固定具は傷んでいる。':'固定具は補修されている。'}`:
- spec.kind==='supply'?`保管と受領の記録：${Object.entries(spec.required).map(([id,n])=>`${spec.resourceNames?.[id]||id} ${Math.min(n,p.stock[id]||0)}/${n}`).join('、')}。`:
+ spec.kind==='supply'?`保管と受領の記録：${Object.entries(spec.required).map(([id,n])=>`${spec.resourceNames?.[id]||id} ${Math.min(n,(p.receipts||p.stock)[id]||0)}/${n}`).join('、')}。`:
  spec.kind==='patient'?(state.npcs[spec.actorId]?.hp<=0?'呼吸がなく、呼びかけにも反応しない。':p.treated?'処置を受け、呼吸が落ち着いている。':p.exposed?'顔色が悪く、手足が震えている。':'飲食物の封には傷があり、異臭がする。'):
  p.order?.status==='issued'?'提出された記録の審理が終わり、是正命令が交付されている。':p.documents.length?'提出された書類は担当者の審理を待っている。':'照合する原本と証言の提出を窓口で受け付けている。';
  return `${spec.observation} ${physical}${p.failedAt!==undefined?' 被害の後始末はまだ続いている。':''}`;
@@ -72,7 +72,7 @@ function operations(state,spec){
  if(spec.kind==='device')return [
   ...(p.powered?[{verb:'isolate',label:'動力弁を閉じ、送出線を切り離す',minutes:15,requirements:{items:{rope:1}}}]:[]),
   ...(!linkedStructure(state,spec)&&p.integrity<80?[{verb:'repair',label:'傷んだ固定具を交換して補修する',minutes:30,requirements:{items:{timber:2,...(spec.magical?{crystal:1}:{})},skills:spec.magical?['magic']:['crafting']}}]:[])];
- if(spec.kind==='supply')return Object.entries(spec.required).filter(([id,n])=>(p.stock[id]||0)<n).map(([id,n])=>({verb:`deliver-${id}`,label:`${spec.resourceNames?.[id]||id}を受領窓口へ届ける`,minutes:15,requirements:id==='gold'?{gold:Math.min(n-(p.stock[id]||0),20)}:{items:{[id]:1}}}));
+ if(spec.kind==='supply')return p.distributedAt!==undefined?[]:Object.entries(spec.required).filter(([id,n])=>(p.stock[id]||0)<n).map(([id,n])=>({verb:`deliver-${id}`,label:`${spec.resourceNames?.[id]||id}を受領窓口へ届ける`,minutes:15,requirements:id==='gold'?{gold:Math.min(n-(p.stock[id]||0),20)}:{items:{[id]:1}}}));
  if(spec.kind==='patient')return !p.treated&&state.npcs[spec.actorId]?.hp>0?[{verb:'treat',label:'本人の薬を交換し、解毒処置を行う',minutes:15,requirements:{items:{antidote:1}}}]:[];
  if(spec.kind==='inquiry')return !p.order&&spec.documents.some(d=>state.knowledge.some(k=>k.documentId===d.id)&&!p.documents.includes(d.id))?[{verb:'submit',label:'読んだ原本の写しを審理窓口へ提出する',minutes:5,requirements:{}}]:[];
  return [];

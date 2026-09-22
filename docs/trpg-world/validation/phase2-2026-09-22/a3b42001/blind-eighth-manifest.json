@@ -1,0 +1,27 @@
+{
+  "sourceCheckpoint": "a3b42001",
+  "contentHash": "8d4e14c4fce07edd45c724071c8b8c90553cbc94f39415abd0d7f75c8a89aa77",
+  "finalHash": "1f8ee779d6d859beb2708be3d1dfa691e55e14c066da7dba9c13162ee0f02cf0",
+  "fullReplay": true,
+  "status": "FIRST_BAD_DECISION",
+  "sharedDay2SnapshotWithSixth": false,
+  "scope": "T13 component resolved through preparation and ordinary actions; run stopped at a perceived-geometry defect",
+  "files": {
+    "blind-eighth-record.json.gz": {
+      "sha256": "ecad78502a72c8f05b8d2aa6ad20d8acc9e76a65fa1dac8dca3e7307cf757318",
+      "bytes": 370382
+    },
+    "blind-eighth-intermediate.json.gz": {
+      "sha256": "a46fc6ed781ef6f1c9fed0a4ba236a992d9d1bbd3de364a5fca4ea416934dc40",
+      "bytes": 170995
+    },
+    "blind-eighth-summary.json.gz": {
+      "sha256": "b5dfb47e1193e442e3f776b0b8de73334a53236f1fa095d448b5e27c4588bc16",
+      "bytes": 34745
+    },
+    "content.json.gz": {
+      "sha256": "a4e449321c535f49ab622131f23901cf388fa8f7bae0850a3475a39447add2fd",
+      "bytes": 172211
+    }
+  }
+}

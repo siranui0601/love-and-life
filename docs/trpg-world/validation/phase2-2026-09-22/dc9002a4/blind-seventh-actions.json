@@ -1,0 +1,153 @@
+[
+  {
+    "index": 236,
+    "command": {
+      "type": "work",
+      "targetId": "LOC_FARM_GRANARY",
+      "action": "work:JOB-FARM-02",
+      "jobId": "JOB-FARM-02"
+    }
+  },
+  {
+    "index": 242,
+    "command": {
+      "type": "work",
+      "targetId": "LOC_FARM_GRANARY",
+      "action": "work:JOB-FARM-02",
+      "jobId": "JOB-FARM-02"
+    }
+  },
+  {
+    "index": 243,
+    "command": {
+      "type": "work",
+      "targetId": "LOC_FARM_GRANARY",
+      "action": "work:JOB-FARM-02",
+      "jobId": "JOB-FARM-02"
+    }
+  },
+  {
+    "index": 3162,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_FOREST_RIVER",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 4102,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_CAP_APOTHECARY",
+      "action": "buy:timber",
+      "itemId": "timber"
+    }
+  },
+  {
+    "index": 4103,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_CAP_APOTHECARY",
+      "action": "buy:timber",
+      "itemId": "timber"
+    }
+  },
+  {
+    "index": 6417,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_FORT_INN",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 6419,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_FORT_INN",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 6626,
+    "command": {
+      "type": "process",
+      "targetId": "LOC_BLACKRIDGE_COUNCIL",
+      "action": "joint-ceasefire/submit"
+    }
+  },
+  {
+    "index": 7962,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_TRADE_FISH_MARKET",
+      "action": "buy:supplies",
+      "itemId": "supplies"
+    }
+  },
+  {
+    "index": 7964,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_TRADE_FISH_MARKET",
+      "action": "buy:supplies",
+      "itemId": "supplies"
+    }
+  },
+  {
+    "index": 7965,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_TRADE_FISH_MARKET",
+      "action": "buy:supplies",
+      "itemId": "supplies"
+    }
+  },
+  {
+    "index": 8178,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_DWARF_INN",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 8179,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_DWARF_INN",
+      "action": "rest",
+      "hours": 6
+    }
+  },
+  {
+    "index": 8311,
+    "command": {
+      "type": "process",
+      "targetId": "NPC009",
+      "action": "lord-treatment/inspect"
+    }
+  },
+  {
+    "index": 8459,
+    "command": {
+      "type": "buy",
+      "targetId": "LOC_DWARF_MARKET",
+      "action": "buy:antidote",
+      "itemId": "antidote"
+    }
+  },
+  {
+    "index": 8776,
+    "command": {
+      "type": "rest",
+      "targetId": "LOC_TRADE_INN",
+      "action": "rest",
+      "hours": 6
+    }
+  }
+]

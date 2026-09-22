@@ -49,3 +49,9 @@ test('blind traveller uses the actual offered ferry, pays fare and advances trav
  const decision=chooseBlind(o.observation,m),command=o.bindings.get(decision.action);assert.equal(command?.type,'travel');assert.equal(command.mode,'boat');
  const gold=r.state.player.gold,time=r.state.time;assert(!r.command(command).error);assert.equal(r.state.player.region,'other');assert.equal(r.state.player.gold,gold-4);assert(r.state.time>time);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
+
+test('a long river is perceived by its nearby bank rather than its distant centre; blind walking avoids the visible water',()=>{
+ const c=fixture();c.regions[0].spawn=[37.4813575832,0,8.3876954656];c.regions[0].obstacles=[{id:'river',x:22,z:-39,width:9,depth:82,height:.15}];
+ c.regions[0].objects=[];c.regions[0].portals=[];const r=new WorldReplay(c),o=blindInput(r.view()).observation;assert.equal(o.obstacles.length,1);
+ const decision=chooseBlind(o,{bearing:4});assert(decision.walk);const [x,,z]=decision.walk;assert(!(Math.abs(x-22)<4.95&&Math.abs(z+39)<41.45));assert.deepEqual(decision,chooseBlind(o,{bearing:4}));
+});

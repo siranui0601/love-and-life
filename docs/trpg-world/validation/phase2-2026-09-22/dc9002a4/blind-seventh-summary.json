@@ -1,0 +1,123 @@
+{
+  "seed": 17,
+  "stopped": "natural-day-boundary",
+  "day": 5,
+  "clock": "04:31",
+  "hp": 156,
+  "operations": 8777,
+  "decisions": 1423,
+  "outcomes": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "failed"
+    }
+  },
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 8777,
+    "simulationAdvances": 4223,
+    "movementInputs": 3824,
+    "meaningfulPlayerDecisions": 729,
+    "travelSegments": 189,
+    "investigations": 124,
+    "conversationTurns": 185,
+    "preparationActions": 21,
+    "combatActions": 142,
+    "otherDecisions": 68
+  },
+  "conversationDiscoveries": 53,
+  "verification": {
+    "replay": true
+  },
+  "lastDecisions": [
+    {
+      "index": 8713,
+      "day": 4,
+      "clock": "19:39",
+      "region": "北陵要塞",
+      "decision": {
+        "walk": [
+          -35,
+          0,
+          60
+        ],
+        "target": "entity:dd2def61228a7a6b",
+        "reason": "見聞きした場所へ歩く：交易都市への街道"
+      },
+      "result": {
+        "arrived": true
+      }
+    },
+    {
+      "index": 8714,
+      "day": 4,
+      "clock": "19:55",
+      "region": "北陵要塞",
+      "decision": {
+        "action": "d5722f34c9a00412a1d9",
+        "reason": "徒歩で向かう · 144分 · 無料 · 安定"
+      },
+      "result": {
+        "result": {
+          "message": "交易都市へ到着。144分、0G。",
+          "minutes": 144,
+          "cost": 0,
+          "hazard": null
+        }
+      }
+    },
+    {
+      "index": 8776,
+      "day": 4,
+      "clock": "22:19",
+      "region": "交易都市",
+      "decision": {
+        "walk": [
+          -5,
+          0,
+          53
+        ],
+        "target": "entity:6c2b597b24cdc66a",
+        "reason": "見聞きした場所へ歩く：潮風宿"
+      },
+      "result": {
+        "arrived": true
+      }
+    },
+    {
+      "index": 8777,
+      "day": 4,
+      "clock": "22:31",
+      "region": "交易都市",
+      "decision": {
+        "action": "201d9e7c3da2de0e7970",
+        "reason": "6時間泊まる · 8G"
+      },
+      "result": {
+        "result": {
+          "message": "休息して回復した。"
+        }
+      }
+    }
+  ]
+}
