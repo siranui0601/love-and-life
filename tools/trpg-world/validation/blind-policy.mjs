@@ -8,6 +8,8 @@ export function chooseBlind(o,m){
  const p=o.self,actions=o.actions,act=a=>({action:a.key,reason:a.label}),walk=t=>({walk:t.position,target:t.id,reason:`見聞きした場所へ歩く：${t.name||t.text||'現場'}`});
  m.roads||=[];if(m.departure&&m.departure.from!==p.region){m.roads.push({...m.departure,to:p.region});delete m.departure;}
  const travelVia=route=>{const offers=actions.filter(a=>a.available&&a.type==='travel'&&a.targetId===route.id),travel=offers.find(a=>a.mode==='foot')||offers.sort((a,b)=>(a.price||0)-(b.price||0)||(a.minutes||0)-(b.minutes||0))[0];if(travel){m.travelled.push(route.id);m.departure={from:p.region,exit:structuredClone(route)};return act(travel);}return dist(route.position,p.position)<1?{stop:'known-exit-without-affordable-transport'}:walk(route);};
+ const knownService=predicate=>o.services.filter(s=>s.offers.some(predicate)&&(s.region===p.region||rememberedExit(m,p.region,s.region))).sort((a,b)=>(a.region!==p.region)-(b.region!==p.region))[0];
+ const visit=service=>service.region===p.region?walk(service):travelVia(rememberedExit(m,p.region,service.region));
  const ready=actions.filter(a=>a.available),find=(type,verb)=>ready.find(a=>a.type===type&&(!verb||a.verb===verb));
  const danger=o.monsters.filter(n=>n.activity==='attack'||dist(n.position,p.position)<12);
  if(p.collapse?.status==='active'){const a=find('recover');return a?act(a):{stop:'collapsed-without-current-help'};}
@@ -27,7 +29,7 @@ export function chooseBlind(o,m){
  }
  const hour=Number(o.clock.split(':')[0]);
  if(p.hunger>55){const eat=find('eat');if(eat)return act(eat);m.need={items:{supplies:2}};}
- if(p.fatigue>65||hour>=22||hour<6){const rest=find('rest');if(rest)return act(rest);const inn=o.places.find(t=>t.kind==='inn');if(inn)return walk(inn);}
+ if(p.fatigue>65||hour>=22||hour<6){const rest=find('rest');if(rest)return act(rest);const inn=o.places.find(t=>t.kind==='inn');if(inn)return walk(inn);const lodging=knownService(a=>a.type==='rest');if(lodging)return visit(lodging);}
  // An observed injured person takes priority over wages. No hidden person list.
  const tend=find('causal','tend');if(tend)return act(tend);
  const escort=ready.find(a=>a.type==='causal'&&a.verb==='escort'&&!m.attempted.includes(a.key));if(escort){m.attempted.push(escort.key);return act(escort);}
@@ -45,12 +47,12 @@ export function chooseBlind(o,m){
  if(m.task&&p.hunger<=55)m.need=m.task.requirements;
  if(m.need){
   const item=Object.entries(m.need.items||{}).find(([id,n])=>(p.inventory[id]||0)<n),skill=(m.need.skills||[]).find(id=>!p.skills.includes(id));
-  if(p.gold<(m.need.gold||0)){const work=find('work');if(work)return act(work);const employer=o.services.find(s=>s.offers.some(a=>a.type==='work'));if(employer)return walk(employer);}
+  if(p.gold<(m.need.gold||0)){const work=find('work');if(work)return act(work);const employer=knownService(a=>a.type==='work');if(employer)return visit(employer);}
   if(item||skill){const type=item?'buy':'train',key=item?'itemId':'skillId',id=item?item[0]:skill;
    const offer=ready.find(a=>a.type===type&&a[key]===id);if(offer)return act(offer);
-   const service=o.services.find(s=>s.offers.some(a=>a.type===type&&a[key]===id));
-   if(service&&dist(service.position,p.position)>3)return walk(service);
-   if(service){const work=find('work');if(work)return act(work);const employer=o.services.find(s=>s.offers.some(a=>a.type==='work'));if(employer)return walk(employer);}
+   const service=knownService(a=>a.type===type&&a[key]===id);
+   if(service&&(service.region!==p.region||dist(service.position,p.position)>3))return visit(service);
+   if(service){const work=find('work');if(work)return act(work);const employer=knownService(a=>a.type==='work');if(employer)return visit(employer);}
    const unexplored=o.places.find(t=>(item?['shop','stable']:['trainer']).includes(t.kind)&&!o.services.some(s=>s.id===t.id));if(unexplored&&dist(unexplored.position,p.position)>3)return walk(unexplored);
    // Keep looking, rather than granting the missing resource or skill.
   }else m.need=null;
@@ -65,7 +67,7 @@ export function chooseBlind(o,m){
  const processInspect=ready.find(a=>a.type==='process'&&a.verb==='inspect'&&!m.attempted.includes(a.key));if(processInspect){m.attempted.push(processInspect.key);return act(processInspect);}
  const talk=ready.find(a=>a.type==='interact'&&a.verb==='talk'&&!m.attempted.includes(a.key));if(talk){m.attempted.push(talk.key);return act(talk);}
  // A modest travel reserve, not a target event day. Replenish spent wages.
- if(p.gold<150){const work=find('work');if(work)return act(work);const employer=o.services.find(s=>s.offers.some(a=>a.type==='work'));if(employer)return walk(employer);}
+ if(p.gold<150){const work=find('work');if(work)return act(work);const employer=o.services.find(s=>s.region===p.region&&s.offers.some(a=>a.type==='work'));if(employer)return walk(employer);}
  const changed=o.places.filter(t=>t.changedSinceInspection).sort((a,b)=>dist(a.position,p.position)-dist(b.position,p.position))[0];if(changed)return walk(changed);
  const unexplored=o.places.filter(t=>!m.visited.includes(t.id)).sort((a,b)=>dist(a.position,p.position)-dist(b.position,p.position))[0];if(unexplored)return walk(unexplored);
  const heard=o.directions.find(d=>d.destination.region===p.region&&!['not-here','searched-absent'].includes(d.destination.status)&&!m.visited.includes(d.destination.targetId));if(heard)return walk({...heard,id:heard.destination.targetId,position:heard.destination.position});

@@ -27,10 +27,13 @@ export function playerPerception(state,content,view){
  const self=Object.fromEntries(personalKeys.filter(k=>p[k]!==undefined).map(k=>[k,structuredClone(p[k])]));
  // Action instances expose only the actor's own phase, never a hidden target plan.
  if(self.actionInstance)self.actionInstance={phase:self.actionInstance.phase};
+ if(self.collapse)self.collapse=structuredClone(view.player.collapse);
  if(self.activity)self.activity={kind:self.activity.kind,worldTimePolicy:self.activity.worldTimePolicy};
  return {day:view.day,clock:view.clock,time:view.time,region:{id:region.id,name:region.name,size:region.size},self,
   places:places.map(o=>({...structuredClone(o),changedSinceInspection:!!p.inspections?.[o.id]&&JSON.stringify(p.inspections[o.id].appearance||[])!==JSON.stringify(o.appearance||[])})),exits:structuredClone(exits),people:structuredClone(view.npcs),monsters:structuredClone(view.monsters),
-  services:structuredClone(view.services.filter(s=>s.region===p.region)),notes:structuredClone(view.notes),
+  // A visit records a service, not live remote stock. Keep the inspected
+  // snapshot when leaving town so ordinary preparation can include a return.
+  services:structuredClone(view.services),notes:structuredClone(view.notes),
   inspections:Object.entries(p.inspections||{}).filter(([id])=>places.some(o=>o.id===id)).map(([id,entry])=>({id,text:entry.text})),
   directions:state.knowledge.filter(k=>['site-observation','testimony'].includes(k.kind)&&k.destination).map(k=>({text:k.text,destination:observedDestination(state,content,k),source:structuredClone(k.source)})),
   // Local geometry may guide footsteps around walls already within sight range;

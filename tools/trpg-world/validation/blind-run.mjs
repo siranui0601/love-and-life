@@ -44,6 +44,15 @@ function approach(run,destination){
  }
  return {error:'movement-budget'};
 }
+export function repeatedDestinations(entries){
+ // Meaningful destinations tolerate floating-point drift. In particular a
+ // six-heading walking loop must not masquerade as exploration for days.
+ for(let period=1;period<=8;period++){
+  const recent=entries.slice(-period*3);if(recent.length!==period*3)continue;
+  if(recent.every((entry,i)=>entry.decision.walk&&!entry.result?.interrupted&&distance(entry.decision.walk,recent[i%period].decision.walk)<.1))return true;
+ }
+ return false;
+}
 export function runBlind(content,{seed=17,decisions=240,untilDay=5,onProgress=()=>{},onCheckpoint=()=>{}}={}){
  const run=new WorldReplay(content,{seed}),memory={},decisionsLog=[];let stopped='decision-budget',intermediate;
  run.command({type:'resume'});run.advance(.5);
@@ -60,7 +69,7 @@ export function runBlind(content,{seed=17,decisions=240,untilDay=5,onProgress=()
   decisionsLog.push({index:run.operations.length,day:observation.day,clock:observation.clock,region:observation.region.name,decision,result});
   if(!intermediate&&run.view().day>=2)intermediate={state:JSON.parse(JSON.stringify(run.state)),memory:JSON.parse(JSON.stringify(memory)),operationIndex:run.operations.length};
   if(result?.error||run.defects.length){stopped='FIRST_BAD_DECISION';break;}
-  let cycle=false;for(let period=1;period<=4;period++){const recent=decisionsLog.slice(-period*3);if(recent.length===period*3&&recent.every((x,j)=>x.decision.walk&&!x.result?.interrupted&&JSON.stringify(x.decision.walk)===JSON.stringify(recent[j%period].decision.walk)))cycle=true;}if(cycle){stopped='DUPLICATE_DESTINATION_LOOP';break;}
+  if(repeatedDestinations(decisionsLog)){stopped='DUPLICATE_DESTINATION_LOOP';break;}
  }
  // True state is inspected ONLY after the blind decisions have ended, as an
  // evaluation report. It is never returned to chooseBlind.

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
-import {blindInput,runBlind} from './validation/blind-run.mjs';
+import {blindInput,runBlind,repeatedDestinations} from './validation/blind-run.mjs';
 import {readFileSync} from 'node:fs';
 import {chooseBlind} from './validation/blind-policy.mjs';
 import {retireDesignInspections} from '../../src/shared/trpg-world/knowledge-migration.js';
@@ -66,4 +66,34 @@ test('observed walls persist around corners: ordinary blind footsteps reach the 
  assert(run.operations.some(o=>o.command?.type==='interact'&&o.command.targetId==='LOC_DWARF_FORGE'));
  assert(!summary.decisionsLog.some(d=>d.result.error));assert.equal(digest(replay(c,run.export()).state),digest(run.state));
  assert.deepEqual(run.fork().view().perception.obstacles,run.view().perception.obstacles);assert(!('observedObstacles' in run.view().player));
+});
+
+test('a previously inspected shop remains a remembered destination across travel; blind preparation returns on actually travelled roads',()=>{
+ const c=fixture();c.events=[];c.regions[0].objects=[{id:'shop',kind:'shop',name:'雑貨屋',position:[0,0,1]}];c.regions[0].portals[0].position=[1,0,0];
+ c.regions[1].name='森';c.regions[1].portals=[{id:'return',routeId:'road',to:'farm',position:[1,0,0]}];c.routes[0].minutes=10;c.items=[{id:'supplies',kind:'food',name:'携帯食',price:3}];
+ const r=new WorldReplay(c);r.command({type:'interact',targetId:'shop',action:'inspect'});const recorded=structuredClone(r.view().services);
+ const first=blindInput(r.view()).observation;r.command({type:'travel',portalId:'remote-exit',mode:'foot'});const second=blindInput(r.view()).observation;
+ assert.deepEqual(r.view().services,recorded);assert.equal(second.services[0].region,'farm');assert(!second.places.some(p=>p.id===first.services[0].id));
+ r.command({type:'travel',portalId:'return',mode:'foot'});r.command({type:'travel',portalId:'remote-exit',mode:'foot'});
+ // Memory records the two journeys above, not a lookup of content.routes.
+ const memory={need:{items:{supplies:3}},roads:[{from:'farm',to:'other',exit:first.exits[0]},{from:'other',to:'farm',exit:second.exits[0]}]};
+ let input=blindInput(r.view()),decision=chooseBlind(input.observation,memory),command=input.bindings.get(decision.action);assert.equal(command?.type,'travel');assert.equal(command.portalId,'return');assert(!r.command(command).error);
+ input=blindInput(r.view());decision=chooseBlind(input.observation,memory);command=input.bindings.get(decision.action);assert.equal(command?.type,'buy');assert.equal(command.itemId,'supplies');assert(!r.command(command).error);
+ assert.equal(r.state.player.inventory.supplies,3);assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.deepEqual(r.defects,[]);
+});
+
+test('collapse through ordinary work exposes bodily condition without unknown incidents or rescue reasoning',()=>{
+ const c=fixture();c.regions[0].objects[0].kind='board';c.events[0]={...c.events[0],region:'farm',position:[70,0,70],startsAt:1,deadline:1e9};
+ c.jobs=[{id:'shift',name:'荷運び',region:'farm',facilityId:'notice',minutes:240,pay:5,xp:0}];const r=new WorldReplay(c);
+ for(let i=0;i<12&&r.state.player.collapse?.status!=='active';i++)assert(!r.command({type:'work',targetId:'notice',jobId:'shift'}).error);
+ assert.equal(r.state.player.collapse?.status,'active');assert(r.state.player.collapse.eventContext.includes('secret'));
+ const view=r.view(),o=blindInput(view).observation;assert.equal(o.self.collapse.status,'active');
+ for(const key of ['eventContext','witnesses','nearbyEntities','helpRequest','reasoning','knownLocation','planId']){assert(!JSON.stringify(view.player.collapse).includes(key));assert(!JSON.stringify(o).includes(key));}
+ assert(!JSON.stringify(o).includes('HIDDEN_EVENT'));assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('six-heading exploration cycles cannot evade semantic loop detection through floating point drift',()=>{
+ const loop=Array.from({length:18},(_,i)=>({decision:{walk:[Math.sin(i%6)*18+i*1e-12,0,Math.cos(i%6)*18]},result:{arrived:true}}));assert(repeatedDestinations(loop));
+ const progressing=structuredClone(loop);progressing[12].decision.walk[0]+=3;assert(!repeatedDestinations(progressing));
+ const purposeful=structuredClone(loop);purposeful[12]={decision:{action:'actually-eat'},result:{}};assert(!repeatedDestinations(purposeful));
 });

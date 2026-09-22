@@ -4,6 +4,14 @@ import {setActivity} from './activity.js';
 import {distance,findPath,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction,evaluateCooperation} from './relationships.js';
 export const NEEDS=Object.freeze({limit:100,hungerPerDay:45,fatiguePerDay:48,sleepRecoveryPerHour:12,mealRelief:40,treatmentSeconds:7200});
+export function publicCollapse(c){
+ if(!c)return undefined;
+ // The fallen player's bodily condition is public. Hidden crises, witness
+ // lists and a distant helper's reasoning/planned destination are not.
+ return {status:c.status,cause:c.cause,at:c.at,injury:structuredClone(c.injury),
+  ...(c.recoveredAt!==undefined?{recoveredAt:c.recoveredAt}:{}),
+  ...(['carrying','treatment'].includes(c.rescue?.phase)?{rescue:{phase:c.rescue.phase}}:{})};
+}
 export function collapse(state,content,cause) {
   if(state.player.collapse?.status==='active')return;
   const p=state.player,region=content.regions.find(r=>r.id===p.region);
