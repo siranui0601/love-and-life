@@ -7,9 +7,16 @@ import {playerIsLocal} from './activity.js';
 // This server projection is the only environment input to blind policies.
 export function playerPerception(state,content,view){
  const p=state.player,region=content.regions.find(r=>r.id===p.region);
- p.observedPlaces||={};p.observedExits||={};
+ p.observedPlaces||={};p.observedExits||={};p.observedObstacles||={};
  const conscious=p.hp>0&&playerIsLocal(state)&&p.activity?.kind!=='sleeping'&&p.activity?.kind!=='recovering';
  const visible=position=>conscious&&distance(p.position,position)<=45&&hasLineOfSight(region,p.position,position);
+ const seenSurface=o=>visible([Math.max(o.x-o.width/2,Math.min(o.x+o.width/2,p.position[0])),0,Math.max(o.z-o.depth/2,Math.min(o.z+o.depth/2,p.position[2]))]);
+ const geometry=p.observedObstacles[region.id]||={};
+ const obstacleKey=o=>o.id||JSON.stringify([o.x,o.z,o.width,o.depth]);
+ // Turning a corner does not erase the wall just seen. Retain only observed
+ // geometry, and revise it only when the player can see the surface again.
+ for(const [id,old] of Object.entries(geometry))if(seenSurface(old)&&!(region.obstacles||[]).some(o=>obstacleKey(o)===id))delete geometry[id];
+ for(const obstacle of region.obstacles||[])if(seenSurface(obstacle))geometry[obstacleKey(obstacle)]={...obstacle};
  for(const object of view.region.objects)if(visible(object.position))p.observedPlaces[object.id]={id:object.id,name:object.name,kind:object.kind,region:region.id,position:[...object.position],appearance:siteAppearance(state,content,object.id),source:'seen'};
  for(const portal of region.portals||[])if(visible(portal.position)){
   // The sign at this exit identifies its endpoint, not the destination's other roads.
@@ -28,8 +35,5 @@ export function playerPerception(state,content,view){
   directions:state.knowledge.filter(k=>['site-observation','testimony'].includes(k.kind)&&k.destination).map(k=>({text:k.text,destination:observedDestination(state,content,k),source:structuredClone(k.source)})),
   // Local geometry may guide footsteps around walls already within sight range;
   // it contains no regional edges, future scenes or event solution positions.
-  obstacles:conscious?(region.obstacles||[]).filter(o=>{
-   const nearest=[Math.max(o.x-o.width/2,Math.min(o.x+o.width/2,p.position[0])),0,Math.max(o.z-o.depth/2,Math.min(o.z+o.depth/2,p.position[2]))];
-   return distance(nearest,p.position)<45&&hasLineOfSight(region,p.position,nearest);
-  }).map(o=>({...o})):[]};
+  obstacles:Object.keys(geometry).sort().map(id=>({...geometry[id]}))};
 }

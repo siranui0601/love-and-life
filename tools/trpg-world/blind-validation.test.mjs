@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
-import {blindInput} from './validation/blind-run.mjs';
+import {blindInput,runBlind} from './validation/blind-run.mjs';
+import {readFileSync} from 'node:fs';
 import {chooseBlind} from './validation/blind-policy.mjs';
 import {retireDesignInspections} from '../../src/shared/trpg-world/knowledge-migration.js';
 
@@ -54,4 +55,15 @@ test('a long river is perceived by its nearby bank rather than its distant centr
  const c=fixture();c.regions[0].spawn=[37.4813575832,0,8.3876954656];c.regions[0].obstacles=[{id:'river',x:22,z:-39,width:9,depth:82,height:.15}];
  c.regions[0].objects=[];c.regions[0].portals=[];const r=new WorldReplay(c),o=blindInput(r.view()).observation;assert.equal(o.obstacles.length,1);
  const decision=chooseBlind(o,{bearing:4});assert(decision.walk);const [x,,z]=decision.walk;assert(!(Math.abs(x-22)<4.95&&Math.abs(z+39)<41.45));assert.deepEqual(decision,chooseBlind(o,{bearing:4}));
+});
+
+test('observed walls persist around corners: ordinary blind footsteps reach the production workshop without oscillation',()=>{
+ const production=JSON.parse(readFileSync(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url)));
+ const c=fixture(),region=structuredClone(production.regions.find(r=>r.id==='dwarf'));
+ region.id='farm';region.spawn=[-20.8,0,-32];region.portals=[];region.objects=region.objects.filter(o=>o.id==='LOC_DWARF_FORGE');
+ c.regions=[region];c.routes=[];c.events=[];const {run,summary}=runBlind(c,{decisions:8});
+ const arrival=summary.decisionsLog.find(d=>d.decision.reason?.includes('名工工房'));assert(arrival?.result.arrived,JSON.stringify(summary.decisionsLog));
+ assert(run.operations.some(o=>o.command?.type==='interact'&&o.command.targetId==='LOC_DWARF_FORGE'));
+ assert(!summary.decisionsLog.some(d=>d.result.error));assert.equal(digest(replay(c,run.export()).state),digest(run.state));
+ assert.deepEqual(run.fork().view().perception.obstacles,run.view().perception.obstacles);assert(!('observedObstacles' in run.view().player));
 });
