@@ -1,0 +1,72 @@
+{
+  "seed": 17,
+  "stopped": "FIRST_BAD_DECISION",
+  "day": 4,
+  "clock": "20:20",
+  "hp": 148,
+  "operations": 12594,
+  "decisions": 1269,
+  "outcomes": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active",
+      "components": "resolved"
+    }
+  },
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 12594,
+    "simulationAdvances": 5964,
+    "movementInputs": 5873,
+    "meaningfulPlayerDecisions": 756,
+    "travelSegments": 362,
+    "investigations": 87,
+    "conversationTurns": 129,
+    "preparationActions": 17,
+    "combatActions": 106,
+    "otherDecisions": 55
+  },
+  "conversationDiscoveries": 25,
+  "verification": {
+    "replay": true
+  },
+  "lastDecision": [
+    {
+      "index": 12594,
+      "day": 4,
+      "clock": "20:17",
+      "region": "森",
+      "decision": {
+        "walk": [
+          -16.17691453624076,
+          0,
+          1.000000000002169
+        ],
+        "reason": "見えている障害物を避け、まだ歩いていない通りを見て回る"
+      },
+      "result": {
+        "error": "collapsed-during-walk"
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "sourceCheckpoint": "265effcc",
+  "sourceQualification": "Same as checkpoint except blind policy still excludes repeated completed action keys and supply delivery offers do not yet close after receipt",
+  "contentFile": "../a3b42001/content.json.gz",
+  "fullReplay": true,
+  "files": {
+    "blind-ninth-record.json.gz": {
+      "sha256": "78d2b8b6cc3f41cba88ebea04f610949a8928014bcf09af15d70d15b9519630a",
+      "bytes": 290546
+    },
+    "blind-ninth-intermediate.json.gz": {
+      "sha256": "d13357eae3cab224f07497b4a8eb9d44daa09350f22687d22a661c696f6913a6",
+      "bytes": 170557
+    },
+    "blind-ninth-summary.json.gz": {
+      "sha256": "773f7b131c08ae959926997479260b0a9f3b1447656093148d46fc3feeee8a85",
+      "bytes": 33037
+    }
+  }
+}

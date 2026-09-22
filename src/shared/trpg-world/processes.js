@@ -32,6 +32,12 @@ export function processSafe(state,spec){
  if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
  return false;
 }
+export function processHazard(state,spec){
+ const p=state.processes?.[spec.id];if(!p||p.legacyDormant)return null;
+ const safe=processSafe(state,spec),permitted=allowed(state,spec.activation);
+ const present=permitted&&!safe&&(spec.kind!=='device'||p.powered===true)&&(spec.kind!=='patient'||state.npcs[spec.actorId]?.hp>0);
+ return {present,aftermath:p.failedAt!==undefined&&!safe};
+}
 function pointFor(state,content,spec){return spec.kind==='patient'?state.npcs[spec.actorId]:site(content,spec.targetId);}
 function satisfied(state,spec,event){
  // A conditional threat which never acquired its physical prerequisite is not

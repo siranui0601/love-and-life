@@ -1,4 +1,5 @@
 import {siteAppearance} from './site-appearance.js';
+import {encounterEligible,encounterSourceIds} from './encounter-sources.js';
 import {playerPerception} from './perception.js';
 import {processActions,inspectProcesses,startProcessWork,finishProcessWork} from './processes.js';
 import {advanceMemories,recalled,testimony,hearTestimony} from './memory.js';
@@ -92,34 +93,28 @@ function updateIncidentPopulation(state,content) {
   state.nextPopulation=state.time+1800;
   for(const event of content.events || []) {
     const current=state.events[event.id];if(!current)continue;
-    const settled=['resolved','prevented'].includes(current.status);
-    if(settled){for(const monster of values(state.monsters))if(monster.eventId===event.id){monster.hp=0;monster.respawnAt=0;}continue;}
     // Instigators physically exist before their crisis starts, so prevention by
     // force requires winning a real encounter instead of selecting a force score.
     const opposition=index(content).monsters.get(event.opposition?.monsterId),oppositionId=`opposition:${event.id}`;
-    if(opposition&&!state.monsters[oppositionId]){
+    if(opposition&&!state.monsters[oppositionId]&&encounterEligible(state,content,event,opposition,{instigator:true})){
       const region=index(content).regions.get(event.region),anchor=event.position||[0,0,0];
       const candidates=[[anchor[0],0,anchor[2]-12],[anchor[0]+9,0,anchor[2]-8],[-44,0,-38]];
       const position=candidates.find(p=>canOccupy(region,p));
       if(position)state.monsters[oppositionId]={id:oppositionId,templateId:opposition.id,eventId:event.id,causalRole:'instigator',region:event.region,position:[...position],home:[...position],hp:opposition.hp,maxHp:opposition.hp,activity:'roam',cooldown:0,respawnAt:0,lastThreat:0,heading:0,mp:20+opposition.level*3,maxMp:20+opposition.level*3};
     }
-    if(current.status==='latent')continue;
-    const sourceIds=new Set((event.sourceIds || []).map(String));
     const candidates=(content.monsters || []).filter(m=>{
       if(!m.sourceCondition)return false;
-      const references=m.sourceCondition.match(/T\d{2}/g)||[];
-      if(!references.some(id=>sourceIds.has(id)))return false;
-      const aftermath=/失敗|failed/i.test(m.sourceCondition);
-      return current.status==='failed'?aftermath:!aftermath;
+      return encounterSourceIds(event,m).length&&encounterEligible(state,content,event,m);
     });
     for(const region of content.regions) {
       const local=candidates.filter(m=>m.region===region.id).sort((a,b)=>a.level-b.level);
-      const normal=local.find(m=>!m.boss),bosses=local.filter(m=>m.boss);
-      const selected=[normal,current.status==='critical'?bosses.at(-1):bosses[0]].filter(Boolean);
-      const selectedBoss=selected.find(m=>m.boss);
-      if(selectedBoss)for(const prior of values(state.monsters))if(prior.eventId===event.id&&prior.region===region.id&&prior.templateId!==selectedBoss.id&&index(content).monsters.get(prior.templateId)?.boss){prior.hp=0;prior.respawnAt=0;}
+      const families=new Map();for(const template of local){const family=encounterSourceIds(event,template).sort().join(',');if(!families.has(family))families.set(family,[]);families.get(family).push(template);}
+      // Rank is not a physical growth event. Keep the existing living boss;
+      // do not kill it and spawn its higher-level template at an event deadline.
+      const selected=[...families.values()].flatMap(group=>[group.find(m=>!m.boss),group.find(m=>m.boss)].filter(Boolean));
       for(const template of selected) {
         const id=`incident:${event.id}:${template.id}`;if(state.monsters[id])continue;
+        if(values(state.monsters).some(m=>m.eventId===event.id&&m.region===region.id&&(m.templateId===template.id||m.hp>0&&template.boss&&index(content).monsters.get(m.templateId)?.boss&&encounterSourceIds(event,index(content).monsters.get(m.templateId)).some(s=>encounterSourceIds(event,template).includes(s)))))continue;
         const anchor=event.region===region.id?event.position || [0,0,0]:[30,0,-36];
         let position=[anchor[0]+12,0,anchor[2]+9];
         if(!canOccupy(region,position))position=[-44,0,-38];

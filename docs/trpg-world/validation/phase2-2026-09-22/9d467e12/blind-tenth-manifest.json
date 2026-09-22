@@ -1,0 +1,20 @@
+{
+  "sourceCheckpoint": "9d467e12",
+  "sourceQualification": "Exact runtime checkpoint",
+  "contentFile": "../a3b42001/content.json.gz",
+  "fullReplay": true,
+  "files": {
+    "blind-tenth-record.json.gz": {
+      "sha256": "f9dd534eeb565a216ba566e6675b2cdefdf07fc47df01261da9776566e5361c8",
+      "bytes": 539082
+    },
+    "blind-tenth-intermediate.json.gz": {
+      "sha256": "13f9a4ad52574c4b14378c79087c3877af233adf9ef0a7302117b84e142543d8",
+      "bytes": 174589
+    },
+    "blind-tenth-summary.json.gz": {
+      "sha256": "5a3a3d2fedda5d6d0892f924022913ab50f553fbabcc33c5f28467da885f210d",
+      "bytes": 39919
+    }
+  }
+}

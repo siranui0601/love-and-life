@@ -82,3 +82,26 @@ test('ordinary repeated deliveries change actual stock; completed distribution p
  assert.equal(r.state.player.gold,money-60);assert.deepEqual(r.state.processes.fund.receipts,{gold:60,supplies:3});assert(r.state.processes.fund.distributions.includes('clerk'));assert(!r.options().some(o=>o.command.action?.startsWith('fund/deliver')));
  assert(r.state.player.inspections.office.text.includes('3/3'));assert(r.state.player.inspections.office.text.includes('60/60'));assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.deepEqual(r.defects,[]);
 });
+
+test('conditional actors emerge from their own powered source; repair cannot erase already living actors',()=>{
+ const c=fixture();c.events[0]={...c.events[0],sourceIds:['T91','T92'],startsAt:25200,position:[45,0,45]};
+ c.processes=[{...c.processes[0],sourceId:'T91'},{...structuredClone(c.processes[0]),id:'second',sourceId:'T92',targetId:'office',activation:{path:['processes','drive','powered'],value:false}}];
+ const creature=(id,source)=>({id,region:'farm',name:'現場の生物',sourceCondition:source,hp:35,level:1,attack:4,defense:0,speed:1,range:2.8,xp:20,gold:3,drops:[]});
+ c.monsters=[creature('first','T91進行中'),creature('second','T92進行中')];const r=new WorldReplay(c);r.advance(.5);
+ const firstId='incident:incident:first',secondId='incident:incident:second';assert(r.state.monsters[firstId]);assert(!r.state.monsters[secondId]);
+ assert(prepare(r,{items:{timber:4,rope:2},skills:['crafting']}).prepared);act(r,'machine','drive/inspect');act(r,'machine','drive/isolate');
+ r.command({type:'resume'});r.advance(31);assert(r.state.monsters[secondId]);assert.equal(r.state.monsters[firstId].hp,35);
+ const split=r.fork();act(r,'machine','drive/repair');act(r,'office','second/inspect');act(r,'office','second/isolate');act(r,'office','second/repair');
+ assert.equal(r.state.events.incident.status,'resolved');r.command({type:'resume'});r.advance(31);
+ assert.equal(r.state.monsters[firstId].hp,35);assert.equal(r.state.monsters[secondId].hp,35);assert.equal(split.state.processes.second.powered,true);
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.deepEqual(r.defects,[]);
+});
+
+test('one component failure activates only its own aftermath population while another component continues',()=>{
+ const c=fixture();c.events[0]={...c.events[0],sourceIds:['T91','T92'],startsAt:25200,position:[45,0,45]};
+ c.processes=[{...c.processes[0],sourceId:'T91',deadline:25300},{...structuredClone(c.processes[0]),id:'second',sourceId:'T92',targetId:'office'}];
+ c.monsters=['T91','T92'].map(source=>({id:source,region:'farm',name:'被害後の生物',sourceCondition:source+'失敗',hp:35,level:1,attack:4,defense:0,speed:1,range:2.8,xp:20,gold:3,drops:[]}));
+ const r=new WorldReplay(c);r.command({type:'resume'});r.advance(32);
+ assert(r.state.processes.drive.failedAt);assert(!r.state.processes.second.failedAt);assert.equal(r.state.events.incident.status,'active');
+ assert(r.state.monsters['incident:incident:T91']);assert(!r.state.monsters['incident:incident:T92']);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});

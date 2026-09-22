@@ -1,0 +1,73 @@
+{
+  "seed": 17,
+  "stopped": "FIRST_BAD_DECISION",
+  "day": 3,
+  "clock": "14:46",
+  "hp": 148,
+  "operations": 6588,
+  "decisions": 1007,
+  "outcomes": {
+    "border": {
+      "status": "latent"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "latent"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "active"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active",
+      "components": "resolved"
+    }
+  },
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 6588,
+    "simulationAdvances": 3206,
+    "movementInputs": 2878,
+    "meaningfulPlayerDecisions": 503,
+    "travelSegments": 119,
+    "investigations": 84,
+    "conversationTurns": 131,
+    "preparationActions": 15,
+    "combatActions": 101,
+    "otherDecisions": 53
+  },
+  "conversationDiscoveries": 35,
+  "verification": {
+    "replay": true
+  },
+  "lastDecision": [
+    {
+      "index": 6588,
+      "day": 3,
+      "clock": "11:26",
+      "region": "ドワーフ洞窟",
+      "decision": {
+        "walk": [
+          -29,
+          0,
+          -16
+        ],
+        "target": "entity:1fab4ca8be528c2c",
+        "reason": "見聞きした場所へ歩く：名工工房"
+      },
+      "result": {
+        "error": "movement-budget"
+      }
+    }
+  ]
+}
