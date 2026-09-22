@@ -43,7 +43,11 @@ function satisfied(state,spec,event){
  // A conditional threat which never acquired its physical prerequisite is not
  // a failed intervention. Evaluate this only at the authored review horizon;
  // a temporarily intact upstream system is not an early victory.
- return processSafe(state,spec)||!!spec.activation&&state.time>=(spec.deadline??event.deadline)&&!allowed(state,spec.activation)&&state.processes[spec.id].failedAt===undefined;
+ const p=state.processes[spec.id],reviewed=state.time>=(spec.deadline??event.deadline);
+ // Isolation removes the powered cause; a broken but inert fixture still
+ // needs maintenance. Do not fabricate a fire simply because it is unrepaired.
+ const inactiveCause=spec.kind==='device'&&p.powered===false||!!spec.activation&&!allowed(state,spec.activation);
+ return processSafe(state,spec)||reviewed&&inactiveCause&&p.failedAt===undefined;
 }
 export function processDescription(state,spec){
  const p=state.processes[spec.id],structure=linkedStructure(state,spec),integrity=structure?.integrity??p.integrity;
@@ -143,7 +147,7 @@ export function advanceProcesses(state,content,seconds){
   }
   const safe=processSafe(state,spec);
   if(safe&&p.safeAt===undefined)p.safeAt=state.time;
-  if(active&&!safe&&state.time>=(spec.deadline??event.deadline)&&p.failedAt===undefined){
+  if(active&&!safe&&(spec.kind!=='device'||p.powered===true)&&state.time>=(spec.deadline??event.deadline)&&p.failedAt===undefined){
    p.failedAt=state.time;
    if(spec.kind==='device'){
     p.integrity=0;p.powered=false;

@@ -62,6 +62,21 @@ test('a conditional downstream threat does not fail when its physical prerequisi
  assert.equal(r.state.events.incident.status,'resolved');assert.equal(r.state.processes.downstream.failedAt,undefined);assert.equal(r.state.processes.downstream.powered,true);assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
 
+test('isolating machinery prevents its powered failure while damaged supports still need ordinary restoration',()=>{
+ const c=fixture(),physical=structuredClone(DEFAULT_PROCESS_STRUCTURES.find(s=>s.failure.kind==='fire'));
+ Object.assign(physical,{id:'wreck',processId:'drive',region:'farm',targetId:'machine',shelterId:'inn',hazardEventId:'incident'});
+ physical.actions.find(a=>a.id==='shore').requirements={items:{timber:2},skills:['crafting']};
+ c.structures=[physical];c.processes=[{...c.processes[0],structureId:'wreck'}];c.events[0].sourceIds=['a'];c.events[0].startsAt=40000;c.events[0].deadline=50000;
+ const r=new WorldReplay(c);act(r,'machine','drive/inspect');act(r,'machine','drive/isolate');
+ for(let i=0;i<2;i++)assert(!performAt(r,target(r,'inn'),'rest').error);
+ assert.equal(r.state.processes.drive.failedAt,undefined);assert.equal(r.state.structures.wreck.damageAt,undefined);
+ assert.equal(r.state.structures.wreck.integrity,40);assert.equal(r.state.facilities.machine.closed,true);
+ assert.equal(r.state.events.incident.status,'resolved');
+ assert(prepare(r,{items:{timber:2},skills:['crafting']}).prepared);
+ assert(!performAt(r,target(r,'machine'),'maintain',{action:'shore'}).error);assert.equal(r.state.structures.wreck.integrity,100);
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
 test('process failure enters shared physical rescue and reopening without deleting the failure',()=>{
  for(const kind of ['collapse','fire']){
  const c=fixture(),physical=structuredClone(DEFAULT_PROCESS_STRUCTURES.find(s=>s.failure.kind===kind));

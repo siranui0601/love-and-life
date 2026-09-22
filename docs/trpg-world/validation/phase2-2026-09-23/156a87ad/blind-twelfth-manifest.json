@@ -15,6 +15,10 @@
     "blind-twelfth-summary.json.gz": {
       "sha256": "aa85258c25b62694a635a8833a2cfcae47185d79b55b6de0e05ac5ba969a8dac",
       "bytes": 43812
+    },
+    "blind-twelfth-save-summary.json": {
+      "sha256": "9811f09c110cd2e17b6c66d6440f1113efdfcb4b2cbdd70bba77bb725a6756ef",
+      "bytes": 387
     }
   }
 }
