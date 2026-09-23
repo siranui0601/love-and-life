@@ -4,6 +4,8 @@ Priority updated on 2026-09-23. Live reference verified: TRPG spreadsheet `15slf
 
 **Gate NOT achieved.** All current major components must have actual actor/resource/institutional and physical consequences. One normal-command worldline must resolve or prevent all of them and naturally continue to the end of Day10. Day10-morning survival, process bindings and issued orders do not suffice. Exact replay, durable save continuation, migration and knowledge boundaries must pass before WORLD ART & SPATIAL REBUILD.
 
+The latest instruction explicitly removes blind discovery from this gate and suspends long candidate runs while known causal execution edges remain missing. The authoritative implementation queue and authored Day1–10 route budget are now [CAUSAL-EDGE-AUDIT.md](CAUSAL-EDGE-AUDIT.md). Preserve existing blind/knowledge contracts; do not iterate the blind policy as the main work.
+
 Current geometry is blockout. Further local path tuning is not a phase goal. Collision, LOS, actual presence, regional separation, observed geography and physical escort remain general contracts. Semantic IDs/history/outcomes must survive replaceable mesh and navigation representations.
 
 ## Current execution

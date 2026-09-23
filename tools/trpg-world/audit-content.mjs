@@ -79,6 +79,16 @@ export function auditWorldContent(content) {
     for(const doc of scenario.documents||[])if(!objects.has(doc.targetId))errors.push(`${scenario.eventId}: inaccessible document ${doc.id}`);
   }
 
+  const shipments=new Set();
+  for(const shipment of content.shipments||[]) {
+    if(shipments.has(shipment.id))errors.push(`${shipment.id}: duplicate shipment`);shipments.add(shipment.id);
+    for(const key of ['ownerId','carrierId','receiverId'])if(!ids.npcs.has(shipment[key]))errors.push(`${shipment.id}: missing ${key}`);
+    for(const key of ['originId','destinationId'])if(!objects.has(shipment[key]))errors.push(`${shipment.id}: missing ${key}`);
+    if(!Number.isFinite(shipment.dispatchAt)||!shipment.billId||!shipment.modes?.length||!shipment.manifest?.length)errors.push(`${shipment.id}: incomplete dispatch/manifest`);
+    for(const lot of shipment.manifest||[])if(!lot.name||!lot.assetId||!Number.isSafeInteger(lot.quantity)||lot.quantity<=0)errors.push(`${shipment.id}: invalid cargo lot`);
+    for(const id of shipment.routeIds||[])if(!(content.routes||[]).some(r=>r.id===id&&r.modes.some(m=>shipment.modes.includes(m))))errors.push(`${shipment.id}: invalid known route ${id}`);
+  }
+  for(const process of content.processes||[])for(const id of process.impoundShipments||[])if(!shipments.has(id)||!process.access)errors.push(`${process.id}: invalid custody order ${id}`);
   for(const recipe of content.recipes||[]) {
     if(!recipe.name||!Number.isFinite(recipe.minutes)||recipe.minutes<=0)errors.push(`${recipe.id}: invalid recipe metadata`);
     for(const id of recipe.requirements?.skills||[])if(!ids.skills.has(id))errors.push(`${recipe.id}: unknown skill ${id}`);

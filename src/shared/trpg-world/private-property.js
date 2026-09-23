@@ -10,7 +10,7 @@ export function initializeProperty(state,content) {
  state.societyPropertyVersion=1;
 }
 function accessible(state,content,o) {
- if(!o||state.player.hp<=0||state.player.collapse?.status==='active'||state.player.actionInstance||state.player.activity?.kind==='travelling')return false;
+ if(!o||o.inTransit||state.player.hp<=0||state.player.collapse?.status==='active'||state.player.actionInstance||state.player.activity?.kind==='travelling')return false;
  if(o.custodianId==='player'&&!o.parentId)return true;
  if(o.region!==state.player.region||distance(o.position,state.player.position)>4||!hasLineOfSight(content.regions.find(r=>r.id===o.region),state.player.position,o.position))return false;
  const parent=state.properties[o.parentId];return !parent||parent.openedBy.includes('player')&&parent.inspectedBy.includes('player')&&accessible(state,content,parent);
@@ -48,8 +48,8 @@ export function performPropertyAction(state,content,command) {
  if(command.action==='take'||command.action==='return') {
   const taking=command.action==='take',from=o.custodianId;
   if(taking){o.originalParentId=o.parentId;o.parentId=null;o.custodianId='player';}else{o.parentId=o.originalParentId;o.custodianId=state.properties[o.parentId].custodianId;}
-  kind=taking&&o.ownerId!=='player'&&o.privacy==='private'?'theft':taking?'property-taken':'property-returned';message=taking?'文書を持った。':'元の場所へ戻した。';
-  state.propertyTransfers||=[];const transfer={id:`custody:${state.nextId++}`,from,to:o.custodianId,assetId:o.id,quantity:1,reason:kind,at:state.time};state.propertyTransfers.push(transfer);payload.custodyId=transfer.id;
+  kind=taking&&o.ownerId!=='player'&&o.privacy==='private'?'theft':taking?'property-taken':'property-returned';message=taking?`${o.name}を持った。`:'元の場所へ戻した。';
+  state.propertyTransfers||=[];const transfer={id:`custody:${state.nextId++}`,from,to:o.custodianId,assetId:o.id,quantity:o.quantity,reason:kind,at:state.time};state.propertyTransfers.push(transfer);payload.custodyId=transfer.id;
  }
  // Observers see the reading action, never receive the text from its payload.
  const fact=rememberAction(state,content,kind,{targetId:o.id,payload});

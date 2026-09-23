@@ -19,7 +19,7 @@ Legend: **VERIFIED** means an actual runtime chain has command/replay evidence; 
 | T11 | Forged guard roster → noble / assassin / guard / king → physical approach, defense or attack | Review endpoint only | PARTIAL: assassination actor execution and guard enforcement |
 | T12 | False raid report → military actors / evidence / stores → deployment or stand-down | Review endpoint only | PARTIAL: orders reaching units, movement, confrontation, aftermath |
 | T13 | Absorbing core → river / tree / sealing resources → divert and contain | Flow restored; tree damage and downstream barrier state | VERIFIED core intervention; downstream population response partial |
-| T14 | False manifest → actual cargo / captain / warehouse / customs → shipping, seizure, custody | Official walks to close warehouse | PARTIAL: actual cargo and shipment movement; next shared implementation |
+| T14 | False manifest → actual owned cargo / captain-held bill / sea route / consignee / customs → loading, route travel, handoff or seizure | Actual custody receipts preserve legal title; missing carrier/recipient/contents cannot become success | Shared cargo chain VERIFIED by focused command/save tests and canonical map delivery; wider armed distribution/reaction still PARTIAL |
 | T15 | Political/port instability → fleet, crew, supplies → sail/blockade or stand-down | Conditional port mechanism and collapse | PARTIAL: fleet actor execution and blockade |
 | T16 | Forged clearance → residents / printer evidence / official → local protection | Actual access order enacted in district | PARTIAL: intimidation/eviction actors and resident response |
 | T17 | Uncontrolled power → mages / device / rift actors → containment or emergence | Device isolation, fire and casualties | PARTIAL: summoning actor lifecycle and physical response |
@@ -59,4 +59,10 @@ Third bounded itinerary: D3 09:05 fatigue collapse during preparation, 6,456 ope
 
 Fourth bounded itinerary: D2 20:23, preparation dependency cycle during dock funding, 3,994 operations / 160 domain decisions, exact replay PASS. No more long reruns scheduled. This validator limitation is recorded, not a reason to change world outcomes.
 
-Focused unclaimed-stock and long-preparation tests pass. Phase 2 remains **INCOMPLETE**. Paid/live LLM calls 0. USER DECISION REQUIRED none.
+Focused unclaimed-stock and long-preparation tests pass. Checkpoint `aa049adf` pushed.
+
+Cargo milestone: shared `actor-journey` resolves semantic sites and physically reaches a departure portal; shipment plans read a bill actually assigned to the carrier, collect real owned contents, travel by an authored known route, and wait for a present living consignee. Customs may instead seize the arrived goods in person. Ownership is retained, custody changes have world facts, and stolen contents are not replaced. Orders require the physical custody receipt. A cross-region cached-path bug exposed by identical coordinates was fixed by invalidating the previous region's navigation target on arrival. No blockout-specific routing rule was added.
+
+Seven shipment-focused cases include an actual generated-world sea delivery; all pass. Sixteen preparation/migration cases also pass. New content revision `world-10d-be0609b3b3b0` is hash-pinned for the reviewed migration; existing saves receive dormant shipment definitions, not retroactively spawned cargo. First full check found three version-allowlist failures (151 pass / 3 fail); the reviewed migration fixed them. Final `world:check`: **155 PASS / 0 FAIL / 0 SKIP**, content audit, assets and client build PASS. Browser SKIP.
+
+Phase 2 remains **INCOMPLETE**. No long all-crisis/blind run was started after the causal-first instruction. Paid/live LLM calls 0. USER DECISION REQUIRED none.

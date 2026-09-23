@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-4de4bc7caf72",
+  "revision": "world-10d-be0609b3b3b0",
   "time": {
     "days": 10,
     "scale": 60,
@@ -24935,6 +24935,9 @@
         "targetId": "LOC_TRADE_WAREHOUSE",
         "closed": true
       },
+      "impoundShipments": [
+        "unmanifested-arms"
+      ],
       "reviewers": [
         "NPC075"
       ]
@@ -25093,6 +25096,32 @@
       "reviewers": [
         "NPC043",
         "NPC108"
+      ]
+    }
+  ],
+  "shipments": [
+    {
+      "id": "unmanifested-arms",
+      "name": "農具と申告された武器箱",
+      "ownerId": "NPC048",
+      "carrierId": "NPC052",
+      "receiverId": "NPC076",
+      "originId": "LOC_CRIME_WAREHOUSE",
+      "destinationId": "LOC_TRADE_WAREHOUSE",
+      "billId": "customs-cargo:bill",
+      "dispatchAt": 201600,
+      "routeIds": [
+        "R08"
+      ],
+      "modes": [
+        "ship"
+      ],
+      "manifest": [
+        {
+          "name": "封をされた武器の包み",
+          "assetId": "weapon-crate",
+          "quantity": 6
+        }
       ]
     }
   ],

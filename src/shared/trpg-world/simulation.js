@@ -224,13 +224,13 @@ function advanceNpcs(state,content,gameDelta) {
   for (const npc of values(state.npcs)) {
     if (npc.hp<=0) { npc.activity='倒れている'; continue; }
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
-    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.institutionalAssignment||npc.care?.status==='injured'||npc.companionOf)continue;
+    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.care?.status==='injured'||npc.companionOf)continue;
     if(advanceSocialPlan(state,content,npc,gameDelta))continue;
     const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacementCause?original.work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
     if (npc.travel) {
       if (state.time>=npc.travel.arrivesAt) {
-        npc.region=npc.travel.to; npc.position=[...(idx.regions.get(npc.region)?.spawn || [0,0,0])]; npc.travel=null; npc.path=[];npc.nextDecision=0;delete npc.plan;template={...original,home:idx.regions.get(npc.region).spawn,work:idx.regions.get(npc.region).spawn};
+        npc.region=npc.travel.to; npc.position=[...(idx.regions.get(npc.region)?.spawn || [0,0,0])]; npc.travel=null; npc.path=[];delete npc.pathTarget;npc.nextDecision=0;delete npc.plan;template={...original,home:idx.regions.get(npc.region).spawn,work:idx.regions.get(npc.region).spawn};
       } else { npc.activity='街道を旅している'; continue; }
     }
     const region = idx.regions.get(npc.region); if (!region) continue;

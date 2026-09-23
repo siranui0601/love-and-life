@@ -39,10 +39,17 @@ export const DEFAULT_PROCESSES=[
 const byId=new Map(DEFAULT_PROCESSES.map(p=>[p.id,p]));
 Object.assign(byId.get('bond-review'),{protectedActor:'NPC027',affectedTarget:'NPC027'});
 Object.assign(byId.get('forest-passage'),{access:{targetId:'LOC_ELF_BARRIER_STONE',closed:false}});
-Object.assign(byId.get('customs-cargo'),{access:{targetId:'LOC_TRADE_WAREHOUSE',closed:true}});
+Object.assign(byId.get('customs-cargo'),{access:{targetId:'LOC_TRADE_WAREHOUSE',closed:true},impoundShipments:['unmanifested-arms']});
 Object.assign(byId.get('civic-protection'),{access:{targetId:'LOC_CAP_AJIN_QUARTER',closed:false}});
 for(const id of ['colossus-feed','joint-ceasefire'])byId.get(id).activation={path:['events','roots','causal','forestBarrier'],value:false};
 byId.get('harbor-chain').activation={any:[{path:['npcs','NPC009','hp'],op:'lte',value:0},{path:['processes','dock-payroll','failedAt'],op:'gte',value:0}]};
+
+// Initial possessions and a commercial assignment, not a solver reward.
+// The captain carries the bill and knows this sea route. Replacing the map
+// changes site coordinates without changing the shipment or its legal owner.
+export const DEFAULT_SHIPMENTS=[{id:'unmanifested-arms',name:'農具と申告された武器箱',ownerId:'NPC048',carrierId:'NPC052',receiverId:'NPC076',
+ originId:'LOC_CRIME_WAREHOUSE',destinationId:'LOC_TRADE_WAREHOUSE',billId:'customs-cargo:bill',dispatchAt:2*86400+8*3600,routeIds:['R08'],modes:['ship'],
+ manifest:[{name:'封をされた武器の包み',assetId:'weapon-crate',quantity:6}]}];
 
 // Machinery failures reuse the same physical exposure, shelter and maintenance
 // model as fires and mine collapses. No new casualty is spawned by these bindings.
