@@ -27,6 +27,7 @@ export function auditWorldContent(content) {
     const region=(content.regions||[]).find(r=>r.id===npc.region);
     if(!region){errors.push(`${npc.id}: unknown region`);continue;}
     for(const key of ['home','work'])if(!npc[key]||!canOccupy(region,npc[key]))errors.push(`${npc.id}: blocked ${key}`);
+    for(const appointment of npc.appointments||[])if(!region.objects.some(o=>o.id===appointment.siteId)||!(appointment.endsAt>appointment.startsAt)||!appointment.activity)errors.push(`${npc.id}: invalid appointment`);
   }
   for(const event of content.events||[]) {
     const region=(content.regions||[]).find(r=>r.id===event.region);
@@ -80,6 +81,17 @@ export function auditWorldContent(content) {
   }
 
   const shipments=new Set();
+  const operations=new Set();
+  for(const op of content.actorOperations||[]){
+    if(operations.has(op.id))errors.push(`${op.id}: duplicate actor operation`);operations.add(op.id);
+    if(!ids.npcs.has(op.actorId)||!ids.npcs.has(op.targetActorId)||!objects.has(op.targetSiteId))errors.push(`${op.id}: missing actor or destination`);
+    if(!op.intention||!Number.isFinite(op.departAt)||!(op.windupSeconds>0)||!(op.damage>0))errors.push(`${op.id}: missing intention/action timing`);
+    if(op.weaponItemId&&!ids.items.has(op.weaponItemId)&&!ids.equipment.has(op.weaponItemId))errors.push(`${op.id}: missing weapon`);
+  }
+  for(const process of content.processes||[])if(process.enforcement){const d=process.enforcement;
+    if(!ids.npcs.has(d.actorId)||!ids.npcs.has(d.protectActorId)||!objects.has(d.meetingId)||!objects.has(d.postId))errors.push(`${process.id}: missing enforcement actor or location`);
+    for(const id of d.stoppedOperations||[])if(!operations.has(id))errors.push(`${process.id}: missing threat operation ${id}`);
+  }
   for(const shipment of content.shipments||[]) {
     if(shipments.has(shipment.id))errors.push(`${shipment.id}: duplicate shipment`);shipments.add(shipment.id);
     for(const key of ['ownerId','carrierId','receiverId'])if(!ids.npcs.has(shipment[key]))errors.push(`${shipment.id}: missing ${key}`);

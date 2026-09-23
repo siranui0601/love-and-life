@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
 import {DEFAULT_STRUCTURES} from '../../src/shared/trpg-world/infrastructure.js';
-import {DEFAULT_PROCESSES,DEFAULT_PROCESS_STRUCTURES,DEFAULT_SHIPMENTS} from '../../src/shared/trpg-world/process-content.js';
+import {DEFAULT_PROCESSES,DEFAULT_PROCESS_STRUCTURES,DEFAULT_SHIPMENTS,DEFAULT_ACTOR_OPERATIONS} from '../../src/shared/trpg-world/process-content.js';
 import {createRegion,createPortal,placeNPC,finalizeRegions} from './region-layout.mjs';
 const base=new URL('../../',import.meta.url);
 const source=JSON.parse(await fs.readFile(new URL('sources/world.json',import.meta.url),'utf8'));
@@ -82,8 +82,12 @@ const publicSiteDescriptions={
 for(const object of regions.flatMap(r=>r.objects))if(publicSiteDescriptions[object.id]){object.sourceDesignNotes=object.description;object.description=publicSiteDescriptions[object.id];}
 
 const processes=structuredClone(DEFAULT_PROCESSES);
-for(const process of processes)if(process.kind==='inquiry')process.reviewers=npcs.filter(n=>n.region===process.region&&n.workFacilityId===process.targetId).map(n=>n.id);
-const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:[...DEFAULT_STRUCTURES,...DEFAULT_PROCESS_STRUCTURES],processes,shipments:DEFAULT_SHIPMENTS,skills,items,recipes,jobs,...combat,
+for(const process of processes)if(process.kind==='inquiry'&&!process.reviewers)process.reviewers=npcs.filter(n=>n.region===process.region&&n.workFacilityId===process.targetId).map(n=>n.id);
+for(const operation of DEFAULT_ACTOR_OPERATIONS){const actor=npcs.find(n=>n.id===operation.actorId);if(actor&&operation.weaponItemId)actor.possessions={...actor.possessions,[operation.weaponItemId]:1};}
+// Published duties keep their actual participants at the relevant venue;
+// danger, urgent needs and already accepted field work can still interrupt.
+const king=npcs.find(n=>n.id==='NPC016');if(king)king.appointments=[{siteId:'LOC_CAP_CASTLE',startsAt:7*86400+11*3600,endsAt:7*86400+17*3600,activity:'王城で予定されていた謁見を行う'}];
+const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:[...DEFAULT_STRUCTURES,...DEFAULT_PROCESS_STRUCTURES],processes,shipments:DEFAULT_SHIPMENTS,actorOperations:DEFAULT_ACTOR_OPERATIONS,skills,items,recipes,jobs,...combat,
  provenance:{sourceUrl:source.sourceUrl,retrievedAt:source.retrievedAt,policy:'Source material, not legacy rules. No Human Virtue ledger or replay used.',eventPolicy:'19 causes regrouped into 8 crises; deadlines and balance authored anew.',assets:'Kenney CC0 Fantasy Town Kit 2.0 and Blocky Characters 2.0.'}};
 content.revision='world-10d-'+createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0,12);
 const target=new URL('src/server/trpg/world/content/world-content.json',base);await fs.mkdir(new URL('.',target),{recursive:true});await fs.writeFile(target,JSON.stringify(content,null,2)+'\n');

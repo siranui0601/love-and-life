@@ -210,6 +210,9 @@ function chooseGoal(state,content,npc,template) {
     {goal:'work',utility:h>=7&&h<18&&!knownWorkplaceClosed(npc,template.workFacilityId)?50:0,target:template.work,activity:template.publicRole ? `${template.publicRole}の仕事`:'仕事'},
     {goal:'social',utility:h>=18&&h<22?55:20,target:region?.objects?.find(o=>o.kind==='inn')?.position || template.home,activity:'会話と休憩'},
   ];
+  const appointment=(template.appointments||[]).find(a=>state.time>=a.startsAt&&state.time<a.endsAt);
+  const meeting=appointment&&region.objects.find(o=>o.id===appointment.siteId);
+  if(meeting)utilities.push({goal:'work',utility:70,target:meeting.position,activity:appointment.activity});
   const chosen = utilities.sort((a,b)=>b.utility-a.utility)[0];
   const belief=(npc.beliefs||[]).find(b=>!b.checkedAt&&b.place?.region===npc.region&&['ill','missing-property','property-interference','possible-water-hazard'].includes(b.claim));
   if(belief&&chosen.utility<75){chosen.goal='investigate-observation';chosen.activity='気になった場所を確かめる';chosen.target=belief.place.position;}
@@ -224,7 +227,7 @@ function advanceNpcs(state,content,gameDelta) {
   for (const npc of values(state.npcs)) {
     if (npc.hp<=0) { npc.activity='倒れている'; continue; }
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
-    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.care?.status==='injured'||npc.companionOf)continue;
+    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.reviewAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.operationAssignment||npc.dutyAssignment||npc.detention?.status==='held'||npc.care?.status==='injured'||npc.companionOf)continue;
     if(advanceSocialPlan(state,content,npc,gameDelta))continue;
     const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacementCause?original.work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}

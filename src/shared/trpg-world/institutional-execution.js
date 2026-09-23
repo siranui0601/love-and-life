@@ -3,10 +3,12 @@ import {searchPlan,advanceActionPlan} from './npc-planner.js';
 import {rememberAction} from './relationships.js';
 import {observeWorkplace} from './world-semantics.js';
 import {impoundShipment,shipmentSecured} from './shipments.js';
+import {advanceFieldOrder} from './actor-operations.js';
 
 // An issued document is not an enacted site policy. The official who carries
 // it must reach the semantic destination; geometry is resolved at execution.
 export function advanceInstitutionalExecution(state,content,spec,process,seconds){
+ if(spec.enforcement)return advanceFieldOrder(state,content,spec,process,seconds);
  const order=process.order;if(!order?.executionRequired||order.execution?.status==='completed'||seconds<=0)return;
  const actor=state.npcs[order.authority],region=content.regions.find(r=>r.id===spec.region),target=region?.objects.find(o=>o.id===spec.access?.targetId);
  if(!actor||!target||actor.hp<=0||actor.travel||actor.region!==spec.region)return;

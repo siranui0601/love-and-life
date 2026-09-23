@@ -41,6 +41,7 @@ Object.assign(byId.get('bond-review'),{protectedActor:'NPC027',affectedTarget:'N
 Object.assign(byId.get('forest-passage'),{access:{targetId:'LOC_ELF_BARRIER_STONE',closed:false}});
 Object.assign(byId.get('customs-cargo'),{access:{targetId:'LOC_TRADE_WAREHOUSE',closed:true},impoundShipments:['unmanifested-arms']});
 Object.assign(byId.get('civic-protection'),{access:{targetId:'LOC_CAP_AJIN_QUARTER',closed:false}});
+Object.assign(byId.get('palace-protection'),{reviewers:['NPC016'],enforcement:{actorId:'NPC024',meetingId:'LOC_CAP_LOWER_INN',postId:'LOC_CAP_CASTLE',protectActorId:'NPC016',routeIds:[],modes:['foot'],stoppedOperations:['palace-assault'],text:'偽造された警備交代を撤回し、国王がいる王城の持ち場を守る。'}});
 for(const id of ['colossus-feed','joint-ceasefire'])byId.get(id).activation={path:['events','roots','causal','forestBarrier'],value:false};
 byId.get('harbor-chain').activation={any:[{path:['npcs','NPC009','hp'],op:'lte',value:0},{path:['processes','dock-payroll','failedAt'],op:'gte',value:0}]};
 
@@ -50,6 +51,9 @@ byId.get('harbor-chain').activation={any:[{path:['npcs','NPC009','hp'],op:'lte',
 export const DEFAULT_SHIPMENTS=[{id:'unmanifested-arms',name:'農具と申告された武器箱',ownerId:'NPC048',carrierId:'NPC052',receiverId:'NPC076',
  originId:'LOC_CRIME_WAREHOUSE',destinationId:'LOC_TRADE_WAREHOUSE',billId:'customs-cargo:bill',dispatchAt:2*86400+8*3600,routeIds:['R08'],modes:['ship'],
  manifest:[{name:'封をされた武器の包み',assetId:'weapon-crate',quantity:6}]}];
+
+export const DEFAULT_ACTOR_OPERATIONS=[{id:'palace-assault',actorId:'NPC020',targetActorId:'NPC016',targetSiteId:'LOC_CAP_CASTLE',
+ intention:'警備が薄い時刻に王城へ入り、国王を襲う依頼を引き受けた。',departAt:7*86400+12*3600,searchSeconds:4*3600,routeIds:[],modes:['foot'],weaponItemId:'EQP-W-0001',windupSeconds:60,damage:75}];
 
 // Machinery failures reuse the same physical exposure, shelter and maintenance
 // model as fires and mine collapses. No new casualty is spawned by these bindings.

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-be0609b3b3b0",
+  "revision": "world-10d-30a9cef5f426",
   "time": {
     "days": 10,
     "scale": 60,
@@ -19895,7 +19895,15 @@
         "row": 20,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC016"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_CAP_CASTLE",
+          "startsAt": 644400,
+          "endsAt": 666000,
+          "activity": "王城で予定されていた謁見を行う"
+        }
+      ]
     },
     {
       "id": "NPC017",
@@ -20059,6 +20067,9 @@
         "row": 24,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC020"
+      },
+      "possessions": {
+        "EQP-W-0001": 1
       }
     },
     {
@@ -24877,9 +24888,22 @@
         }
       ],
       "reviewers": [
-        "NPC016",
-        "NPC019"
-      ]
+        "NPC016"
+      ],
+      "enforcement": {
+        "actorId": "NPC024",
+        "meetingId": "LOC_CAP_LOWER_INN",
+        "postId": "LOC_CAP_CASTLE",
+        "protectActorId": "NPC016",
+        "routeIds": [],
+        "modes": [
+          "foot"
+        ],
+        "stoppedOperations": [
+          "palace-assault"
+        ],
+        "text": "偽造された警備交代を撤回し、国王がいる王城の持ち場を守る。"
+      }
     },
     {
       "id": "border-testimony",
@@ -25123,6 +25147,24 @@
           "quantity": 6
         }
       ]
+    }
+  ],
+  "actorOperations": [
+    {
+      "id": "palace-assault",
+      "actorId": "NPC020",
+      "targetActorId": "NPC016",
+      "targetSiteId": "LOC_CAP_CASTLE",
+      "intention": "警備が薄い時刻に王城へ入り、国王を襲う依頼を引き受けた。",
+      "departAt": 648000,
+      "searchSeconds": 14400,
+      "routeIds": [],
+      "modes": [
+        "foot"
+      ],
+      "weaponItemId": "EQP-W-0001",
+      "windupSeconds": 60,
+      "damage": 75
     }
   ],
   "skills": [

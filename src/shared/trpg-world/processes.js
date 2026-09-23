@@ -4,6 +4,7 @@ import {rememberAction} from './relationships.js';
 import {damageStructure} from './aftermath.js';
 import {advanceInstitutionalExecution} from './institutional-execution.js';
 import {initializeShipments,advanceShipments,shipmentSecured} from './shipments.js';
+import {initializeActorOperations,advanceActorOperations,advanceDuties,operationsStopped} from './actor-operations.js';
 
 // Authored bindings run through a small physical/resource/institution vocabulary.
 // Neither a command nor a narrative provider can assign an event outcome.
@@ -13,6 +14,7 @@ const site=(content,id)=>{if(!siteIndexes.has(content))siteIndexes.set(content,n
 const error=message=>{throw Object.assign(new Error(message),{code:'PROCESS_REQUIREMENTS',status:409});};
 export function initializeProcesses(state,content){
  initializeShipments(state,content);
+ initializeActorOperations(state,content);
  state.processes||={};
  for(const spec of content.processes||[])if(!state.processes[spec.id])state.processes[spec.id]={...copy(spec.initial),stock:{},documents:[],milestones:[],reviewSeconds:0,initializedAt:state.time,...(state.contentRevision!==content.revision?{legacyDormant:true}:{})};
 }
@@ -31,7 +33,13 @@ export function processSafe(state,spec){
   return !p.powered&&(physical?physical.integrity>=80&&!physical.blocked&&!(physical.fire>0):p.integrity>=80);
  }
  if(spec.kind==='supply')return p.distributedAt!==undefined&&Object.entries(spec.required).every(([id,n])=>(p.receipts?.[id]||0)>=n);
- if(spec.kind==='inquiry')return p.order?.status==='issued'&&!!state.institutionalOrders?.[p.order.factId]&&(!p.order.executionRequired||p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed&&(p.order.impoundShipments||[]).every(id=>shipmentSecured(state,id,p.order.factId)));
+ if(spec.kind==='inquiry'){
+  if(spec.enforcement&&state.npcs[spec.enforcement.protectActorId]?.hp>0&&spec.enforcement.stoppedOperations?.length&&spec.enforcement.stoppedOperations.every(id=>!state.actorOperations?.[id]?.legacyDormant)&&operationsStopped(state,spec.enforcement.stoppedOperations))return true;
+  if(!p.order||p.order.status!=='issued'||!state.institutionalOrders?.[p.order.factId])return false;
+  if(!p.order.executionRequired)return true;
+  if(spec.enforcement)return !!state.duties?.[p.order.factId]?.arrivalFactId&&state.npcs[spec.enforcement.protectActorId]?.hp>0&&operationsStopped(state,p.order.stoppedOperations);
+  return p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed&&(p.order.impoundShipments||[]).every(id=>shipmentSecured(state,id,p.order.factId));
+ }
  if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
  return false;
 }
@@ -128,6 +136,7 @@ export function finishProcessWork(state,content,{spec,op}){
 export function advanceProcesses(state,content,seconds){
  initializeProcesses(state,content);
  advanceShipments(state,content,seconds);
+ advanceDuties(state,content,seconds);advanceActorOperations(state,content,seconds);
  for(const spec of content.processes||[]){
   const p=state.processes[spec.id],event=content.events.find(e=>e.id===spec.eventId),point=pointFor(state,content,spec);
   if(!event||!point||p.legacyDormant)continue;
@@ -142,13 +151,15 @@ export function advanceProcesses(state,content,seconds){
   }
   if(active&&spec.kind==='patient'&&!p.treated){const npc=state.npcs[spec.actorId];if(!p.exposed){p.exposed=true;npc.injury={kind:'poison',treated:false,at:state.time};npc.hp=Math.min(npc.hp,40);}npc.hp=Math.max(0,npc.hp-seconds/3600*(spec.damagePerHour||1));}
   if(spec.kind==='inquiry'&&!p.order&&spec.documents.every(d=>p.documents.includes(d.id))&&seconds>0){
-   const clerk=Object.values(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===spec.region&&distance(n.position,point.position)<8&&hasLineOfSight(content.regions.find(r=>r.id===spec.region),n.position,point.position)&&((spec.reviewers||[]).includes(n.id)||content.npcs.find(t=>t.id===n.id)?.workFacilityId===spec.targetId));
-   if(clerk){p.reviewSeconds+=seconds;if(p.reviewSeconds>=300){const fact=rememberAction(state,content,'institutional-order',{actorId:clerk.id,targetId:spec.targetId,payload:{documents:[...p.documents],order:spec.order}});p.order={status:'issued',kind:spec.order,authority:clerk.id,evidence:[...p.documents],at:state.time,factId:fact.id};
+   const clerk=Object.values(state.npcs).find(n=>n.hp>0&&!n.travel&&!n.rescueAssignment&&!n.institutionalAssignment&&!n.transportAssignment&&!n.operationAssignment&&!n.dutyAssignment&&!n.entrapment&&(!n.reviewAssignment||n.reviewAssignment===spec.id)&&n.region===spec.region&&distance(n.position,point.position)<8&&hasLineOfSight(content.regions.find(r=>r.id===spec.region),n.position,point.position)&&(spec.reviewers?.length?spec.reviewers.includes(n.id):content.npcs.find(t=>t.id===n.id)?.workFacilityId===spec.targetId));
+   if(p.reviewerId&&p.reviewerId!==clerk?.id&&state.npcs[p.reviewerId]?.reviewAssignment===spec.id)delete state.npcs[p.reviewerId].reviewAssignment;
+   if(clerk){p.reviewerId=clerk.id;clerk.reviewAssignment=spec.id;clerk.activity='手元の原本を照合し、審理を進める';p.reviewSeconds+=seconds;if(p.reviewSeconds>=300){delete clerk.reviewAssignment;const fact=rememberAction(state,content,'institutional-order',{actorId:clerk.id,targetId:spec.targetId,payload:{documents:[...p.documents],order:spec.order}});p.order={status:'issued',kind:spec.order,authority:clerk.id,evidence:[...p.documents],at:state.time,factId:fact.id};
      state.institutionalOrders||={};state.institutionalOrders[fact.id]={...copy(p.order),jurisdiction:spec.region,targetId:spec.affectedTarget||spec.targetId};
-     if(spec.access){p.order.executionRequired=true;state.institutionalOrders[fact.id].executionRequired=true;
+     if(spec.access||spec.enforcement){p.order.executionRequired=true;state.institutionalOrders[fact.id].executionRequired=true;
       // Old saves do not receive newly authored shipments or new custody goals.
       const ids=(spec.impoundShipments||[]).filter(id=>state.shipments[id]&&!state.shipments[id].legacyDormant);
-      p.order.impoundShipments=ids;state.institutionalOrders[fact.id].impoundShipments=[...ids];}
+      p.order.impoundShipments=ids;state.institutionalOrders[fact.id].impoundShipments=[...ids];
+      p.order.stoppedOperations=(spec.enforcement?.stoppedOperations||[]).filter(id=>!state.actorOperations[id]?.legacyDormant);}
      if(spec.protectedActor){const person=state.npcs[spec.protectedActor];if(person){person.legalProtection={authority:clerk.id,jurisdiction:spec.region,orderId:fact.id};}}
 }}
   }
