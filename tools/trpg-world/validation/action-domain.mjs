@@ -30,19 +30,31 @@ export function performAt(run,target,type,parameter={},reason='現地で提示�
 export function prepare(run,requirements,{maxDecisions=24}={}) {
  const goals=[requirements];let decisions=0;
  while(goals.length&&decisions<maxDecisions) {
-  const goal=goals.at(-1),view=run.view(),p=view.player;
+  const view=run.view(),p=view.player;
   if(view.monsters.some(m=>m.activity==='attack'||distance(m.position,p.position)<12)){const fight=secureArea(run);decisions++;if(fight.error)return fight;continue;}
+  // Preparation can itself require a working day. Use the same meals and
+  // lodging as a player, instead of working through exhaustion to a grant.
+  const meal=run.options().find(o=>o.command.type==='eat'&&!o.command.targetId);
+  if(p.hunger>50&&meal){const result=run.select(meal,'準備の途中で携帯食を取る');decisions++;if(result.error)return result;continue;}
+  if(p.fatigue>55&&p.gold>=8){
+   const inn=view.region.objects.find(o=>o.kind==='inn'&&!o.closed);
+   if(!inn)return {error:'FIRST_MISSING_AFFORDANCE',reason:'疲労を回復できる宿をまだ知らない',decisions};
+   const result=performAt(run,inn,'rest',{},'準備の途中で宿に泊まり、疲れを取る');decisions++;if(result.error)return result;continue;
+  }
+  const upkeep=p.hunger>50&&!meal?{items:{supplies:1}}:p.fatigue>55?{gold:8}:null;
+  if(upkeep&&JSON.stringify(goals.at(-1))!==JSON.stringify(upkeep))goals.push(upkeep);
+  const goal=goals.at(-1);
   const item=Object.entries(goal.items||{}).find(([id,n])=>(p.inventory[id]||0)<n),skill=(goal.skills||[]).find(id=>!p.skills.includes(id));
   if(!item&&!skill&&p.gold>=(goal.gold||0)&&p.sp>=(goal.sp||0)){goals.pop();continue;}
   if(p.sp<(goal.sp||0))return {error:'FIRST_MISSING_AFFORDANCE',reason:'技能点を得る成長行動が必要',decisions};
   const type=item?'buy':skill?'train':'work',parameter=item?{itemId:item[0]}:skill?{skillId:skill}:{};
   const known=(view.services||[]).flatMap(s=>s.offers.filter(o=>o.type===type&&Object.entries(parameter).every(([k,v])=>o[k]===v)).map(offer=>({service:s,offer})));
-  const choice=known.sort((a,b)=>(a.service.region!==view.region.id)-(b.service.region!==view.region.id)||a.service.id.localeCompare(b.service.id,'en'))[0];
-  if(!choice) {
+  const choice=known.sort((a,b)=>(a.service.region!==view.region.id)-(b.service.region!==view.region.id)||distance(a.service.position,p.position)-distance(b.service.position,p.position)||a.service.id.localeCompare(b.service.id,'en'))[0];
+  if(!choice||choice.service.region!==view.region.id) {
    const kinds=type==='buy'?['shop','stable']:type==='train'?['trainer']:['job','board'];
-   const place=view.region.objects.find(o=>kinds.includes(o.kind)&&!view.services?.some(s=>s.id===o.id));
-   if(!place)return {error:'FIRST_MISSING_AFFORDANCE',reason:'必要な品や技能の入手先をまだ知らない',type,parameter,decisions};
-   const result=performAt(run,place,'interact',{action:'inspect'},'必要な品や仕事を探して、店頭や掲示を確かめる');decisions++;if(result.error)return result;continue;
+   const place=view.region.objects.filter(o=>kinds.includes(o.kind)&&!view.services?.some(s=>s.id===o.id)).sort((a,b)=>distance(a.position,p.position)-distance(b.position,p.position))[0];
+   if(place){const result=performAt(run,place,'interact',{action:'inspect'},'必要な品や仕事を探して、店頭や掲示を確かめる');decisions++;if(result.error)return result;continue;}
+   if(!choice)return {error:'FIRST_MISSING_AFFORDANCE',reason:'必要な品や技能の入手先をまだ知らない',type,parameter,decisions};
   }
   const needed=choice.offer.requirements||{};
   const lacking=Object.entries(needed.items||{}).some(([id,n])=>(p.inventory[id]||0)<n)||(needed.skills||[]).some(id=>!p.skills.includes(id))||p.gold<(needed.gold||0)||p.sp<(needed.sp||0);

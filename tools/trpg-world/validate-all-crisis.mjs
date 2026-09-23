@@ -12,7 +12,7 @@ const name=process.argv[2]||'candidate';if(!/^[a-z-]+$/.test(name))throw new Err
 const run=new WorldReplay(content,{seed:4}),root=new URL('./reports/all-crisis/'+name+'/',import.meta.url);fs.mkdirSync(root,{recursive:true});
 const must=r=>{if(r?.error)throw Object.assign(new Error('FIRST_MISSING_AFFORDANCE'),{detail:r});return r;};
 const entity=id=>{const npc=run.state.npcs[id];if(npc)return {id,region:npc.region,position:[...npc.position]};for(const region of content.regions){const o=region.objects.find(o=>o.id===id);if(o)return {...o,region:region.id};}throw new Error('Missing semantic entity '+id);};
-function arrive(id){const t=entity(id);must(travelTo(run,t.region));must(performAt(run,t,null));must(secureArea(run));must(performAt(run,entity(id),null));return entity(id);}
+function arrive(id){must(prepare(run,{}, {maxDecisions:48}));const t=entity(id);must(travelTo(run,t.region));must(performAt(run,t,null));must(secureArea(run));must(performAt(run,entity(id),null));return entity(id);}
 function inspect(id){must(performAt(run,arrive(id),'interact',{action:'inspect'}));}
 function ready(requirements){
  for(const kind of ['shop','trainer','board']){const place=run.view().region.objects.find(o=>o.kind===kind&&!run.view().services.some(s=>s.id===o.id));if(place)inspect(place.id);}

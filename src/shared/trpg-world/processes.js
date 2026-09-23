@@ -28,7 +28,7 @@ export function processSafe(state,spec){
   const physical=linkedStructure(state,spec);
   return !p.powered&&(physical?physical.integrity>=80&&!physical.blocked&&!(physical.fire>0):p.integrity>=80);
  }
- if(spec.kind==='supply')return Object.entries(spec.required).every(([id,n])=>((p.receipts||p.stock)[id]||0)>=n);
+ if(spec.kind==='supply')return p.distributedAt!==undefined&&Object.entries(spec.required).every(([id,n])=>(p.receipts?.[id]||0)>=n);
  if(spec.kind==='inquiry')return p.order?.status==='issued'&&!!state.institutionalOrders?.[p.order.factId]&&(!p.order.executionRequired||p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed);
  if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
  return false;
@@ -129,7 +129,7 @@ export function advanceProcesses(state,content,seconds){
   const p=state.processes[spec.id],event=content.events.find(e=>e.id===spec.eventId),point=pointFor(state,content,spec);
   if(!event||!point||p.legacyDormant)continue;
   const active=state.time>= (spec.startsAt??event.startsAt)&&allowed(state,spec.activation);
-  if(spec.kind==='supply'&&processSafe(state,spec)&&!p.distributedAt){
+  if(spec.kind==='supply'&&p.distributedAt===undefined&&Object.entries(spec.required).every(([id,n])=>(p.stock[id]||0)>=n)){
    const recipients=Object.values(state.npcs).filter(n=>n.hp>0&&!n.travel&&n.region===spec.region&&distance(n.position,point.position)<8&&hasLineOfSight(content.regions.find(r=>r.id===spec.region),n.position,point.position)&&content.npcs.find(t=>t.id===n.id)?.workFacilityId===spec.targetId);
    if(recipients.length){let remaining=p.stock.gold||0;for(const n of recipients){const amount=Math.floor(remaining/(recipients.length-recipients.indexOf(n)));n.money+=amount;remaining-=amount;}
     p.distributedAt=state.time;p.distributions=recipients.map(n=>n.id);p.receipts=copy(p.stock);p.stock={};

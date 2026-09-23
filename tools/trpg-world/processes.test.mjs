@@ -48,6 +48,24 @@ test('failure leaves broken access that ordinary repair reopens without erasing 
  assert(prepare(r,{items:{timber:2,rope:1},skills:['crafting']}).prepared);assert.equal(r.state.events.incident.status,'failed');assert.equal(r.state.facilities.machine.closed,true);
  act(r,'machine','drive/inspect');act(r,'machine','drive/repair');assert.equal(r.state.facilities.machine.closed,false);assert(r.state.processes.drive.recoveredAt);assert.equal(r.state.events.incident.status,'failed');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
+
+test('unclaimed deposited resources never count as received wages or resolved supply trouble',()=>{
+ const c=fixture();c.npcs=[];c.events[0].sourceIds=['b'];c.processes=c.processes.filter(p=>p.kind==='supply');
+ const r=new WorldReplay(c);assert(prepare(r,{items:{supplies:1},gold:20}).prepared);
+ act(r,'office','fund/inspect');act(r,'office','fund/deliver-supplies');act(r,'office','fund/deliver-gold');
+ assert.equal(r.state.processes.fund.stock.gold,20);assert.equal(r.state.processes.fund.receipts,undefined);
+ assert.equal(r.state.events.incident.status,'latent');assert(!r.state.processes.fund.safeAt);
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
+test('ordinary resource preparation interrupts long work with real meals and lodging',()=>{
+ const c=fixture();c.processes=[];c.events=[];c.jobs[0]={...c.jobs[0],minutes:240,pay:18};
+ const r=new WorldReplay(c),result=prepare(r,{gold:220},{maxDecisions:80});
+ assert(result.prepared,JSON.stringify(result));assert(!r.state.player.collapse);
+ assert(r.operations.some(o=>o.command?.type==='eat'));assert(r.operations.some(o=>o.command?.type==='rest'));
+ assert(r.operations.filter(o=>o.command?.type==='work').length>=6);assert(r.state.time>86400);
+ assert.equal(digest(replay(c,r.export()).state),digest(r.state));assert.deepEqual(r.defects,[]);
+});
 test('copies require actual reading and submission; institutional order requires a present living reviewer',()=>{
  const c=fixture();c.events[0].sourceIds=['a'];c.processes=[{id:'review',kind:'inquiry',eventId:'incident',sourceId:'a',region:'farm',targetId:'office',name:'審理',observation:'受付がある。',initial:{},order:'correct-ledger',documents:[{id:'original',targetId:'machine',text:'原本の記載が異なる。'}],reviewers:['clerk']}];const r=new WorldReplay(c);
  act(r,'office','review/inspect');assert(!r.options().some(o=>o.command.action==='review/submit'));assert(!performAt(r,target(r,'machine'),'interact',{action:'inspect'}).error);assert(r.state.knowledge.some(k=>k.documentId==='original'));
