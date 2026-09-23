@@ -2,6 +2,7 @@ import {distance,hasLineOfSight} from './navigation.js';
 import {consumeResources,depositDocuments,recordMilestone} from './world-semantics.js';
 import {rememberAction} from './relationships.js';
 import {damageStructure} from './aftermath.js';
+import {advanceInstitutionalExecution} from './institutional-execution.js';
 
 // Authored bindings run through a small physical/resource/institution vocabulary.
 // Neither a command nor a narrative provider can assign an event outcome.
@@ -28,7 +29,7 @@ export function processSafe(state,spec){
   return !p.powered&&(physical?physical.integrity>=80&&!physical.blocked&&!(physical.fire>0):p.integrity>=80);
  }
  if(spec.kind==='supply')return Object.entries(spec.required).every(([id,n])=>((p.receipts||p.stock)[id]||0)>=n);
- if(spec.kind==='inquiry')return p.order?.status==='issued'&&!!state.institutionalOrders?.[p.order.factId];
+ if(spec.kind==='inquiry')return p.order?.status==='issued'&&!!state.institutionalOrders?.[p.order.factId]&&(!p.order.executionRequired||p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed);
  if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
  return false;
 }
@@ -141,10 +142,11 @@ export function advanceProcesses(state,content,seconds){
    const clerk=Object.values(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===spec.region&&distance(n.position,point.position)<8&&hasLineOfSight(content.regions.find(r=>r.id===spec.region),n.position,point.position)&&((spec.reviewers||[]).includes(n.id)||content.npcs.find(t=>t.id===n.id)?.workFacilityId===spec.targetId));
    if(clerk){p.reviewSeconds+=seconds;if(p.reviewSeconds>=300){const fact=rememberAction(state,content,'institutional-order',{actorId:clerk.id,targetId:spec.targetId,payload:{documents:[...p.documents],order:spec.order}});p.order={status:'issued',kind:spec.order,authority:clerk.id,evidence:[...p.documents],at:state.time,factId:fact.id};
      state.institutionalOrders||={};state.institutionalOrders[fact.id]={...copy(p.order),jurisdiction:spec.region,targetId:spec.affectedTarget||spec.targetId};
-     if(spec.access){const facility=state.facilities[spec.access.targetId]||={};facility.closed=spec.access.closed;facility.orderId=fact.id;}
+     if(spec.access){p.order.executionRequired=true;state.institutionalOrders[fact.id].executionRequired=true;}
      if(spec.protectedActor){const person=state.npcs[spec.protectedActor];if(person){person.legalProtection={authority:clerk.id,jurisdiction:spec.region,orderId:fact.id};}}
 }}
   }
+  advanceInstitutionalExecution(state,content,spec,p,seconds);
   const safe=processSafe(state,spec);
   if(safe&&p.safeAt===undefined)p.safeAt=state.time;
   if(active&&!safe&&(spec.kind!=='device'||p.powered===true)&&state.time>=(spec.deadline??event.deadline)&&p.failedAt===undefined){

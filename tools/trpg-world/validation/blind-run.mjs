@@ -22,16 +22,18 @@ export function blindInput(view){
  for(const action of actions)action.targetId=alias(action.targetId);
  observation.actions=actions;return {observation,bindings};
 }
-function step(run,point){
+function step(run,point,pace=1){
  const p=run.view().perception.self,d=distance(p.position,point);if(d<.12)return;
- run.command({type:'input',x:(point[0]-p.position[0])/d,z:(point[2]-p.position[2])/d});run.advance(Math.min(.4,d/4.2));
+ run.command({type:'input',x:pace*(point[0]-p.position[0])/d,z:pace*(point[2]-p.position[2])/d});run.advance(Math.min(.4,d/(4.2*pace)));
 }
 // Footstep executor receives the same current observations as the policy.
 // It recomputes only local obstacle paths; no content.routes or hidden target.
 function approach(run,destination){
- run.command({type:'resume'});let path=[],geometry;
+ run.command({type:'resume'});let path=[],geometry;const companions=new Set();
  for(let n=0;n<500;n++){
   const o=run.view().perception,p=o.self;
+  for(const person of o.people)if(person.accompanyingPlayer)companions.add(person.id);else companions.delete(person.id);
+  if([...companions].some(id=>!o.people.some(n=>n.id===id))){run.command({type:'input',x:0,z:0});return {interrupted:'companion-out-of-sight'};}
   if(p.collapse?.status==='active')return {error:'collapsed-during-walk'};
   if(distance(p.position,destination)<.2){run.command({type:'input',x:0,z:0});return {arrived:true};}
   if(o.monsters.some(m=>m.activity==='attack'||distance(m.position,p.position)<12)){run.command({type:'input',x:0,z:0});return {interrupted:'visible-danger'};}
@@ -39,7 +41,7 @@ function approach(run,destination){
   if(!path.length||geometry!==currentGeometry){path=findPath({size:o.region.size,obstacles:o.obstacles},p.position,destination);geometry=currentGeometry;}
   if(!path.length)return {error:'no-path-through-observed-geometry'};
   while(path.length&&distance(path[0],p.position)<.12)path.shift();
-  const before=[...p.position];step(run,path[0]||destination);
+  const before=[...p.position];step(run,path[0]||destination,companions.size?.5:1);
   if(distance(run.view().perception.self.position,before)<.0001)return {error:'first-unseen-or-blocked-footstep'};
  }
  return {error:'movement-budget'};
@@ -53,9 +55,9 @@ export function repeatedDestinations(entries){
  }
  return false;
 }
-export function runBlind(content,{seed=17,decisions=240,untilDay=5,onProgress=()=>{},onCheckpoint=()=>{}}={}){
- const run=new WorldReplay(content,{seed}),memory={},decisionsLog=[];let stopped='decision-budget',intermediate;
- run.command({type:'resume'});run.advance(.5);
+export function runBlind(content,{seed=17,decisions=240,untilDay=5,initialState,memory:savedMemory,onProgress=()=>{},onCheckpoint=()=>{}}={}){
+ const run=new WorldReplay(content,{seed,initialState}),memory=structuredClone(savedMemory||{}),decisionsLog=[];let stopped='decision-budget',intermediate;
+ run.command({type:'resume'});if(!initialState)run.advance(.5);
  for(let i=0;i<decisions;i++){
   const {observation,bindings}=blindInput(run.view());if(i%50===0){onProgress({i,day:observation.day,clock:observation.clock,region:observation.region.name,operations:run.operations.length});onCheckpoint({run,memory,decisionsLog});}if(observation.day>=untilDay){stopped='natural-day-boundary';break;}
   const decision=chooseBlind(JSON.parse(JSON.stringify(observation)),memory);

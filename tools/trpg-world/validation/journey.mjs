@@ -69,7 +69,8 @@ export function travelTo(run,destination) {
  for(const routeId of path){const portal=run.view().region.portals.find(p=>p.routeId===routeId);const moved=walk(run,portal.position);if(moved.error)return moved;
   const safe=secureArea(run);if(safe.error)return safe;
   const returned=walk(run,portal.position);if(returned.error)return returned;
-  const option=run.options().find(o=>o.command.type==='travel'&&o.command.portalId===portal.id&&o.command.mode==='foot');if(!option)return {error:'no-legal-travel-action'};
+  const offers=run.options().filter(o=>o.command.type==='travel'&&o.command.portalId===portal.id);
+  const option=offers.find(o=>o.command.mode==='foot')||offers[0];if(!option)return {error:'no-legal-travel-action'};
   const result=run.select(option,'街道の出口に着いたので、歩いて次の地域へ向かう');if(result.error)return result;
  }
  return {arrived:true};

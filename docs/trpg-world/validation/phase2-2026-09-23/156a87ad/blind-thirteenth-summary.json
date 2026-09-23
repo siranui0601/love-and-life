@@ -1,0 +1,53 @@
+{
+  "seed": 17,
+  "stopped": "DUPLICATE_DESTINATION_LOOP",
+  "day": 6,
+  "clock": "14:59",
+  "hp": 156,
+  "operations": 10973,
+  "decisions": 1573,
+  "outcomes": {
+    "border": {
+      "status": "active"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "critical"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active",
+      "components": "resolved"
+    }
+  },
+  "defects": [],
+  "counts": {
+    "lowLevelOperations": 10973,
+    "simulationAdvances": 5306,
+    "movementInputs": 4846,
+    "meaningfulPlayerDecisions": 817,
+    "travelSegments": 240,
+    "investigations": 134,
+    "conversationTurns": 185,
+    "preparationActions": 42,
+    "combatActions": 137,
+    "otherDecisions": 79
+  },
+  "conversationDiscoveries": 53,
+  "verification": {
+    "replay": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "sourceCheckpoint": "adc33c18",
+  "sourceQualification": "Runtime adc33c18 plus visible accompanyingPlayer projection; blind continuation and observed-companion pacing; before institutional execution",
+  "contentFile": "../../phase2-2026-09-22/a3b42001/content.json.gz",
+  "fullReplay": true,
+  "files": {
+    "blind-fifteenth-record.json.gz": {
+      "sha256": "8646558a196b1677dd714069558198301810f39a4e86a9fd6f84c2d5388f5b23",
+      "bytes": 597492
+    },
+    "blind-fifteenth-final-state.json.gz": {
+      "sha256": "18e28212b013b84fced0064d01b205d3f99fc6e53e7bf4be1385c19ffb00d4be",
+      "bytes": 543521
+    },
+    "blind-fifteenth-summary.json.gz": {
+      "sha256": "789fe1d26c4eb429d3d1cca59d122fcc61b1ae23ff71de68e01dc0006b06a924",
+      "bytes": 10322
+    }
+  }
+}

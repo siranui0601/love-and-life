@@ -1,0 +1,58 @@
+{
+  "seed": 17,
+  "stopped": "escort-person-not-visible-at-destination",
+  "day": 6,
+  "clock": "16:03",
+  "hp": 156,
+  "operations": 326,
+  "decisions": 8,
+  "outcomes": {
+    "border": {
+      "status": "active"
+    },
+    "bread-fire": {
+      "status": "failed"
+    },
+    "crown": {
+      "status": "active"
+    },
+    "deep-mine": {
+      "status": "failed"
+    },
+    "harbor": {
+      "status": "critical"
+    },
+    "lost-road": {
+      "status": "failed"
+    },
+    "resonance": {
+      "status": "active"
+    },
+    "roots": {
+      "status": "active",
+      "components": "resolved"
+    }
+  },
+  "defects": [],
+  "continuedFrom": {
+    "sourceName": "blind-thirteenth",
+    "sha256": "f3d61c2743876517e010674a596c5a344e1c4d3a06a2f8a7de0dbc966fb0ec69",
+    "worldTime": 485986.8023267086
+  },
+  "counts": {
+    "lowLevelOperations": 326,
+    "simulationAdvances": 159,
+    "movementInputs": 160,
+    "meaningfulPlayerDecisions": 6,
+    "travelSegments": 3,
+    "investigations": 0,
+    "conversationTurns": 0,
+    "preparationActions": 1,
+    "combatActions": 0,
+    "otherDecisions": 2
+  },
+  "conversationDiscoveries": 0,
+  "verification": {
+    "replay": true
+  }
+}

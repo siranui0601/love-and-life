@@ -1,0 +1,20 @@
+{
+  "sourceCheckpoint": "adc33c18",
+  "sourceQualification": "Runtime/policy adc33c18 plus continuation driver; before observed-companion pacing",
+  "contentFile": "../../phase2-2026-09-22/a3b42001/content.json.gz",
+  "fullReplay": true,
+  "files": {
+    "blind-fourteenth-record.json.gz": {
+      "sha256": "6e7e8e764b6142e7769e4335699062d0f307de35b069dab870f1735d15c4d941",
+      "bytes": 436631
+    },
+    "blind-fourteenth-final-state.json.gz": {
+      "sha256": "0480b8fd71ab9c882657731938ee26bc507ecb9adf84a25f048c69f4e8a74130",
+      "bytes": 432381
+    },
+    "blind-fourteenth-summary.json.gz": {
+      "sha256": "f6ec450b3d2b5794753f2cce0f4a7d8c026487c9510e38aeda2395075f23e627",
+      "bytes": 1192
+    }
+  }
+}

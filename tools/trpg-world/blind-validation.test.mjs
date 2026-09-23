@@ -125,3 +125,13 @@ test('blind free exploration remembers actual ground visited instead of circling
  const {run,summary}=runBlind(c,{decisions:24});const destinations=summary.decisionsLog.filter(d=>d.decision.walk).map(d=>d.decision.walk.map(n=>Math.round(n/6)).join(','));
  assert(destinations.length>=10);assert.equal(new Set(destinations).size,destinations.length);assert(!repeatedDestinations(summary.decisionsLog));assert.equal(digest(replay(c,run.export()).state),digest(run.state));
 });
+
+test('blind continuation restores only its recorded world and personal observations without offline progress',()=>{
+ const c=fixture();c.events=[];c.regions=c.regions.slice(0,1);c.regions[0].objects=[];c.regions[0].portals=[];c.routes=[];
+ const first=runBlind(c,{decisions:5}),saved=JSON.parse(JSON.stringify({state:first.run.state,memory:first.memory})),before=digest(saved);
+ const options={decisions:5,initialState:saved.state,memory:saved.memory},a=runBlind(c,options),b=runBlind(c,options);
+ assert.equal(digest(saved),before);assert.equal(a.run.initialState.time,saved.state.time);
+ assert.deepEqual(a.summary.decisionsLog,b.summary.decisionsLog);assert.equal(digest(a.run.state),digest(b.run.state));
+ assert.equal(digest(replay(c,a.run.export()).state),digest(a.run.state));
+ assert(Object.keys(a.memory.walkedGround).length>Object.keys(saved.memory.walkedGround).length);
+});

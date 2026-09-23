@@ -1,0 +1,20 @@
+{
+  "sourceCheckpoint": "156a87ad",
+  "sourceQualification": "Exact runtime and policy; driver allows Day10 horizon and final-state export only",
+  "contentFile": "../../phase2-2026-09-22/a3b42001/content.json.gz",
+  "fullReplay": true,
+  "files": {
+    "blind-thirteenth-record.json.gz": {
+      "sha256": "39abb75f53db589af25263e3f2946d8866ae17fda0e242ecaff40796d5d31838",
+      "bytes": 478721
+    },
+    "blind-thirteenth-final-state.json.gz": {
+      "sha256": "32b04831989eb9210d107e75f94c032a88884b23000ad8437101171b542e55a2",
+      "bytes": 433797
+    },
+    "blind-thirteenth-summary.json.gz": {
+      "sha256": "fc707dcbca8ff04988efc64038ef2e16990ec83a586134cc84ca73d33bc74bb1",
+      "bytes": 52601
+    }
+  }
+}

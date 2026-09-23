@@ -7,6 +7,7 @@ export function chooseBlind(o,m){
  m.visited||=[];m.asked||=[];m.attempted||=[];m.travelled||=[];
  for(const inspection of o.inspections)if(!m.visited.includes(inspection.id))m.visited.push(inspection.id);
  const p=o.self,actions=o.actions,act=a=>({action:a.key,reason:a.label}),walk=t=>({walk:t.position,target:t.id,reason:`見聞きした場所へ歩く：${t.name||t.text||'現場'}`});
+ m.companions||={};for(const person of o.people)if(person.accompanyingPlayer)m.companions[person.id]={...person,region:p.region};else delete m.companions[person.id];
  const groundKey=point=>`${p.region}:${Math.round(point[0]/6)},${Math.round(point[2]/6)}`;
  m.walkedGround||={};m.walkedGround[groundKey(p.position)]=true;
  m.roads||=[];if(m.departure&&m.departure.from!==p.region){m.roads.push({...m.departure,to:p.region});delete m.departure;}
@@ -39,8 +40,9 @@ export function chooseBlind(o,m){
  const tend=find('causal','tend');if(tend){if(m.task?.key===tend.key){m.task=null;m.need=null;}return act(tend);}
  const escort=ready.find(a=>a.type==='causal'&&a.verb==='escort'&&!m.attempted.includes(a.key));if(escort){m.attempted.push(escort.key);return act(escort);}
  const home=o.directions.find(d=>d.purpose==='escort'&&!d.completed);if(home&&home.destination.region===p.region){
+  const companion=o.people.find(n=>n.id===home.personId),lastSeen=m.companions[home.personId];
+  if(!companion&&lastSeen?.region===p.region){if(dist(lastSeen.position,p.position)>1)return walk(lastSeen);return {stop:'companion-absent-at-last-seen-position'};}
   if(dist(home.destination.position,p.position)>3)return walk({...home,id:home.destination.targetId,position:home.destination.position});
-  const companion=o.people.find(n=>n.id===home.personId);
   if(companion&&dist(companion.position,p.position)>3){if(p.activity.worldTimePolicy==='paused')return {resume:true};return {seconds:1,reason:'付き添い相手が追いつくのを、その場で見守る'};}
   if(companion){if(p.activity.worldTimePolicy==='paused')return {resume:true};return {seconds:1,reason:'相手と一緒に引き渡しを確かめる'};}
   return {stop:'escort-person-not-visible-at-destination'};

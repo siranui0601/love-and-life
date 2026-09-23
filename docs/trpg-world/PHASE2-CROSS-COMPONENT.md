@@ -1,5 +1,7 @@
 # Phase 2 cross-component continuation
 
+Current priority and completion gate: [DAY10-ALL-CRISIS.md](DAY10-ALL-CRISIS.md), updated after live verification of 総合設計書 section 21 on 2026-09-23. The blind continuation milestones below are supporting evidence, not substitutes for the all-success Day10-end gate.
+
 Starting checkpoint: `9ad51ebb4b1fa921b194f3a7f03e4b0e059887e6`.
 
 ## Shared process milestone

@@ -1,12 +1,16 @@
 import fs from 'node:fs/promises';
 import {writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {runBlind,verifyBlindRecord} from './validation/blind-run.mjs';
 import {decisionCounts} from './validation/action-domain.mjs';
 const name=process.argv[2]||'blind-life',directory=new URL('./reports/',import.meta.url);
 if(!/^[a-z-]+$/.test(name))throw new Error('Invalid worldline name');
 const untilDay=Number(process.argv[3]||5);if(!Number.isInteger(untilDay)||untilDay<2||untilDay>10)throw new Error('Worldline day limit must be 2..10');
 const content=JSON.parse(await fs.readFile(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url),'utf8'));
-const result=runBlind(content,{decisions:4000,untilDay,onProgress:state=>console.log(JSON.stringify(state)),onCheckpoint:({run,memory,decisionsLog})=>{writeFileSync(new URL(name+'-checkpoint.json',directory),JSON.stringify({record:run.export(),state:run.state,memory,decisionsLog}));}});
+const sourceName=process.argv[4];let saved,continuedFrom;
+if(sourceName){if(!/^[a-z-]+$/.test(sourceName)||sourceName===name)throw new Error('Invalid continuation source');const bytes=await fs.readFile(new URL(sourceName+'-final-state.json',directory));saved=JSON.parse(bytes);continuedFrom={sourceName,sha256:createHash('sha256').update(bytes).digest('hex'),worldTime:saved.state.time};}
+const result=runBlind(content,{decisions:4000,untilDay,initialState:saved?.state,memory:saved?.memory,onProgress:state=>console.log(JSON.stringify(state)),onCheckpoint:({run,memory,decisionsLog})=>{writeFileSync(new URL(name+'-checkpoint.json',directory),JSON.stringify({record:run.export(),state:run.state,memory,decisionsLog}));}});
+if(continuedFrom)result.summary.continuedFrom=continuedFrom;
 await fs.writeFile(new URL(name+'-final-state.json',directory),JSON.stringify({state:result.run.state,memory:result.memory}));
 await fs.writeFile(new URL(name+'-final-observation.json',directory),JSON.stringify(result.run.view().perception));
 await fs.writeFile(new URL(name+'-record.json',directory),JSON.stringify(result.run.export()));

@@ -9,12 +9,14 @@ import {prepare,performAt} from './validation/action-domain.mjs';
 function fixture(){return {revision:'process-contract',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'村',size:160,spawn:[0,0,0],obstacles:[],portals:[],objects:[{id:'shop',kind:'shop',name:'店',position:[0,0,2]},{id:'teacher',kind:'trainer',name:'師匠',skills:['crafting'],position:[2,0,0]},{id:'board',kind:'board',name:'仕事場',position:[-2,0,0]},{id:'inn',kind:'inn',name:'宿',position:[0,0,-2]},{id:'machine',kind:'landmark',name:'機械',position:[1,0,1]},{id:'office',kind:'landmark',name:'審理窓口',position:[-1,0,1]}]}],npcs:[{id:'clerk',name:'係員',region:'farm',home:[-1,0,1],work:[-1,0,1],workFacilityId:'office'}],events:[{id:'incident',name:'異変',region:'farm',position:[0,0,3],startsAt:100000,deadline:200000,sourceIds:['a','b']}],causalScenarios:[],routes:[],items:[{id:'timber',name:'木材',price:2},{id:'rope',name:'縄',price:2},{id:'supplies',name:'携帯食',price:5,kind:'food'},{id:'antidote',name:'解毒薬',price:3}],skills:[{id:'crafting',name:'工作',goldCost:2,cost:1}],jobs:[{id:'labor',name:'荷運び',region:'farm',facilityId:'board',minutes:30,pay:45,xp:32}],equipment:[],monsters:[],processes:[{id:'drive',kind:'device',eventId:'incident',sourceId:'a',region:'farm',targetId:'machine',name:'送出機',observation:'留め具に傷がある。',initial:{powered:true,integrity:40},aftermath:{closedTarget:'machine'}},{id:'fund',kind:'supply',eventId:'incident',sourceId:'b',region:'farm',targetId:'office',name:'供託所',observation:'納品簿が置いてある。',initial:{},required:{supplies:1,gold:20}}]};}
 const target=(r,id)=>r.view().region.objects.find(o=>o.id===id)||r.view().npcs.find(n=>n.id===id);
 const act=(r,id,action)=>{const result=performAt(r,target(r,id),'process',{action});assert(!result.error,JSON.stringify(result));};
-test('blind ordinary life discovers structural aftermath, prepares, rescues and continues without outcome injection',()=>{
- const c=fixture(),physical=structuredClone(DEFAULT_PROCESS_STRUCTURES.find(s=>s.failure.kind==='collapse'));
+for(const kind of ['collapse','fire'])test(`blind ordinary life discovers ${kind} aftermath, prepares, rescues and continues without outcome injection`,()=>{
+ const c=fixture(),physical=structuredClone(DEFAULT_PROCESS_STRUCTURES.find(s=>s.failure.kind===kind));
  Object.assign(physical,{id:'wreck',processId:'drive',region:'farm',targetId:'machine',shelterId:'inn',hazardEventId:'incident'});
+ physical.actions.find(a=>a.id==='shore').requirements={items:{timber:2},skills:['crafting']};
  c.time.startSeconds=22*3600;c.regions[0].spawn=[0,0,-20];
  c.regions[0].objects.find(o=>o.id==='inn').position=[0,0,-20];
  c.regions[0].objects.find(o=>o.id==='machine').position=[25,0,0];
+ c.regions[0].obstacles=[{x:12,z:-5,width:4,depth:12}];
  c.structures=[physical];c.processes=[{...c.processes[0],structureId:'wreck'}];c.events[0].sourceIds=['a'];c.events[0].startsAt=22*3600+60;c.events[0].deadline=22*3600+120;
  c.items.push({id:'medicine',name:'傷薬',price:2});
  c.npcs=['worker','coworker','visitor'].map((id,i)=>({id,name:`現場の住人${i+1}`,role:'作業員',region:'farm',home:[25+i,0,0],work:[25+i,0,0],knowledge:[]}));
@@ -51,6 +53,21 @@ test('copies require actual reading and submission; institutional order requires
  act(r,'office','review/inspect');assert(!r.options().some(o=>o.command.action==='review/submit'));assert(!performAt(r,target(r,'machine'),'interact',{action:'inspect'}).error);assert(r.state.knowledge.some(k=>k.documentId==='original'));
  act(r,'office','review/submit');assert.equal(r.state.processes.review.order,undefined);assert.equal(r.state.documentCustody.office[0].documentId,'original');r.command({type:'resume'});r.advance(6);assert.equal(r.state.processes.review.order.authority,'clerk');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
  const absent=fixture();absent.events=c.events;absent.processes=c.processes;absent.npcs=[];const a=new WorldReplay(absent);act(a,'office','review/inspect');performAt(a,target(a,'machine'),'interact',{action:'inspect'});act(a,'office','review/submit');a.command({type:'resume'});a.advance(60);assert.equal(a.state.processes.review.order,undefined);
+});
+
+test('institutional access changes require the informed official to walk to the site and enact the order',()=>{
+ const c=fixture();c.events[0].sourceIds=['a'];c.regions[0].objects.find(o=>o.id==='machine').position=[32,0,12];
+ c.processes=[{id:'review',kind:'inquiry',eventId:'incident',sourceId:'a',region:'farm',targetId:'office',name:'審理',observation:'受付がある。',initial:{},order:'suspend-access',documents:[{id:'original',targetId:'shop',text:'危険な搬入の記録。'}],reviewers:['clerk'],access:{targetId:'machine',closed:true}}];
+ const r=new WorldReplay(c);act(r,'office','review/inspect');assert(!performAt(r,target(r,'shop'),'interact',{action:'inspect'}).error);act(r,'office','review/submit');r.command({type:'resume'});r.advance(6);
+ assert.equal(r.state.processes.review.order.status,'issued');assert.equal(r.state.processes.review.order.execution.status,'in-progress');
+ assert(!r.state.facilities.machine?.closed);assert.equal(r.state.events.incident.status,'latent');
+ const saved=r.fork();for(const run of [r,saved]){
+  assert(!performAt(run,target(run,'inn'),'rest').error);
+  const order=run.state.processes.review.order;assert.equal(order.execution.status,'completed');assert.equal(run.state.facilities.machine.orderId,order.factId);assert.equal(run.state.events.incident.status,'prevented');
+  const fact=run.state.socialFacts.find(f=>f.id===order.execution.evidence);assert.equal(fact.actorId,'clerk');assert.equal(fact.targetId,'machine');
+  assert(Math.hypot(fact.position[0]-32,fact.position[2]-12)<3);assert(run.state.npcs.clerk.planHistory.some(p=>p.goal==='enact-order'));
+ }
+ assert.equal(digest(r.state),digest(saved.state));assert.equal(digest(replay(c,r.export()).state),digest(r.state));
 });
 test('patient treatment consumes a real antidote and prevents physical poisoning, never creates a person',()=>{
  const c=fixture();c.events[0].sourceIds=['a'];c.processes=[{id:'illness',kind:'patient',eventId:'incident',sourceId:'a',region:'farm',targetId:'clerk',actorId:'clerk',name:'容体',observation:'薬が変色している。',initial:{treated:false,exposed:false}}];const r=new WorldReplay(c);assert(prepare(r,{items:{antidote:1}}).prepared);act(r,'clerk','illness/inspect');act(r,'clerk','illness/treat');assert.equal(r.state.player.inventory.antidote,0);assert.equal(r.state.processes.illness.treated,true);assert.equal(r.state.events.incident.status,'prevented');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
