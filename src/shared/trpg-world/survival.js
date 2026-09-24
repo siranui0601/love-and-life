@@ -55,7 +55,7 @@ function assignRescue(state,npc,facility,reason) {
 export function advanceRescue(state,content,seconds) {
  const p=state.player,c=p.collapse;if(c?.status!=='active')return;
  const region=content.regions.find(r=>r.id===p.region),budget=seconds/(content.time?.scale||60)*1.4;
- const eligible=n=>n.hp>0&&!n.travel&&!n.captive&&!n.causalAssignment&&n.region===p.region;
+ const eligible=n=>n.hp>0&&!n.travel&&!n.captive&&n.detention?.status!=='held'&&!n.custodyAssignment&&!n.operationMember&&!n.causalAssignment&&n.region===p.region;
  const facility=region.objects?.find(o=>['inn','clinic'].includes(o.kind)&&!state.facilities?.[o.id]?.closed&&findPath(region,p.position,o.position).length);if(!facility)return;
  if(!c.rescue&&c.helpRequest){
   const request=c.helpRequest,witness=state.npcs[request.actorId],helper=state.npcs[request.helperId];

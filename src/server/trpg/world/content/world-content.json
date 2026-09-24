@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-7447e1bcfa30",
+  "revision": "world-10d-8cc8c18b05b7",
   "time": {
     "days": 10,
     "scale": 60,
@@ -21520,7 +21520,15 @@
         "row": 59,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC055"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_TEMPLE_CORRIDOR",
+          "startsAt": 118800,
+          "endsAt": 129600,
+          "activity": "回廊の文字を調べるため、巡礼に訪れている"
+        }
+      ]
     },
     {
       "id": "NPC056",
@@ -24587,13 +24595,13 @@
         "blocked": false
       },
       "failure": {
-        "kind": "collapse",
-        "traps": true,
-        "exposureRange": 8,
+        "kind": "discharge",
+        "traps": false,
+        "exposureRange": 0,
         "effects": {
           "integrity": 0,
           "operating": false,
-          "blocked": true,
+          "blocked": false,
           "fire": 0
         }
       },
@@ -24781,6 +24789,22 @@
       "aftermath": {
         "closedTarget": "LOC_TEMPLE_CORRIDOR"
       },
+      "startsAt": 118800,
+      "transfer": {
+        "destinationId": "LOC_TEMPLE_SEALED",
+        "shelterId": "LOC_TEMPLE_REST",
+        "radius": 2,
+        "windupSeconds": 180,
+        "charges": 1,
+        "damage": 20
+      },
+      "documents": [
+        {
+          "id": "pilgrim-transfer:receiver",
+          "targetId": "LOC_TEMPLE_ADMIN",
+          "text": "回廊の整備図では、割れた選路器の残存出力が地下封印区画の受信環へ接続されている。"
+        }
+      ],
       "structureId": "structure:pilgrim-transfer"
     },
     {

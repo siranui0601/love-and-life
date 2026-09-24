@@ -6,11 +6,24 @@ import {rememberAction} from './relationships.js';
 import {observeWorkplace} from './world-semantics.js';
 
 const siteOf=(content,spec)=>content.regions.find(r=>r.id===spec.region)?.objects.find(o=>o.id===spec.targetId);
+const aftermathOf=(state,spec)=>spec.careCaseId?state.careCases[spec.careCaseId]:state.structures[spec.id];
+const careMatches=(npc,spec)=>spec.careCaseId?npc.care?.caseId===spec.careCaseId:npc.care?.structureId===spec.id;
+const sourceFact=s=>s.sourceFactId||s.damageFactId;
+export function registerInjuryCase(state,content,npc,{sourceFactId,siteId,shelterId,text,kind='trauma',damage=20}){
+ const region=content.regions.find(r=>r.id===npc.region),site=region?.objects.find(o=>o.id===siteId),shelter=region?.objects.find(o=>o.id===shelterId);
+ if(!site||!shelter||npc.hp<=0||npc.travel)return null;
+ state.careCases||={};const id=`care:${sourceFactId}`;
+ const incident=state.careCases[id]||={id,region:npc.region,targetId:siteId,shelterId,sourceFactId,damageAt:state.time,incidentText:text,casualties:[],recoveries:[],blocked:false,fire:0};
+ if(incident.casualties.includes(npc.id))return incident;
+ npc.hp=Math.max(1,npc.hp-damage);npc.injury={kind,treated:false,at:state.time,sourceFactId};npc.care={caseId:id,destination:shelterId,status:'injured'};
+ delete npc.plan;npc.goal='await-help';npc.activity='負傷し、安全な場所への助けを待っている';incident.casualties.push(npc.id);
+ const observation=rememberAction(state,content,'injured-person',{actorId:npc.id,targetId:siteId,payload:{kind}});incident.observationFactId=observation.id;return incident;
+}
 function recoverAtShelter(state,content,s,npc,shelter,helperId) {
  if(npc.care.status==='recovered')return;
- const fact=rememberAction(state,content,'rescue',{actorId:helperId,targetId:npc.id,payload:{shelterId:shelter.id,sourceFactId:s.damageFactId}});
+ const fact=rememberAction(state,content,'rescue',{actorId:helperId,targetId:npc.id,payload:{shelterId:shelter.id,sourceFactId:sourceFact(s)}});
  if(helperId==='player'){const account=state.knowledge.find(k=>k.id===`escort:${npc.id}`);if(account){account.completedAt=state.time;account.completionFactId=fact.id;}}
- npc.care.status='recovered';npc.care.recoveryFactId=fact.id;npc.displacedHome=[...shelter.position];npc.displacementCause=s.damageFactId;npc.hp=Math.max(npc.hp,50);delete npc.companionOf;delete npc.plan;
+ npc.care.status='recovered';npc.care.recoveryFactId=fact.id;npc.displacedHome=[...shelter.position];npc.displacementCause=sourceFact(s);npc.hp=Math.max(npc.hp,50);delete npc.companionOf;delete npc.plan;
  s.recoveries.push({personId:npc.id,factId:fact.id,at:state.time});
 }
 export function damageStructure(state,content,spec) {
@@ -26,15 +39,16 @@ export function damageStructure(state,content,spec) {
  }
 }
 export function siteDescription(s,voices=false) {
+ if(s.incidentText)return s.incidentText;
  return `${s.fire>0?'炎と煙が上がっている。':s.fuel?'床に灯油がこぼれている。':''}${s.blocked?'崩れた物が入口を塞いでいる。':''}${s.damageAt!==undefined?(s.recoveredAt!==undefined&&!s.blocked?'設備には補修の跡が残っている。':'壊れた設備と散らばった残骸がある。'):''}${voices?'奥から人の声がする。':''}`;
 }
 function observeSite(state,content,spec,npc) {
- const s=state.structures[spec.id],site=siteOf(content,spec),region=content.regions.find(r=>r.id===spec.region);
+ const s=aftermathOf(state,spec),site=siteOf(content,spec),region=content.regions.find(r=>r.id===spec.region);
  if(!site||s.damageAt===undefined||npc.hp<=0||npc.travel||npc.goal==='sleep'||npc.region!==spec.region||distance(npc.position,site.position)>24||!hasLineOfSight(region,npc.position,site.position))return;
- const id=`site:${spec.id}:${s.damageFactId}`,old=npc.knowledge.find(k=>k.id===id);
+ const id=`site:${spec.id}:${sourceFact(s)}`,old=npc.knowledge.find(k=>k.id===id);
  if(old)return;
- const fact=state.socialFacts.find(f=>f.id===s.damageFactId);observeMemory(state,npc,fact,{range:distance(npc.position,site.position),template:content.npcs.find(n=>n.id===npc.id)});
- observeWorkplace(state,npc,site,!!state.facilities?.[site.id]?.closed);
+ const fact=state.socialFacts.find(f=>f.id===(s.observationFactId||sourceFact(s)));if(!fact)return;observeMemory(state,npc,fact,{range:distance(npc.position,site.position),template:content.npcs.find(n=>n.id===npc.id)});
+ if(!spec.careCaseId)observeWorkplace(state,npc,site,!!state.facilities?.[site.id]?.closed);
  fact.witnesses.push(npc.id);
  const voices=(s.casualties||[]).some(id=>state.npcs[id]?.hp>0&&distance(state.npcs[id].position,site.position)<12);
  npc.knowledge.push({id,kind:'site-observation',topicLabel:`${site.name}で見た異変`,text:`${site.name}で、${siteDescription(s,voices)}`,destination:{region:spec.region,position:[...site.position],targetId:site.id},observedAt:state.time,source:{type:'seen',observerId:npc.id},belief:{factId:fact.id}});
@@ -42,8 +56,8 @@ function observeSite(state,content,spec,npc) {
 }
 // An observed danger becomes a searched movement/arrival plan, not a global alarm.
 function evacuate(state,content,npc,spec,seconds) {
- const s=state.structures[spec.id],site=siteOf(content,spec),region=content.regions.find(r=>r.id===spec.region),shelter=region.objects.find(o=>o.id===spec.shelterId);
- if(!shelter||npc.entrapment||npc.companionOf)return;
+ const s=aftermathOf(state,spec),site=siteOf(content,spec),region=content.regions.find(r=>r.id===spec.region),shelter=region.objects.find(o=>o.id===spec.shelterId);
+ if(!shelter||npc.entrapment||npc.companionOf||npc.captive||npc.detention?.status==='held')return;
  const known=npc.knowledge.find(k=>k.kind==='site-observation'&&k.destination?.targetId===site.id&&(!k.belief?.factId||recalled(npc,k.belief.factId)));
  if(!known||npc.region!==spec.region||npc.travel)return;
  if(npc.aftermathAssignment&&npc.plan?.goal!=='evacuate')delete npc.aftermathAssignment;
@@ -62,9 +76,9 @@ function evacuate(state,content,npc,spec,seconds) {
  if(['completed','invalidated'].includes(status)){delete npc.aftermathAssignment;delete npc.plan;}
 }
 function medicalSearch(state,content,helper,spec,seconds) {
- const s=state.structures[spec.id],region=content.regions.find(r=>r.id===spec.region),site=siteOf(content,spec),template=content.npcs.find(n=>n.id===helper.id);
+ const s=aftermathOf(state,spec),region=content.regions.find(r=>r.id===spec.region),site=siteOf(content,spec),template=content.npcs.find(n=>n.id===helper.id);
  if(helper.plan?.goal!=='medical-search') {
-  if(helper.aftermathAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.injury&&!helper.injury.treated||!(helper.possessions.medicine>0)||!/医師|救護|治療|衛生/.test(template?.role||''))return false;
+  if(helper.captive||helper.detention?.status==='held'||helper.operationMember||helper.custodyAssignment||helper.aftermathAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.injury&&!helper.injury.treated||!(helper.possessions.medicine>0)||!/医師|救護|治療|衛生/.test(template?.role||''))return false;
   const known=helper.knowledge.find(k=>k.kind==='site-observation'&&k.destination.targetId===site.id&&recalled(helper,k.belief?.factId));
   if(!known||helper.medicalInspections?.[known.id])return false;
   const length=Math.max(1,distance(helper.position,site.position)),position=site.position.map((v,i)=>i===1?v:v+(helper.position[i]-v)/length*12);
@@ -81,12 +95,12 @@ function medicalSearch(state,content,helper,spec,seconds) {
  if(status==='invalidated'||status==='completed'&&plan.completedAt<state.time){delete helper.aftermathAssignment;delete helper.plan;}return true;
 }
 function medicalResponse(state,content,helper,spec,seconds) {
- const s=state.structures[spec.id],region=content.regions.find(r=>r.id===spec.region),shelter=region.objects.find(o=>o.id===spec.shelterId),template=content.npcs.find(n=>n.id===helper.id);
- if(!shelter||helper.region!==spec.region||helper.travel||helper.hp<40||helper.entrapment||helper.injury&&!helper.injury.treated)return false;
+ const s=aftermathOf(state,spec),region=content.regions.find(r=>r.id===spec.region),shelter=region.objects.find(o=>o.id===spec.shelterId),template=content.npcs.find(n=>n.id===helper.id);
+ if(!shelter||helper.captive||helper.detention?.status==='held'||helper.operationMember||helper.custodyAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.entrapment||helper.injury&&!helper.injury.treated)return false;
  if(helper.plan?.goal!=='aftermath-rescue') {
   if(helper.aftermathAssignment&&!(helper.plan?.goal==='medical-search'&&helper.plan.status==='completed')||s.blocked||s.fire>0||!(helper.possessions.medicine>0)||!/医師|救護|治療|衛生/.test(template?.role||''))return false;
   const known=helper.knowledge.find(k=>k.kind==='site-observation'&&k.destination.targetId===spec.targetId&&recalled(helper,k.belief?.factId));if(!known)return false;
-  const patient=orderedValues(state.npcs).find(n=>n.care?.structureId===spec.id&&n.care.status!=='recovered'&&!n.entrapment&&!n.companionOf&&n.hp>0&&n.region===helper.region&&distance(n.position,helper.position)<18&&hasLineOfSight(region,n.position,helper.position));
+  const patient=orderedValues(state.npcs).find(n=>careMatches(n,spec)&&n.care.status!=='recovered'&&!n.entrapment&&!n.captive&&n.detention?.status!=='held'&&!n.companionOf&&n.hp>0&&n.region===helper.region&&distance(n.position,helper.position)<18&&hasLineOfSight(region,n.position,helper.position));
   if(!patient)return false;
   const steps=searchPlan({near:false,treated:!!patient.injury?.treated,arrived:false,done:false,medicine:true},{done:true},[
    {action:'approach-patient',preconditions:{},effects:{near:true},cost:1},
@@ -109,19 +123,22 @@ function medicalResponse(state,content,helper,spec,seconds) {
 }
 export function advanceAftermath(state,content,seconds) {
  const inhabitants=orderedValues(state.npcs);
- for(const spec of content.structures||[]) {
-  const s=state.structures[spec.id];if(!s||s.damageAt===undefined)continue;
+ for(const spec of [...(content.structures||[]),...Object.values(state.careCases||{}).map(c=>({...c,careCaseId:c.id}))]) {
+  const s=aftermathOf(state,spec);if(!s||s.damageAt===undefined)continue;
   for(const npc of inhabitants)if(npc.region===spec.region) {observeSite(state,content,spec,npc);if(seconds>0&&npc.hp>0&&!medicalResponse(state,content,npc,spec,seconds)&&!medicalSearch(state,content,npc,spec,seconds))evacuate(state,content,npc,spec,seconds);}
   for(const id of s.casualties||[]) {
    const npc=state.npcs[id];if(!npc||npc.hp<=0||npc.care?.status==='recovered')continue;
    if(npc.entrapment&&!s.blocked&&!(s.fire>0)){delete npc.entrapment;npc.activity='出口が開いた。手当てと付き添いを待っている';}
-   if(npc.entrapment||npc.companionOf!=='player'||npc.region!==state.player.region)continue;
+   if(npc.entrapment||npc.captive||npc.detention?.status==='held'||npc.travel||npc.companionOf!=='player'||npc.region!==state.player.region)continue;
    const region=content.regions.find(r=>r.id===npc.region),shelter=region.objects.find(o=>o.id===npc.care.destination);
-   if(seconds>0)followPath(region,npc,state.player.position,seconds/(content.time?.scale||60)*2.4);
-   if(shelter&&npc.injury?.treated&&distance(npc.position,shelter.position)<4&&distance(npc.position,state.player.position)<4) {
+   if(seconds>0){
+    if(distance(npc.position,state.player.position)<18&&hasLineOfSight(region,npc.position,state.player.position))npc.escortObservation=[...state.player.position];
+    if(npc.escortObservation)followPath(region,npc,npc.escortObservation,seconds/(content.time?.scale||60)*2.4);
+   }
+   if(shelter&&npc.injury?.treated&&distance(npc.position,shelter.position)<4&&distance(npc.position,state.player.position)<4&&hasLineOfSight(region,npc.position,shelter.position)&&hasLineOfSight(region,npc.position,state.player.position)) {
     recoverAtShelter(state,content,s,npc,shelter,'player');
    }
   }
-  if(!s.blocked&&!(s.fire>0)&&s.integrity>=spec.safe.integrity&&(s.casualties||[]).every(id=>state.npcs[id]?.care?.status==='recovered'))s.recoveredAt??=state.time;
+  if(!s.blocked&&!(s.fire>0)&&(spec.careCaseId||s.integrity>=spec.safe.integrity)&&(s.casualties||[]).every(id=>state.npcs[id]?.care?.status==='recovered'))s.recoveredAt??=state.time;
  }
 }

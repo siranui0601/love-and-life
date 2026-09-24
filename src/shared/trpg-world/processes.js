@@ -6,6 +6,7 @@ import {advanceInstitutionalExecution} from './institutional-execution.js';
 import {initializeShipments,advanceShipments,shipmentSecured} from './shipments.js';
 import {initializeActorOperations,advanceActorOperations,advanceDuties,operationsStopped} from './actor-operations.js';
 import {advancePersonCustody} from './person-custody.js';
+import {initializeTransfer,advancePoweredTransfer,transferCasualtiesRecovered} from './powered-transfer.js';
 
 // Authored bindings run through a small physical/resource/institution vocabulary.
 // Neither a command nor a narrative provider can assign an event outcome.
@@ -18,6 +19,7 @@ export function initializeProcesses(state,content){
  initializeActorOperations(state,content);
  state.processes||={};
  for(const spec of content.processes||[])if(!state.processes[spec.id])state.processes[spec.id]={...copy(spec.initial),stock:{},documents:[],milestones:[],reviewSeconds:0,initializedAt:state.time,...(state.contentRevision!==content.revision?{legacyDormant:true}:{})};
+ for(const spec of content.processes||[])initializeTransfer(state,content,spec);
 }
 function allowed(state,condition){
  if(!condition)return true;
@@ -31,7 +33,7 @@ export function processSafe(state,spec){
  const p=state.processes[spec.id];
  if(spec.kind==='device'){
   const physical=linkedStructure(state,spec);
-  return !p.powered&&(physical?physical.integrity>=80&&!physical.blocked&&!(physical.fire>0):p.integrity>=80);
+  return !p.powered&&(physical?physical.integrity>=80&&!physical.blocked&&!(physical.fire>0):p.integrity>=80)&&(!spec.transfer||transferCasualtiesRecovered(state,spec));
  }
  if(spec.kind==='supply')return p.distributedAt!==undefined&&Object.entries(spec.required).every(([id,n])=>(p.receipts?.[id]||0)>=n);
  if(spec.kind==='inquiry'){
@@ -58,7 +60,7 @@ function satisfied(state,spec,event){
  const p=state.processes[spec.id],reviewed=state.time>=(spec.deadline??event.deadline);
  // Isolation removes the powered cause; a broken but inert fixture still
  // needs maintenance. Do not fabricate a fire simply because it is unrepaired.
- const inactiveCause=spec.kind==='device'&&p.powered===false||!!spec.activation&&!allowed(state,spec.activation);
+ const inactiveCause=spec.kind==='device'&&p.powered===false&&(!spec.transfer||transferCasualtiesRecovered(state,spec))||!!spec.activation&&!allowed(state,spec.activation);
  return processSafe(state,spec)||reviewed&&inactiveCause&&p.failedAt===undefined;
 }
 export function processDescription(state,spec){
@@ -166,11 +168,12 @@ export function advanceProcesses(state,content,seconds){
 }}
   }
   advanceInstitutionalExecution(state,content,spec,p,seconds);
+  advancePoweredTransfer(state,content,spec,seconds);
   const safe=processSafe(state,spec);
   if(safe&&p.safeAt===undefined)p.safeAt=state.time;
-  if(active&&!safe&&(spec.kind!=='device'||p.powered===true)&&state.time>=(spec.deadline??event.deadline)&&p.failedAt===undefined){
+  if(active&&!safe&&(spec.kind!=='device'||p.powered===true||spec.transfer&&!transferCasualtiesRecovered(state,spec))&&state.time>=(spec.deadline??event.deadline)&&p.failedAt===undefined){
    p.failedAt=state.time;
-   if(spec.kind==='device'){
+   if(spec.kind==='device'&&p.powered===true){
     p.integrity=0;p.powered=false;
     const structure=linkedStructure(state,spec)&&(content.structures||[]).find(s=>s.id===spec.structureId);
     if(structure)damageStructure(state,content,structure);

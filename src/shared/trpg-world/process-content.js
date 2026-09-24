@@ -37,6 +37,7 @@ export const DEFAULT_PROCESSES=[
 // Dependencies are world conditions, not route selection. Institutional orders
 // change access/custody policy at actual sites; they are not event victory receipts.
 const byId=new Map(DEFAULT_PROCESSES.map(p=>[p.id,p]));
+Object.assign(byId.get('pilgrim-transfer'),{startsAt:86400+9*3600,transfer:{destinationId:'LOC_TEMPLE_SEALED',shelterId:'LOC_TEMPLE_REST',radius:2,windupSeconds:180,charges:1,damage:20},documents:[{id:'pilgrim-transfer:receiver',targetId:'LOC_TEMPLE_ADMIN',text:'回廊の整備図では、割れた選路器の残存出力が地下封印区画の受信環へ接続されている。'}]});
 Object.assign(byId.get('bond-review'),{protectedActor:'NPC027',affectedTarget:'NPC027',enforcement:{actorId:'NPC024',meetingId:'LOC_CAP_LOWER_INN',postId:'LOC_CRIME_SLAVE_MARKET',protectActorId:'NPC027',custodySiteId:'LOC_CAP_LOWER_INN',routeIds:['R06','R08'],modes:['foot','ship'],stoppedOperations:['coerced-transfer'],text:'本人の同意のない身柄引渡しを止め、拘束されている場合は本人を保護する。'}});
 Object.assign(byId.get('forest-passage'),{access:{targetId:'LOC_ELF_BARRIER_STONE',closed:false}});
 Object.assign(byId.get('customs-cargo'),{access:{targetId:'LOC_TRADE_WAREHOUSE',closed:true},impoundShipments:['unmanifested-arms']});
@@ -65,13 +66,13 @@ export const DEFAULT_ACTOR_OPERATIONS=[{id:'palace-assault',actorId:'NPC020',tar
 // model as fires and mine collapses. No new casualty is spawned by these bindings.
 export const DEFAULT_PROCESS_STRUCTURES=[
  ['harbor-chain','collapse','LOC_TRADE_INN'],
- ['pilgrim-transfer','collapse','LOC_TEMPLE_REST'],
+ ['pilgrim-transfer','discharge','LOC_TEMPLE_REST'],
  ['summoning-feed','fire','LOC_CAP_LOWER_INN'],
 ].map(([id,kind,shelterId])=>{
  const process=byId.get(id),structureId='structure:'+id;process.structureId=structureId;
  return {id:structureId,processId:id,targetId:process.targetId,region:process.region,hazardEventId:process.eventId,shelterId,
  initial:{integrity:40,water:0,operating:true,fire:0,fuel:false,blocked:false},safe:{integrity:80,water:0,operating:false,fire:0,blocked:false},
- failure:{kind,traps:kind==='collapse',exposureRange:8,effects:{integrity:0,operating:false,blocked:true,fire:kind==='fire'?100:0}},
+ failure:{kind,traps:kind==='collapse',exposureRange:kind==='discharge'?0:8,effects:{integrity:0,operating:false,blocked:kind!=='discharge',fire:kind==='fire'?100:0}},
  actions:[
  {id:'extinguish',label:'燃えている機構へ水を運び、消火する',minutes:30,when:{fire:100},requirements:{items:{rope:1}},effects:{fire:0}},
  {id:'shore',label:'壊れた固定具と支持部を補修する',minutes:30,when:{fire:0},requirements:{items:{timber:2,...(process.magical?{crystal:1}:{})},skills:[process.magical?'magic':'crafting']},effects:{integrity:100}},

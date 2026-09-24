@@ -5,7 +5,7 @@ import {rememberAction} from './relationships.js';
 import {activeCustody,restrainPerson,releasePerson} from './person-custody.js';
 import {assembleOperationParty,followOperationParty,releaseOperationParty} from './operation-party.js';
 
-const reserved=n=>n.rescueAssignment||n.aftermathAssignment||n.institutionalAssignment||n.transportAssignment||n.custodyAssignment||n.captive||n.causalAssignment||n.entrapment||n.companionOf||n.detention?.status==='held';
+const reserved=n=>n.rescueAssignment||n.aftermathAssignment||n.institutionalAssignment||n.transportAssignment||n.custodyAssignment||n.captive||n.causalAssignment||n.entrapment||n.companionOf||n.care?.status==='injured'||n.detention?.status==='held';
 const canSee=(content,a,b,range)=>a&&b&&!a.travel&&!b.travel&&a.region===b.region&&distance(a.position,b.position)<range&&hasLineOfSight(content.regions.find(r=>r.id===a.region),a.position,b.position);
 export function initializeActorOperations(state,content){
  state.actorOperations||={};state.duties||={};
@@ -54,7 +54,7 @@ export function advanceActorOperations(state,content,seconds){
   if(reserved(actor))continue;
   if(!actor.knowledge.some(k=>k.id===`intention:${spec.id}`))continue;
   if(op.recallOrderId){
-   actor.operationAssignment=spec.id;actor.activity='受領した中止命令に従い、集合地へ戻る';op.phase='returning';
+   actor.operationAssignment=spec.id;actor.activity='部隊とともに引き返す';op.phase='returning';
    const party=(spec.memberIds||[]).filter(id=>state.npcs[id]?.operationMember===spec.id);
    const result=advanceActorJourney(state,content,actor,spec.assemblySiteId,seconds,{...spec,followers:party});
    if(result.failed)op.blockedReason=result.failed;
@@ -124,7 +124,7 @@ export function advanceDuties(state,content,seconds){
   if(actor.fatigue>85||actor.hunger>90){duty.phase='off-duty';delete actor.dutyAssignment;actor.nextDecision=0;continue;}
   if(duty.phase==='off-duty'&&(actor.fatigue>40||actor.hunger>65))continue;
   if(duty.phase==='responding'&&state.npcs[duty.threatId]?.hp>0&&state.npcs[duty.threatId]?.detention?.status!=='held')continue;
-  actor.dutyAssignment=duty.orderId;actor.activity='受け取った命令に従い、現場の警備に就く';
+  actor.dutyAssignment=duty.orderId;actor.activity='現場で警戒している';
   const reached=advanceActorJourney(state,content,actor,duty.postId,seconds,duty);
   if(reached.complete){if(duty.phase!=='stationed'){const fact=rememberAction(state,content,'guard-post-taken',{actorId:actor.id,targetId:duty.postId,payload:{orderId:duty.orderId}});duty.arrivalFactId=fact.id;duty.arrivedAt=state.time;}duty.phase='stationed';}
   else duty.phase='deploying';
@@ -151,7 +151,7 @@ export function advanceFieldOrder(state,content,spec,process,seconds){
   issuer.plan={id:`plan:${state.nextId++}`,goal:'deliver-field-order',status:'active',steps,cursor:0,orderId:order.factId,createdAt:state.time};
  }
  if(issuer.plan?.orderId!==order.factId){delete issuer.institutionalAssignment;return;}
- issuer.activity='命令書を届けるため、待ち合わせ場所へ向かう';
+ issuer.activity='書類を持って歩く';
  const status=advanceActionPlan(state,issuer,seconds,{facts:()=>({atMeeting:issuer.region===meeting.region&&!issuer.travel&&distance(issuer.position,meeting.position)<3}),handlers:{
   'reach-recipient-site':(_,dt)=>advanceActorJourney(state,content,issuer,meeting.id,dt,definition),
   'hand-over-order':()=>{

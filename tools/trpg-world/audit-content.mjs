@@ -68,6 +68,9 @@ export function auditWorldContent(content) {
     if(!ids.regions.has(process.region)||!objects.has(process.targetId)&&!ids.npcs.has(process.targetId))errors.push(process.id+': inaccessible process target');
     if(process.structureId&&!structures.has(process.structureId))errors.push(process.id+': missing physical structure');
     if(process.kind==='patient'&&!ids.npcs.has(process.actorId))errors.push(process.id+': missing actual patient');
+    if(process.transfer){const t=process.transfer,origin=(content.regions||[]).find(r=>r.objects.some(o=>o.id===process.targetId)),destination=(content.regions||[]).find(r=>r.objects.some(o=>o.id===t.destinationId));
+      if(process.kind!=='device'||!origin||!destination||!destination.objects.some(o=>o.id===t.shelterId)||!(t.radius>0)||!(t.windupSeconds>0)||!Number.isInteger(t.charges)||t.charges<1||!(t.damage>0))errors.push(process.id+': invalid physical receiver, energy or recovery site');
+    }
     if(process.kind==='inquiry'&&(!process.documents?.length||!process.reviewers?.length))errors.push(process.id+': no documents or responsible inhabitants');
     for(const doc of process.documents||[])if(!objects.has(doc.targetId))errors.push(process.id+': inaccessible original '+doc.id);
     for(const id of Object.keys(process.required||{}))if(id!=='gold'&&!ids.items.has(id))errors.push(process.id+': unavailable resource '+id);
