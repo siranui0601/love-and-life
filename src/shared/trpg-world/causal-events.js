@@ -6,11 +6,13 @@ import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
 import {initializeProcesses,advanceProcesses} from './processes.js';
 import {activeCustody,custodyActions,releasePerson} from './person-custody.js';
+import {advanceInstitutionalExecution} from './institutional-execution.js';
+import {occupancyRestored} from './occupancy.js';
 
 // Authored scenario bindings. Components below know roles and resources, not T numbers.
 export const DEFAULT_CAUSAL_SCENARIOS=[
   {eventId:'lost-road',sourceIds:['T01'],type:'return-person',personId:'NPC001',familyId:'NPC002'},
-  {eventId:'crown',sourceIds:['T10'],type:'institution',facilityId:'LOC_CAP_ORPHANAGE',officeId:'LOC_CAP_OFFICE',replacementId:'LOC_CAP_LOWER_INN',
+  {eventId:'crown',sourceIds:['T10'],type:'institution',facilityId:'LOC_CAP_ORPHANAGE',officeId:'LOC_CAP_OFFICE',replacementId:'LOC_CAP_LOWER_INN',occupancyClaim:'orphanage-clearance',reviewers:['NPC067'],
     documents:[{id:'donation',targetId:'LOC_CAP_ORPHANAGE',title:'土地の寄付契約',text:'土地は孤児の養育を目的として寄付され、用途変更には審理が必要と記載されている。'},
       {id:'registry',targetId:'LOC_CAP_OFFICE',title:'土地台帳の写し',text:'土地台帳には寄付契約が登記されている。立ち退き申請にその注記がない。'},
       {id:'debt',targetId:'LOC_CAP_MARKET',title:'納品と請求の控え',text:'孤児院への納品量と請求量が一致しない。二重に計上された代金が借金へ加算されている。'}]},
@@ -90,15 +92,27 @@ export function advanceCausality(state,content,seconds) {
           settle(state,event,'resolved',fact.id);
         }
       }
-    } else if(definition.type==='institution'&&!['resolved','prevented','failed'].includes(current.status)) {
+    } else if(definition.type==='institution'&&!['resolved','prevented'].includes(current.status)) {
       const office=region.objects.find(o=>o.id===definition.officeId);
       // Zero-time physical reevaluation cannot perform a clerk's work during a paused decision.
-      const clerk=office&&orderedValues(state.npcs).find(n=>n.hp>0&&!n.travel&&n.region===event.region&&distance(n.position,office.position)<5&&
-        content.npcs.some(t=>t.id===n.id&&(/役人|役所|文官|行政|官吏/.test(t.role||'')||t.workFacilityId===definition.officeId)));
-      if(seconds>0&&clerk&&conditionHolds(state,content,{type:'field',path:['events',event.id,'causal','submitted'],op:'contains-all',value:definition.documents.map(d=>d.id)})) {
-        causal.reviewed=true;causal.tenure='protected';
+      const clerk=office&&orderedValues(state.npcs).find(n=>n.hp>0&&!n.travel&&!n.institutionalAssignment&&!n.reviewAssignment&&!n.operationAssignment&&!n.relocationAssignment&&n.region===event.region&&distance(n.position,office.position)<5&&hasLineOfSight(region,n.position,office.position)&&
+        (definition.reviewers?.length?definition.reviewers.includes(n.id):content.npcs.some(t=>t.id===n.id&&(/役人|役所|文官|行政|官吏/.test(t.role||'')||t.workFacilityId===definition.officeId))));
+      const physical=definition.occupancyClaim&&state.occupancyClaims?.[definition.occupancyClaim]&&!state.occupancyClaims[definition.occupancyClaim].legacyDormant;
+      if(!causal.reviewed&&seconds>0&&clerk&&conditionHolds(state,content,{type:'field',path:['events',event.id,'causal','submitted'],op:'contains-all',value:definition.documents.map(d=>d.id)})) {
+        causal.reviewed=true;
         const fact=rememberAction(state,content,'document-review',{actorId:clerk.id,targetId:definition.facilityId,payload:{documents:[...causal.submitted]}});
-        settle(state,event,'resolved',fact.id);
+        if(physical){
+          causal.order={status:'issued',kind:'protect-tenure',authority:clerk.id,evidence:[...causal.submitted],at:state.time,factId:fact.id,executionRequired:true};
+          state.institutionalOrders||={};state.institutionalOrders[fact.id]={...structuredClone(causal.order),jurisdiction:event.region,targetId:definition.facilityId};
+        }else {causal.tenure='protected';settle(state,event,'resolved',fact.id);}
+      }
+      if(physical){
+        advanceInstitutionalExecution(state,content,{region:event.region,access:{targetId:definition.facilityId,closed:false},restoresClaims:[definition.occupancyClaim]},causal,seconds);
+        const claim=state.occupancyClaims[definition.occupancyClaim];
+        if(claim.takeoverFactId)causal.tenure='displaced';
+        if(causal.order?.execution?.status==='completed'&&occupancyRestored(state,definition.occupancyClaim)){
+          causal.tenure='protected';causal.recoveredAt??=state.time;settle(state,event,'resolved',causal.order.execution.evidence);
+        }
       }
     } else if(definition.type==='ecosystem'&&!['resolved','prevented','failed'].includes(current.status)) {
       const absorber=state.monsters[`opposition:${event.id}`];
@@ -125,6 +139,8 @@ export function failCausality(state,content,event) {
     // A missed return is an overdue person, not a physical cause of death.
     // Existing injury, whereabouts and escort continue independently of this deadline.
     causal.aftermath.push({kind:'missing-person-not-returned',at:state.time});
+  } else if(definition?.type==='institution'&&definition.occupancyClaim&&!state.occupancyClaims?.[definition.occupancyClaim]?.legacyDormant) {
+    causal.aftermath.push({kind:'tenure-dispute-unsettled',at:state.time});
   } else if(definition?.type==='institution') {
     causal.tenure='evicted';state.facilities[definition.facilityId]={kind:'shop',name:'旧孤児院跡の冒険者店',status:'repurposed'};
     const region=content.regions.find(r=>r.id===event.region),destination=region.objects.find(o=>o.id===definition.replacementId);

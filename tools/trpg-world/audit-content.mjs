@@ -84,6 +84,15 @@ export function auditWorldContent(content) {
   }
 
   const shipments=new Set();
+  const claims=new Set();
+  for(const claim of content.occupancyClaims||[]){
+    if(claims.has(claim.id))errors.push(`${claim.id}: duplicate occupancy claim`);claims.add(claim.id);
+    if(!ids.npcs.has(claim.actorId)||!claim.documentId||!objects.has(claim.facilityId)||!objects.has(claim.shelterId))errors.push(`${claim.id}: missing claimant, document or place`);
+    if(!Number.isFinite(claim.departAt)||!(claim.noticeSeconds>0)||!claim.residentIds?.length||claim.residentIds.some(id=>!ids.npcs.has(id)))errors.push(`${claim.id}: missing residents or notice timing`);
+    for(const id of claim.routeIds||[])if(!(content.routes||[]).some(r=>r.id===id&&r.modes.some(m=>claim.modes?.includes(m))))errors.push(`${claim.id}: invalid known itinerary`);
+  }
+  for(const p of content.processes||[])for(const id of p.restoresClaims||[])if(!claims.has(id)||!p.access)errors.push(`${p.id}: missing physical restitution binding`);
+  for(const d of content.causalScenarios||[])if(d.occupancyClaim&&!claims.has(d.occupancyClaim))errors.push(`${d.eventId}: missing occupancy claim`);
   const operations=new Set();
   for(const op of content.actorOperations||[]){
     if(operations.has(op.id))errors.push(`${op.id}: duplicate actor operation`);operations.add(op.id);

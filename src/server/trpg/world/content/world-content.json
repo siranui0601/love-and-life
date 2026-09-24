@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-8cc8c18b05b7",
+  "revision": "world-10d-6b5f929bc4d6",
   "time": {
     "days": 10,
     "scale": 60,
@@ -20111,7 +20111,15 @@
         "row": 25,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC021"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_CAP_ORPHANAGE",
+          "startsAt": 547200,
+          "endsAt": 565200,
+          "activity": "住居で届けられる書類を受け取るため待ち合わせている"
+        }
+      ]
     },
     {
       "id": "NPC022",
@@ -20152,7 +20160,15 @@
         "row": 26,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC022"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_CAP_ORPHANAGE",
+          "startsAt": 547200,
+          "endsAt": 565200,
+          "activity": "住居で届けられる書類を受け取るため待ち合わせている"
+        }
+      ]
     },
     {
       "id": "NPC023",
@@ -20316,7 +20332,15 @@
         "row": 30,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC026"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_CAP_AJIN_QUARTER",
+          "startsAt": 550800,
+          "endsAt": 568800,
+          "activity": "住居で届けられる書類を受け取るため待ち合わせている"
+        }
+      ]
     },
     {
       "id": "NPC027",
@@ -22184,7 +22208,15 @@
         "row": 75,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC071"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_CAP_ORPHANAGE",
+          "startsAt": 547200,
+          "endsAt": 565200,
+          "activity": "住居で届けられる書類を受け取るため待ち合わせている"
+        }
+      ]
     },
     {
       "id": "NPC072",
@@ -22225,7 +22257,15 @@
         "row": 76,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC072"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_CAP_ORPHANAGE",
+          "startsAt": 547200,
+          "endsAt": 565200,
+          "activity": "住居で届けられる書類を受け取るため待ち合わせている"
+        }
+      ]
     },
     {
       "id": "NPC073",
@@ -24232,6 +24272,10 @@
       "facilityId": "LOC_CAP_ORPHANAGE",
       "officeId": "LOC_CAP_OFFICE",
       "replacementId": "LOC_CAP_LOWER_INN",
+      "occupancyClaim": "orphanage-clearance",
+      "reviewers": [
+        "NPC067"
+      ],
       "documents": [
         {
           "id": "donation",
@@ -25114,13 +25158,15 @@
           "text": "印刷台帳は退去指示の発注者と、無関係な住民へ責任を転嫁する見出しの校正指示を記録している。"
         }
       ],
+      "reviewers": [
+        "NPC067"
+      ],
       "access": {
         "targetId": "LOC_CAP_AJIN_QUARTER",
         "closed": false
       },
-      "reviewers": [
-        "NPC015",
-        "NPC067"
+      "restoresClaims": [
+        "quarter-clearance"
       ]
     },
     {
@@ -25299,6 +25345,43 @@
       "weaponItemId": "EQP-W-0001",
       "windupSeconds": 300,
       "damage": 30
+    }
+  ],
+  "occupancyClaims": [
+    {
+      "id": "orphanage-clearance",
+      "actorId": "NPC023",
+      "documentId": "orphanage:vacate-notice",
+      "facilityId": "LOC_CAP_ORPHANAGE",
+      "shelterId": "LOC_CAP_LOWER_INN",
+      "residentIds": [
+        "NPC021",
+        "NPC022",
+        "NPC071",
+        "NPC072"
+      ],
+      "departAt": 550800,
+      "noticeSeconds": 600,
+      "routeIds": [],
+      "modes": [
+        "foot"
+      ]
+    },
+    {
+      "id": "quarter-clearance",
+      "actorId": "NPC019",
+      "documentId": "quarter:counterfeit-notice",
+      "facilityId": "LOC_CAP_AJIN_QUARTER",
+      "shelterId": "LOC_CAP_LOWER_INN",
+      "residentIds": [
+        "NPC026"
+      ],
+      "departAt": 554400,
+      "noticeSeconds": 600,
+      "routeIds": [],
+      "modes": [
+        "foot"
+      ]
     }
   ],
   "skills": [

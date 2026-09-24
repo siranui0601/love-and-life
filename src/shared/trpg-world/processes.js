@@ -7,6 +7,7 @@ import {initializeShipments,advanceShipments,shipmentSecured} from './shipments.
 import {initializeActorOperations,advanceActorOperations,advanceDuties,operationsStopped} from './actor-operations.js';
 import {advancePersonCustody} from './person-custody.js';
 import {initializeTransfer,advancePoweredTransfer,transferCasualtiesRecovered} from './powered-transfer.js';
+import {initializeOccupancy,advanceOccupancy,occupancyRestored} from './occupancy.js';
 
 // Authored bindings run through a small physical/resource/institution vocabulary.
 // Neither a command nor a narrative provider can assign an event outcome.
@@ -17,6 +18,7 @@ const error=message=>{throw Object.assign(new Error(message),{code:'PROCESS_REQU
 export function initializeProcesses(state,content){
  initializeShipments(state,content);
  initializeActorOperations(state,content);
+ initializeOccupancy(state,content);
  state.processes||={};
  for(const spec of content.processes||[])if(!state.processes[spec.id])state.processes[spec.id]={...copy(spec.initial),stock:{},documents:[],milestones:[],reviewSeconds:0,initializedAt:state.time,...(state.contentRevision!==content.revision?{legacyDormant:true}:{})};
  for(const spec of content.processes||[])initializeTransfer(state,content,spec);
@@ -41,7 +43,7 @@ export function processSafe(state,spec){
   if(!p.order||p.order.status!=='issued'||!state.institutionalOrders?.[p.order.factId])return false;
   if(!p.order.executionRequired)return true;
   if(spec.enforcement)return !!state.duties?.[p.order.factId]?.arrivalFactId&&state.npcs[spec.enforcement.protectActorId]?.hp>0&&operationsStopped(state,p.order.stoppedOperations);
-  return p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed&&(p.order.impoundShipments||[]).every(id=>shipmentSecured(state,id,p.order.factId));
+  return p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed&&(spec.restoresClaims||[]).every(id=>occupancyRestored(state,id))&&(p.order.impoundShipments||[]).every(id=>shipmentSecured(state,id,p.order.factId));
  }
  if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
  return false;
@@ -141,6 +143,7 @@ export function advanceProcesses(state,content,seconds){
  advanceShipments(state,content,seconds);
  advanceDuties(state,content,seconds);advanceActorOperations(state,content,seconds);
  advancePersonCustody(state,content,seconds);
+ advanceOccupancy(state,content,seconds);
  for(const spec of content.processes||[]){
   const p=state.processes[spec.id],event=content.events.find(e=>e.id===spec.eventId),point=pointFor(state,content,spec);
   if(!event||!point||p.legacyDormant)continue;

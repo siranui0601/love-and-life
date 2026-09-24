@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
 import {DEFAULT_STRUCTURES} from '../../src/shared/trpg-world/infrastructure.js';
-import {DEFAULT_PROCESSES,DEFAULT_PROCESS_STRUCTURES,DEFAULT_SHIPMENTS,DEFAULT_ACTOR_OPERATIONS} from '../../src/shared/trpg-world/process-content.js';
+import {DEFAULT_PROCESSES,DEFAULT_PROCESS_STRUCTURES,DEFAULT_SHIPMENTS,DEFAULT_ACTOR_OPERATIONS,DEFAULT_OCCUPANCY_CLAIMS} from '../../src/shared/trpg-world/process-content.js';
 import {createRegion,createPortal,placeNPC,finalizeRegions} from './region-layout.mjs';
 const base=new URL('../../',import.meta.url);
 const source=JSON.parse(await fs.readFile(new URL('sources/world.json',import.meta.url),'utf8'));
@@ -89,7 +89,8 @@ for(const operation of DEFAULT_ACTOR_OPERATIONS){const actor=npcs.find(n=>n.id==
 const king=npcs.find(n=>n.id==='NPC016');if(king)king.appointments=[{siteId:'LOC_CAP_CASTLE',startsAt:7*86400+11*3600,endsAt:7*86400+17*3600,activity:'王城で予定されていた謁見を行う'}];
 const pilgrim=npcs.find(n=>n.id==='NPC055');if(pilgrim)pilgrim.appointments=[{siteId:'LOC_TEMPLE_CORRIDOR',startsAt:86400+9*3600,endsAt:86400+12*3600,activity:'回廊の文字を調べるため、巡礼に訪れている'}];
 for(const operation of DEFAULT_ACTOR_OPERATIONS)for(const id of operation.memberIds||[]){const actor=npcs.find(n=>n.id===id);if(actor){actor.appointments||=[];actor.appointments.push({siteId:operation.assemblySiteId,startsAt:operation.departAt-3600,endsAt:operation.departAt+4*3600,activity:'事前に指定された部隊の集合時刻に兵舎へ向かう'});}}
-const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:[...DEFAULT_STRUCTURES,...DEFAULT_PROCESS_STRUCTURES],processes,shipments:DEFAULT_SHIPMENTS,actorOperations:DEFAULT_ACTOR_OPERATIONS,skills,items,recipes,jobs,...combat,
+for(const claim of DEFAULT_OCCUPANCY_CLAIMS)for(const id of claim.residentIds){const actor=npcs.find(n=>n.id===id);if(actor){actor.appointments||=[];actor.appointments.push({siteId:claim.facilityId,startsAt:claim.departAt-3600,endsAt:claim.departAt+4*3600,activity:'住居で届けられる書類を受け取るため待ち合わせている'});}}
+const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:[...DEFAULT_STRUCTURES,...DEFAULT_PROCESS_STRUCTURES],processes,shipments:DEFAULT_SHIPMENTS,actorOperations:DEFAULT_ACTOR_OPERATIONS,occupancyClaims:DEFAULT_OCCUPANCY_CLAIMS,skills,items,recipes,jobs,...combat,
  provenance:{sourceUrl:source.sourceUrl,retrievedAt:source.retrievedAt,policy:'Source material, not legacy rules. No Human Virtue ledger or replay used.',eventPolicy:'19 causes regrouped into 8 crises; deadlines and balance authored anew.',assets:'Kenney CC0 Fantasy Town Kit 2.0 and Blocky Characters 2.0.'}};
 content.revision='world-10d-'+createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0,12);
 const target=new URL('src/server/trpg/world/content/world-content.json',base);await fs.mkdir(new URL('.',target),{recursive:true});await fs.writeFile(target,JSON.stringify(content,null,2)+'\n');

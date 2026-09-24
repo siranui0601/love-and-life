@@ -31,3 +31,13 @@ No P0 regression was observed in the executed checks; this is not an exhaustive 
 Next: finish shared actor execution across these components with focused normal-command causal tests, then run the canonical continuous new-game Day10 feasibility witness, exact replay and save/restart certification. Do not improve blind navigation policy as a substitute. Art/spatial rebuild readiness is not yet established.
 
 USER DECISION REQUIRED: none.
+
+## Subsequent occupancy milestone
+
+Powered displacement was committed and pushed as `2ccbcf33`. The following occupancy checkpoint adds actual document carriers, face-to-face vacate notices, walking relocation, physical site-policy enforcement, local recognition of posted orders, official visits to known shelters and informed resident return. It is shared by T10 and T16. Legal ownership is retained; a failure deadline alone no longer replaces the orphanage. Failed history remains failed after late recovery.
+
+Seven focused cases PASS, including actual generated-world displacement of five existing residents and canonical normal-command travel/read/submit/return with save/replay. The latter is a bounded Day7 initial-clock integration test using lodging macro progression, not a natural new-game ten-day witness. A displaced resident can leave on other business; the official cannot track them remotely and waits at the known shelter.
+
+Final `npm run world:check`: **188 PASS / 0 FAIL / 0 SKIP**, audit/assets/client build PASS, terminal exit 0. These results include the final local wake/notification, return-state synchronization and appointment corrections. Browser SKIP. Paid/live LLM 0. Explicitly reviewed content migration: `world-10d-6b5f929bc4d6`, parsed SHA256 `5f81b7b160480aab144138ce9093a339820d6e14b3ba8b1954ce9aad03cb065e`. Historical worlds receive dormant claims, not retrospective evictions.
+
+Remaining P1 is unchanged at phase level: ecological population movement, fleet/blockade, evolved actors, counterpart deployment and the combined Day10 proof; T10/T16 further building conversion and wider civilian conflict are partial. No known P0 regression from the executed checks. P2: browser presentation and fuller resident restitution services. USER DECISION REQUIRED none.

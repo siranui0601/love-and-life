@@ -78,7 +78,7 @@ function evacuate(state,content,npc,spec,seconds) {
 function medicalSearch(state,content,helper,spec,seconds) {
  const s=aftermathOf(state,spec),region=content.regions.find(r=>r.id===spec.region),site=siteOf(content,spec),template=content.npcs.find(n=>n.id===helper.id);
  if(helper.plan?.goal!=='medical-search') {
-  if(helper.captive||helper.detention?.status==='held'||helper.operationMember||helper.custodyAssignment||helper.aftermathAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.injury&&!helper.injury.treated||!(helper.possessions.medicine>0)||!/医師|救護|治療|衛生/.test(template?.role||''))return false;
+  if(helper.captive||helper.detention?.status==='held'||helper.operationMember||helper.relocationAssignment||helper.custodyAssignment||helper.aftermathAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.injury&&!helper.injury.treated||!(helper.possessions.medicine>0)||!/医師|救護|治療|衛生/.test(template?.role||''))return false;
   const known=helper.knowledge.find(k=>k.kind==='site-observation'&&k.destination.targetId===site.id&&recalled(helper,k.belief?.factId));
   if(!known||helper.medicalInspections?.[known.id])return false;
   const length=Math.max(1,distance(helper.position,site.position)),position=site.position.map((v,i)=>i===1?v:v+(helper.position[i]-v)/length*12);
@@ -96,7 +96,7 @@ function medicalSearch(state,content,helper,spec,seconds) {
 }
 function medicalResponse(state,content,helper,spec,seconds) {
  const s=aftermathOf(state,spec),region=content.regions.find(r=>r.id===spec.region),shelter=region.objects.find(o=>o.id===spec.shelterId),template=content.npcs.find(n=>n.id===helper.id);
- if(!shelter||helper.captive||helper.detention?.status==='held'||helper.operationMember||helper.custodyAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.entrapment||helper.injury&&!helper.injury.treated)return false;
+ if(!shelter||helper.captive||helper.detention?.status==='held'||helper.operationMember||helper.relocationAssignment||helper.custodyAssignment||helper.region!==spec.region||helper.travel||helper.hp<40||helper.entrapment||helper.injury&&!helper.injury.treated)return false;
  if(helper.plan?.goal!=='aftermath-rescue') {
   if(helper.aftermathAssignment&&!(helper.plan?.goal==='medical-search'&&helper.plan.status==='completed')||s.blocked||s.fire>0||!(helper.possessions.medicine>0)||!/医師|救護|治療|衛生/.test(template?.role||''))return false;
   const known=helper.knowledge.find(k=>k.kind==='site-observation'&&k.destination.targetId===spec.targetId&&recalled(helper,k.belief?.factId));if(!known)return false;
