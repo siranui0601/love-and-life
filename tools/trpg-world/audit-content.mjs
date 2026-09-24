@@ -85,11 +85,14 @@ export function auditWorldContent(content) {
   for(const op of content.actorOperations||[]){
     if(operations.has(op.id))errors.push(`${op.id}: duplicate actor operation`);operations.add(op.id);
     if(!ids.npcs.has(op.actorId)||!ids.npcs.has(op.targetActorId)||!objects.has(op.targetSiteId))errors.push(`${op.id}: missing actor or destination`);
-    if(!op.intention||!Number.isFinite(op.departAt)||!(op.windupSeconds>0)||!(op.damage>0))errors.push(`${op.id}: missing intention/action timing`);
+    if(!op.intention||!Number.isFinite(op.departAt)||!(op.windupSeconds>0)||(op.kind!=='seize-person'&&!(op.damage>0)))errors.push(`${op.id}: missing intention/action timing`);
     if(op.weaponItemId&&!ids.items.has(op.weaponItemId)&&!ids.equipment.has(op.weaponItemId))errors.push(`${op.id}: missing weapon`);
+    if(op.kind==='seize-person'&&(!ids.items.has(op.restraintItemId)||!objects.has(op.holdingSiteId)))errors.push(`${op.id}: missing restraint or holding site`);
+    for(const id of op.routeIds||[])if(!(content.routes||[]).some(r=>r.id===id&&r.modes.some(m=>op.modes?.includes(m))))errors.push(`${op.id}: invalid known itinerary`);
   }
   for(const process of content.processes||[])if(process.enforcement){const d=process.enforcement;
     if(!ids.npcs.has(d.actorId)||!ids.npcs.has(d.protectActorId)||!objects.has(d.meetingId)||!objects.has(d.postId))errors.push(`${process.id}: missing enforcement actor or location`);
+    if(d.custodySiteId&&!objects.has(d.custodySiteId))errors.push(`${process.id}: missing detention destination`);
     for(const id of d.stoppedOperations||[])if(!operations.has(id))errors.push(`${process.id}: missing threat operation ${id}`);
   }
   for(const shipment of content.shipments||[]) {

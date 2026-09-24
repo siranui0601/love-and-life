@@ -37,11 +37,11 @@ export const DEFAULT_PROCESSES=[
 // Dependencies are world conditions, not route selection. Institutional orders
 // change access/custody policy at actual sites; they are not event victory receipts.
 const byId=new Map(DEFAULT_PROCESSES.map(p=>[p.id,p]));
-Object.assign(byId.get('bond-review'),{protectedActor:'NPC027',affectedTarget:'NPC027'});
+Object.assign(byId.get('bond-review'),{protectedActor:'NPC027',affectedTarget:'NPC027',enforcement:{actorId:'NPC024',meetingId:'LOC_CAP_LOWER_INN',postId:'LOC_CRIME_SLAVE_MARKET',protectActorId:'NPC027',custodySiteId:'LOC_CAP_LOWER_INN',routeIds:['R06','R08'],modes:['foot','ship'],stoppedOperations:['coerced-transfer'],text:'本人の同意のない身柄引渡しを止め、拘束されている場合は本人を保護する。'}});
 Object.assign(byId.get('forest-passage'),{access:{targetId:'LOC_ELF_BARRIER_STONE',closed:false}});
 Object.assign(byId.get('customs-cargo'),{access:{targetId:'LOC_TRADE_WAREHOUSE',closed:true},impoundShipments:['unmanifested-arms']});
 Object.assign(byId.get('civic-protection'),{access:{targetId:'LOC_CAP_AJIN_QUARTER',closed:false}});
-Object.assign(byId.get('palace-protection'),{reviewers:['NPC016'],enforcement:{actorId:'NPC024',meetingId:'LOC_CAP_LOWER_INN',postId:'LOC_CAP_CASTLE',protectActorId:'NPC016',routeIds:[],modes:['foot'],stoppedOperations:['palace-assault'],text:'偽造された警備交代を撤回し、国王がいる王城の持ち場を守る。'}});
+Object.assign(byId.get('palace-protection'),{reviewers:['NPC016'],enforcement:{actorId:'NPC024',meetingId:'LOC_CAP_LOWER_INN',postId:'LOC_CAP_CASTLE',protectActorId:'NPC016',custodySiteId:'LOC_CAP_LOWER_INN',routeIds:[],modes:['foot'],stoppedOperations:['palace-assault'],text:'偽造された警備交代を撤回し、国王がいる王城の持ち場を守る。'}});
 for(const id of ['colossus-feed','joint-ceasefire'])byId.get(id).activation={path:['events','roots','causal','forestBarrier'],value:false};
 byId.get('harbor-chain').activation={any:[{path:['npcs','NPC009','hp'],op:'lte',value:0},{path:['processes','dock-payroll','failedAt'],op:'gte',value:0}]};
 
@@ -53,7 +53,9 @@ export const DEFAULT_SHIPMENTS=[{id:'unmanifested-arms',name:'農具と申告さ
  manifest:[{name:'封をされた武器の包み',assetId:'weapon-crate',quantity:6}]}];
 
 export const DEFAULT_ACTOR_OPERATIONS=[{id:'palace-assault',actorId:'NPC020',targetActorId:'NPC016',targetSiteId:'LOC_CAP_CASTLE',
- intention:'警備が薄い時刻に王城へ入り、国王を襲う依頼を引き受けた。',departAt:7*86400+12*3600,searchSeconds:4*3600,routeIds:[],modes:['foot'],weaponItemId:'EQP-W-0001',windupSeconds:60,damage:75}];
+ intention:'警備が薄い時刻に王城へ入り、国王を襲う依頼を引き受けた。',departAt:7*86400+12*3600,searchSeconds:4*3600,routeIds:[],modes:['foot'],weaponItemId:'EQP-W-0001',windupSeconds:60,damage:75},
+ {id:'coerced-transfer',kind:'seize-person',actorId:'NPC033',targetActorId:'NPC027',targetSiteId:'LOC_ELF_YOUNG_HOUSE',holdingSiteId:'LOC_CRIME_SLAVE_MARKET',
+ intention:'代筆した契約を使い、本人を探して市場へ連れ戻すつもりだ。',departAt:2*86400+8*3600,searchSeconds:24*3600,routeIds:['R08','R06','R13','R14'],modes:['foot','ship'],restraintItemId:'rope',windupSeconds:120}];
 
 // Machinery failures reuse the same physical exposure, shelter and maintenance
 // model as fires and mine collapses. No new casualty is spawned by these bindings.

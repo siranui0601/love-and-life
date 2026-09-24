@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-30a9cef5f426",
+  "revision": "world-10d-25c5a7733444",
   "time": {
     "days": 10,
     "scale": 60,
@@ -20603,6 +20603,9 @@
         "row": 37,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC033"
+      },
+      "possessions": {
+        "rope": 1
       }
     },
     {
@@ -24828,6 +24831,25 @@
       ],
       "protectedActor": "NPC027",
       "affectedTarget": "NPC027",
+      "enforcement": {
+        "actorId": "NPC024",
+        "meetingId": "LOC_CAP_LOWER_INN",
+        "postId": "LOC_CRIME_SLAVE_MARKET",
+        "protectActorId": "NPC027",
+        "custodySiteId": "LOC_CAP_LOWER_INN",
+        "routeIds": [
+          "R06",
+          "R08"
+        ],
+        "modes": [
+          "foot",
+          "ship"
+        ],
+        "stoppedOperations": [
+          "coerced-transfer"
+        ],
+        "text": "本人の同意のない身柄引渡しを止め、拘束されている場合は本人を保護する。"
+      },
       "reviewers": [
         "NPC015",
         "NPC067"
@@ -24895,6 +24917,7 @@
         "meetingId": "LOC_CAP_LOWER_INN",
         "postId": "LOC_CAP_CASTLE",
         "protectActorId": "NPC016",
+        "custodySiteId": "LOC_CAP_LOWER_INN",
         "routeIds": [],
         "modes": [
           "foot"
@@ -25165,6 +25188,29 @@
       "weaponItemId": "EQP-W-0001",
       "windupSeconds": 60,
       "damage": 75
+    },
+    {
+      "id": "coerced-transfer",
+      "kind": "seize-person",
+      "actorId": "NPC033",
+      "targetActorId": "NPC027",
+      "targetSiteId": "LOC_ELF_YOUNG_HOUSE",
+      "holdingSiteId": "LOC_CRIME_SLAVE_MARKET",
+      "intention": "代筆した契約を使い、本人を探して市場へ連れ戻すつもりだ。",
+      "departAt": 201600,
+      "searchSeconds": 86400,
+      "routeIds": [
+        "R08",
+        "R06",
+        "R13",
+        "R14"
+      ],
+      "modes": [
+        "foot",
+        "ship"
+      ],
+      "restraintItemId": "rope",
+      "windupSeconds": 120
     }
   ],
   "skills": [

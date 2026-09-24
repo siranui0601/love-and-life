@@ -18,11 +18,11 @@ export function meaningfulState(state) {
   needs:{hunger:state.player.hunger,fatigue:state.player.fatigue},posture:state.player.posture,inspections:state.player.inspections,region:state.player.region,position:state.player.position,
   events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}])),
   npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{region:n.region,position:n.position,hp:n.hp,goal:n.goal,knowledge:n.knowledge.map(knowledgeMeaning),memories:n.memories,plan:n.plan,travel:n.travel}])),
-  properties:state.properties,facilities:state.facilities,processes:state.processes,structures:state.structures});
+  properties:state.properties,facilities:state.facilities,processes:state.processes,structures:state.structures,personCustodies:state.personCustodies,actorOperations:state.actorOperations,duties:state.duties,shipments:state.shipments});
 }
 function progressState(state) {
  return {knowledge:state.knowledge.map(knowledgeMeaning).sort((a,b)=>a.id.localeCompare(b.id,'en')),inventory:state.player.inventory,npcs:Object.fromEntries(Object.entries(state.npcs).map(([id,n])=>[id,{injury:n.injury,companionOf:n.companionOf,knowledge:n.knowledge.map(knowledgeMeaning)}])),
-  properties:state.properties,processes:state.processes,structures:state.structures,events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}]))};
+  properties:state.properties,processes:state.processes,structures:state.structures,personCustodies:state.personCustodies,actorOperations:state.actorOperations,duties:state.duties,shipments:state.shipments,events:Object.fromEntries(Object.entries(state.events).map(([id,e])=>[id,{status:e.status,causal:e.causal}]))};
 }
 export function changedDomains(before,after) {return [...new Set([...Object.keys(before),...Object.keys(after)])].filter(k=>stableString(before[k])!==stableString(after[k]));}
 

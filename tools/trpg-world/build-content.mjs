@@ -83,7 +83,7 @@ for(const object of regions.flatMap(r=>r.objects))if(publicSiteDescriptions[obje
 
 const processes=structuredClone(DEFAULT_PROCESSES);
 for(const process of processes)if(process.kind==='inquiry'&&!process.reviewers)process.reviewers=npcs.filter(n=>n.region===process.region&&n.workFacilityId===process.targetId).map(n=>n.id);
-for(const operation of DEFAULT_ACTOR_OPERATIONS){const actor=npcs.find(n=>n.id===operation.actorId);if(actor&&operation.weaponItemId)actor.possessions={...actor.possessions,[operation.weaponItemId]:1};}
+for(const operation of DEFAULT_ACTOR_OPERATIONS){const actor=npcs.find(n=>n.id===operation.actorId),item=operation.restraintItemId||operation.weaponItemId;if(actor&&item)actor.possessions={...actor.possessions,[item]:1};}
 // Published duties keep their actual participants at the relevant venue;
 // danger, urgent needs and already accepted field work can still interrupt.
 const king=npcs.find(n=>n.id==='NPC016');if(king)king.appointments=[{siteId:'LOC_CAP_CASTLE',startsAt:7*86400+11*3600,endsAt:7*86400+17*3600,activity:'王城で予定されていた謁見を行う'}];

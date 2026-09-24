@@ -5,6 +5,7 @@ import {conditionHolds,consumeResources,depositDocuments,recordMilestone} from '
 import {distance,followPath,hasLineOfSight} from './navigation.js';
 import {rememberAction} from './relationships.js';
 import {initializeProcesses,advanceProcesses} from './processes.js';
+import {activeCustody,custodyActions,releasePerson} from './person-custody.js';
 
 // Authored scenario bindings. Components below know roles and resources, not T numbers.
 export const DEFAULT_CAUSAL_SCENARIOS=[
@@ -144,8 +145,9 @@ export function causalActions(state,content,target) {
   const actions=[];
   const npc=state.npcs[target.id];
   if(npc&&npc.hp<=0)return actions;
+  if(npc)actions.push(...custodyActions(state,content,npc));
   if(npc?.injury&&npc.injury.kind!=='poison'&&!npc.injury.treated&&!npc.entrapment)actions.push({id:'tend',type:'causal',label:'傷を手当てする · 傷薬1つ',requirements:{items:{medicine:1}},available:(state.player.inventory.medicine||0)>0,missing:['傷薬1つ']});
-  if((npc?.injury?.treated||npc?.causalAssignment&&!npc.injury)&&!npc.companionOf)actions.push({id:'escort',type:'causal',label:'身体を支えて、一緒に歩く'});
+  if((npc?.injury?.treated||npc?.causalAssignment&&!npc.injury||npc?.releasedFromCustody)&&!npc.companionOf&&!activeCustody(state,npc))actions.push({id:'escort',type:'causal',label:'身体を支えて、一緒に歩く'});
   if(npc?.companionOf==='player')actions.push({id:'release',type:'causal',label:'ここで待っていてもらう'});
   for(const definition of causalDefinitions(content)) {
     if(definition.type==='institution') {
@@ -164,7 +166,11 @@ export function applyCausalAction(state,content,target,id) {
   const reject=message=>{throw Object.assign(new Error(message),{code:'CAUSAL_REQUIREMENTS',status:409});};
   if(!causalActions(state,content,target).some(a=>a.id===id))reject('この場所ではできません。');
   const p=state.player,npc=state.npcs[target.id];
-  if(id==='tend') {if(!p.inventory.medicine)reject('傷薬が必要です。');p.inventory.medicine--;npc.injury.treated=true;rememberAction(state,content,'treatment',{targetId:npc.id});}
+  if(id==='free-restraints'){
+    if(!custodyActions(state,content,npc).some(a=>a.id===id&&a.available))reject('見張りがすぐそばで警戒しています。');
+    if(!releasePerson(state,content,npc,p))reject('拘束をほどけません。');
+  }
+  else if(id==='tend') {if(!p.inventory.medicine)reject('傷薬が必要です。');p.inventory.medicine--;npc.injury.treated=true;rememberAction(state,content,'treatment',{targetId:npc.id});}
   else if(id==='escort') {
     npc.companionOf='player';
     const definition=causalDefinitions(content).find(d=>d.type==='return-person'&&d.personId===npc.id),family=content.npcs.find(n=>n.id===definition?.familyId);

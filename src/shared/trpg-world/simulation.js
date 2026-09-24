@@ -227,7 +227,11 @@ function advanceNpcs(state,content,gameDelta) {
   for (const npc of values(state.npcs)) {
     if (npc.hp<=0) { npc.activity='倒れている'; continue; }
     npc.hunger=clamp(npc.hunger+gameDelta/DAY*75,0,100);npc.fatigue=clamp(npc.fatigue+gameDelta/DAY*60,0,100);
-    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.reviewAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.operationAssignment||npc.dutyAssignment||npc.detention?.status==='held'||npc.care?.status==='injured'||npc.companionOf)continue;
+    if(npc.releasedFromCustody&&npc.companionOf==='player'&&!npc.travel&&playerIsLocal(state)&&npc.region===state.player.region){
+      if(distance(npc.position,state.player.position)<18&&hasLineOfSight(idx.regions.get(npc.region),npc.position,state.player.position))npc.escortObservation=[...state.player.position];
+      if(npc.escortObservation)followPath(idx.regions.get(npc.region),npc,npc.escortObservation,realDelta*2.4);
+    }
+    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.reviewAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.custodyAssignment||npc.captive||npc.operationAssignment||npc.dutyAssignment||npc.detention?.status==='held'||npc.care?.status==='injured'||npc.companionOf)continue;
     if(advanceSocialPlan(state,content,npc,gameDelta))continue;
     const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacementCause?original.work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
@@ -680,9 +684,15 @@ export function applyCommand(state,content,command) {
     if(p.gold<cost)fail('NO_GOLD','運賃が足りません。',409);
     const destination=idx.regions.get(portal.to);if(!destination)fail('DESTINATION_MISSING','行先が利用できません。',500);
     const originRegion=p.region;
-    p.gold-=cost;if(!advanceMacro(state,content,'travelling',minutes*60,{routeId:route.id,destination:destination.id}))return {message:'出発地点付近で体調を崩し、旅を中断した。'};
+    const companions=values(state.npcs).filter(n=>n.hp>0&&n.companionOf==='player'&&!n.travel&&!n.captive&&!n.entrapment&&n.region===originRegion&&distance(n.position,portal.position)<4&&hasLineOfSight(idx.regions.get(originRegion),n.position,portal.position));
+    const departedAt=state.time;for(const n of companions){n.travel={from:originRegion,to:destination.id,routeId:route.id,mode,leaderId:'player',departedAt,arrivesAt:state.time+minutes*60};n.path=[];delete n.pathTarget;}
+    p.gold-=cost;if(!advanceMacro(state,content,'travelling',minutes*60,{routeId:route.id,destination:destination.id})){
+      for(const n of companions)if(n.travel?.leaderId==='player'&&n.travel.departedAt===departedAt)n.travel=null;
+      return {message:'出発地点付近で体調を崩し、旅を中断した。'};
+    }
     const hazard=resolveTravelHazard(state,content,route,mode,originRegion);
     p.region=destination.id;p.position=[...(destination.spawn||[0,0,8])];p.mode=['horse','broom'].includes(mode)?mode:'foot';
+    for(const n of companions)if(n.hp>0&&n.travel?.leaderId==='player'&&n.travel.departedAt===departedAt){n.region=destination.id;n.position=[...p.position];n.travel=null;n.path=[];delete n.pathTarget;delete n.escortObservation;}
     if(!state.visits.includes(p.region)){state.visits.push(p.region);awardXp(state,35,`region:${p.region}`);}
     updateKnowledgeFromSight(state,content);log(state,`${destination.name}へ到着した。旅の間にも時間が流れた。`,'travel');
     const hazardText=hazard?` 道中で${hazard.damage}の損傷を受けた。`:'';

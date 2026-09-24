@@ -5,6 +5,7 @@ import {damageStructure} from './aftermath.js';
 import {advanceInstitutionalExecution} from './institutional-execution.js';
 import {initializeShipments,advanceShipments,shipmentSecured} from './shipments.js';
 import {initializeActorOperations,advanceActorOperations,advanceDuties,operationsStopped} from './actor-operations.js';
+import {advancePersonCustody} from './person-custody.js';
 
 // Authored bindings run through a small physical/resource/institution vocabulary.
 // Neither a command nor a narrative provider can assign an event outcome.
@@ -137,6 +138,7 @@ export function advanceProcesses(state,content,seconds){
  initializeProcesses(state,content);
  advanceShipments(state,content,seconds);
  advanceDuties(state,content,seconds);advanceActorOperations(state,content,seconds);
+ advancePersonCustody(state,content,seconds);
  for(const spec of content.processes||[]){
   const p=state.processes[spec.id],event=content.events.find(e=>e.id===spec.eventId),point=pointFor(state,content,spec);
   if(!event||!point||p.legacyDormant)continue;
@@ -160,7 +162,7 @@ export function advanceProcesses(state,content,seconds){
       const ids=(spec.impoundShipments||[]).filter(id=>state.shipments[id]&&!state.shipments[id].legacyDormant);
       p.order.impoundShipments=ids;state.institutionalOrders[fact.id].impoundShipments=[...ids];
       p.order.stoppedOperations=(spec.enforcement?.stoppedOperations||[]).filter(id=>!state.actorOperations[id]?.legacyDormant);}
-     if(spec.protectedActor){const person=state.npcs[spec.protectedActor];if(person){person.legalProtection={authority:clerk.id,jurisdiction:spec.region,orderId:fact.id};}}
+     if(spec.protectedActor&&!spec.enforcement){const person=state.npcs[spec.protectedActor];if(person){person.legalProtection={authority:clerk.id,jurisdiction:spec.region,orderId:fact.id};}}
 }}
   }
   advanceInstitutionalExecution(state,content,spec,p,seconds);

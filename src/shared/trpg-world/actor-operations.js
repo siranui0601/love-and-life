@@ -2,8 +2,9 @@ import {worldSite,advanceActorJourney} from './actor-journey.js';
 import {distance,hasLineOfSight,followPath} from './navigation.js';
 import {searchPlan,advanceActionPlan} from './npc-planner.js';
 import {rememberAction} from './relationships.js';
+import {activeCustody,restrainPerson,releasePerson} from './person-custody.js';
 
-const reserved=n=>n.rescueAssignment||n.aftermathAssignment||n.institutionalAssignment||n.transportAssignment||n.causalAssignment||n.entrapment||n.companionOf||n.detention?.status==='held';
+const reserved=n=>n.rescueAssignment||n.aftermathAssignment||n.institutionalAssignment||n.transportAssignment||n.custodyAssignment||n.captive||n.causalAssignment||n.entrapment||n.companionOf||n.detention?.status==='held';
 const canSee=(content,a,b,range)=>a&&b&&!a.travel&&!b.travel&&a.region===b.region&&distance(a.position,b.position)<range&&hasLineOfSight(content.regions.find(r=>r.id===a.region),a.position,b.position);
 export function initializeActorOperations(state,content){
  state.actorOperations||={};state.duties||={};
@@ -21,14 +22,15 @@ export function operationsStopped(state,ids){return (ids||[]).every(id=>state.ac
 function intercept(state,content,attacker,victim,operation,seconds){
  for(const duty of Object.values(state.duties)){
   const guard=state.npcs[duty.actorId];
-  if(duty.kind!=='guard'||duty.protectActorId!==victim.id||!['stationed','responding'].includes(duty.phase)||!guard||guard.hp<35||guard.fatigue>85||guard.hunger>90)continue;
+  if(duty.kind!=='guard'||duty.protectActorId!==victim.id||!['stationed','responding'].includes(duty.phase)||!guard||guard.hp<35||guard.fatigue>85||guard.hunger>90||activeCustody(state,guard))continue;
   if(!canSee(content,guard,attacker,18)||!canSee(content,guard,victim,18))continue;
   guard.activity='目の前の襲撃を止めようとしている';
   duty.phase='responding';duty.threatId=attacker.id;
   followPath(content.regions.find(r=>r.id===guard.region),guard,attacker.position,seconds/(content.time?.scale||60)*1.8);
   if(!canSee(content,guard,attacker,3))return false;
   const fact=rememberAction(state,content,'assault-restrained',{actorId:guard.id,targetId:attacker.id,payload:{protectedActorId:victim.id,attemptFactId:operation.attemptFactId,orderId:duty.orderId}});
-  attacker.detention={status:'held',custodianId:guard.id,authorityId:duty.authorityId,at:state.time,sourceFactId:fact.id};
+  if(activeCustody(state,victim)?.holderId===attacker.id&&canSee(content,guard,victim,5))releasePerson(state,content,victim,guard,fact.id);
+  restrainPerson(state,content,guard,attacker,{sourceFactId:fact.id,authorityId:duty.authorityId,siteId:duty.custodySiteId,routeIds:duty.routeIds,modes:duty.modes});
   attacker.activity='襲撃を止められ、身柄を押さえられている';operation.phase='restrained';operation.stoppedAt=state.time;operation.stopFactId=fact.id;delete attacker.operationAssignment;delete attacker.plan;
   duty.responseFactId=fact.id;return true;
  }
@@ -40,13 +42,21 @@ export function advanceActorOperations(state,content,seconds){
   const op=state.actorOperations[spec.id],actor=state.npcs[spec.actorId];
   if(op.legacyDormant||['restrained','withdrawn','completed','incapacitated'].includes(op.phase)||state.time<spec.departAt||!actor)continue;
   if(actor.hp<=0){op.phase='incapacitated';op.stoppedAt=state.time;delete actor.operationAssignment;continue;}
+  if(['conveying','holding'].includes(op.phase)){
+   const person=state.npcs[spec.targetActorId],custody=activeCustody(state,person);
+   if(!custody){op.phase='withdrawn';op.stoppedAt=state.time;delete actor.operationAssignment;continue;}
+   if(canSee(content,actor,person,18))intercept(state,content,actor,person,op,seconds);
+   if(op.phase!=='restrained')op.phase=custody.phase==='held'?'holding':'conveying';
+   continue;
+  }
   if(reserved(actor))continue;
   if(!actor.knowledge.some(k=>k.id===`intention:${spec.id}`))continue;
-  if(spec.weaponItemId&&!(actor.possessions[spec.weaponItemId]>0)){
-   const fact=rememberAction(state,content,'equipment-missing',{actorId:actor.id,payload:{itemId:spec.weaponItemId}});
+  const requiredItem=spec.restraintItemId||spec.weaponItemId;
+  if(requiredItem&&!(actor.possessions[requiredItem]>0)){
+   const fact=rememberAction(state,content,'equipment-missing',{actorId:actor.id,payload:{itemId:requiredItem}});
    op.phase='withdrawn';op.stopFactId=fact.id;op.stoppedAt=state.time;delete actor.operationAssignment;continue;
   }
-  actor.operationAssignment=spec.id;
+  actor.operationAssignment=spec.id;actor.goal='execute-intention';
   const site=worldSite(content,spec.targetSiteId);if(!site)continue;
   if(op.phase==='pending')op.phase='approaching';
   if(op.phase==='approaching'){
@@ -64,14 +74,19 @@ export function advanceActorOperations(state,content,seconds){
    continue;
   }
   if(victim.hp<=0){op.phase='completed';delete actor.operationAssignment;continue;}
-  actor.activity='武器を手にして相手へ詰め寄る';
-  if(!op.attemptFactId){const fact=rememberAction(state,content,'assault-attempt',{actorId:actor.id,targetId:victim.id});op.attemptFactId=fact.id;}
+  actor.activity=spec.kind==='seize-person'?'縄を手に、相手の行く手をふさぐ':'武器を手にして相手へ詰め寄る';
+  if(!op.attemptFactId){const fact=rememberAction(state,content,spec.kind==='seize-person'?'seizure-attempt':'assault-attempt',{actorId:actor.id,targetId:victim.id});op.attemptFactId=fact.id;}
   if(intercept(state,content,actor,victim,op,seconds))continue;
   if(!canSee(content,actor,victim,2.5)){
    delete op.hitAt;followPath(content.regions.find(r=>r.id===actor.region),actor,victim.position,seconds/(content.time?.scale||60)*1.65);continue;
   }
   if(op.hitAt===undefined){op.hitAt=state.time+(spec.windupSeconds||60);continue;}
   if(state.time<op.hitAt)continue;
+  if(spec.kind==='seize-person'){
+   const custody=restrainPerson(state,content,actor,victim,{kind:'coercion',sourceFactId:op.attemptFactId,siteId:spec.holdingSiteId,routeIds:spec.routeIds,modes:spec.modes});
+   if(custody){actor.possessions[spec.restraintItemId]--;op.phase='conveying';op.custodyId=custody.id;op.resultFactId=custody.restraintFactId;delete actor.operationAssignment;}
+   continue;
+  }
   // Damage follows a persisted temporal attempt and a fresh physical check.
   victim.hp=Math.max(0,victim.hp-spec.damage);victim.injury={kind:'trauma',treated:false,causedBy:actor.id,at:state.time};
   const fact=rememberAction(state,content,'assault',{actorId:actor.id,targetId:victim.id,payload:{attemptFactId:op.attemptFactId,damage:spec.damage}});
@@ -82,6 +97,10 @@ export function advanceDuties(state,content,seconds){
  if(seconds<=0)return;
  for(const duty of Object.values(state.duties||{})){
   const actor=state.npcs[duty.actorId],site=worldSite(content,duty.postId);if(!actor||!site||actor.hp<=0||reserved(actor))continue;
+  if(duty.phase==='completed')continue;
+  if(duty.stoppedOperations?.length&&operationsStopped(state,duty.stoppedOperations)){
+   duty.phase='completed';duty.completedAt=state.time;if(actor.dutyAssignment===duty.orderId)delete actor.dutyAssignment;actor.nextDecision=0;continue;
+  }
   // Personal needs still matter. An exhausted posted actor cannot become an
   // immortal sentry; ordinary daily planning handles food and sleep off duty.
   if(actor.fatigue>85||actor.hunger>90){duty.phase='off-duty';delete actor.dutyAssignment;actor.nextDecision=0;continue;}
@@ -98,7 +117,7 @@ export function advanceDuties(state,content,seconds){
 export function advanceFieldOrder(state,content,spec,process,seconds){
  const order=process.order,definition=spec.enforcement;if(!order?.executionRequired||!definition||seconds<=0)return;
  const duty=state.duties?.[order.factId];
- if(duty){order.execution={...order.execution,status:duty.phase==='stationed'?'completed':'awaiting-deployment',deploymentFactId:duty.arrivalFactId};state.institutionalOrders[order.factId].execution=structuredClone(order.execution);return;}
+ if(duty){order.execution={...order.execution,status:['stationed','completed'].includes(duty.phase)?'completed':'awaiting-deployment',deploymentFactId:duty.arrivalFactId};state.institutionalOrders[order.factId].execution=structuredClone(order.execution);return;}
  const issuer=state.npcs[order.authority],recipient=state.npcs[definition.actorId],meeting=worldSite(content,definition.meetingId);
  if(!issuer||issuer.hp<=0||!recipient||recipient.hp<=0||!meeting||issuer.rescueAssignment||issuer.aftermathAssignment||issuer.transportAssignment||issuer.entrapment||issuer.companionOf)return;
  if(issuer.institutionalAssignment&&issuer.institutionalAssignment!==order.factId)return;
