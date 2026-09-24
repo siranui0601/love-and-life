@@ -3,6 +3,7 @@ import {distance,hasLineOfSight,followPath} from './navigation.js';
 import {searchPlan,advanceActionPlan} from './npc-planner.js';
 import {rememberAction} from './relationships.js';
 import {activeCustody,restrainPerson,releasePerson} from './person-custody.js';
+import {assembleOperationParty,followOperationParty,releaseOperationParty} from './operation-party.js';
 
 const reserved=n=>n.rescueAssignment||n.aftermathAssignment||n.institutionalAssignment||n.transportAssignment||n.custodyAssignment||n.captive||n.causalAssignment||n.entrapment||n.companionOf||n.detention?.status==='held';
 const canSee=(content,a,b,range)=>a&&b&&!a.travel&&!b.travel&&a.region===b.region&&distance(a.position,b.position)<range&&hasLineOfSight(content.regions.find(r=>r.id===a.region),a.position,b.position);
@@ -40,8 +41,9 @@ export function advanceActorOperations(state,content,seconds){
  initializeActorOperations(state,content);if(seconds<=0)return;
  for(const spec of content.actorOperations||[]){
   const op=state.actorOperations[spec.id],actor=state.npcs[spec.actorId];
-  if(op.legacyDormant||['restrained','withdrawn','completed','incapacitated'].includes(op.phase)||state.time<spec.departAt||!actor)continue;
-  if(actor.hp<=0){op.phase='incapacitated';op.stoppedAt=state.time;delete actor.operationAssignment;continue;}
+  if(op.legacyDormant||['restrained','withdrawn','completed','incapacitated'].includes(op.phase)||!actor){if(['restrained','withdrawn','completed','incapacitated'].includes(op.phase))releaseOperationParty(state,spec);continue;}
+  if(!op.recallOrderId&&state.time<spec.departAt)continue;
+  if(actor.hp<=0){op.phase='incapacitated';op.stoppedAt=state.time;delete actor.operationAssignment;releaseOperationParty(state,spec);continue;}
   if(['conveying','holding'].includes(op.phase)){
    const person=state.npcs[spec.targetActorId],custody=activeCustody(state,person);
    if(!custody){op.phase='withdrawn';op.stoppedAt=state.time;delete actor.operationAssignment;continue;}
@@ -51,20 +53,36 @@ export function advanceActorOperations(state,content,seconds){
   }
   if(reserved(actor))continue;
   if(!actor.knowledge.some(k=>k.id===`intention:${spec.id}`))continue;
+  if(op.recallOrderId){
+   actor.operationAssignment=spec.id;actor.activity='受領した中止命令に従い、集合地へ戻る';op.phase='returning';
+   const party=(spec.memberIds||[]).filter(id=>state.npcs[id]?.operationMember===spec.id);
+   const result=advanceActorJourney(state,content,actor,spec.assemblySiteId,seconds,{...spec,followers:party});
+   if(result.failed)op.blockedReason=result.failed;
+   if(result.complete){const fact=rememberAction(state,content,'deployment-returned',{actorId:actor.id,targetId:spec.assemblySiteId,payload:{orderId:op.recallOrderId,members:party}});op.phase='withdrawn';op.stoppedAt=state.time;op.stopFactId=fact.id;releaseOperationParty(state,spec);delete actor.operationAssignment;actor.nextDecision=0;}
+   continue;
+  }
   const requiredItem=spec.restraintItemId||spec.weaponItemId;
   if(requiredItem&&!(actor.possessions[requiredItem]>0)){
    const fact=rememberAction(state,content,'equipment-missing',{actorId:actor.id,payload:{itemId:requiredItem}});
    op.phase='withdrawn';op.stopFactId=fact.id;op.stoppedAt=state.time;delete actor.operationAssignment;continue;
   }
+  if(!actor.operationAssignment)delete actor.plan;
   actor.operationAssignment=spec.id;actor.goal='execute-intention';
   const site=worldSite(content,spec.targetSiteId);if(!site)continue;
-  if(op.phase==='pending')op.phase='approaching';
+  if(op.phase==='pending')op.phase=spec.assemblySiteId?'assembling':'approaching';
+  if(op.phase==='assembling'){
+   actor.activity='集合地で同行者へ指示し、装備と食料を確かめる';
+   const assembled=assembleOperationParty(state,content,spec,op,actor,seconds);if(assembled.complete){op.phase='approaching';delete op.blockedReason;}else op.blockedReason=assembled.failed||assembled.waiting;
+   continue;
+  }
   if(op.phase==='approaching'){
-   actor.activity='訪れる予定の場所へ向かう';const moved=advanceActorJourney(state,content,actor,site.id,seconds,spec);
+   actor.activity='訪れる予定の場所へ向かう';const moved=advanceActorJourney(state,content,actor,site.id,seconds,{...spec,followers:spec.memberIds||[]});
    if(moved.complete){op.phase='searching';op.searchStartedAt=state.time;}
    if(moved.failed)op.blockedReason=moved.failed;
    continue;
   }
+  followOperationParty(state,content,spec,actor,seconds);
+  if(op.phase==='holding-position'){actor.activity='部隊とともに現地へ留まっている';continue;}
   const victim=state.npcs[spec.targetActorId];
   if(!victim||!canSee(content,actor,victim,18)){
    delete op.hitAt;actor.activity='現地で会う相手を探している';
@@ -90,7 +108,7 @@ export function advanceActorOperations(state,content,seconds){
   // Damage follows a persisted temporal attempt and a fresh physical check.
   victim.hp=Math.max(0,victim.hp-spec.damage);victim.injury={kind:'trauma',treated:false,causedBy:actor.id,at:state.time};
   const fact=rememberAction(state,content,'assault',{actorId:actor.id,targetId:victim.id,payload:{attemptFactId:op.attemptFactId,damage:spec.damage}});
-  op.phase='completed';op.resultFactId=fact.id;op.completedAt=state.time;delete actor.operationAssignment;actor.nextDecision=0;
+  op.phase=spec.assemblySiteId?'holding-position':'completed';op.resultFactId=fact.id;op.completedAt=state.time;if(!spec.assemblySiteId)delete actor.operationAssignment;actor.nextDecision=0;
  }
 }
 export function advanceDuties(state,content,seconds){
@@ -116,6 +134,10 @@ export function advanceDuties(state,content,seconds){
 // are never looked up across the map. Delivery and deployment are distinct.
 export function advanceFieldOrder(state,content,spec,process,seconds){
  const order=process.order,definition=spec.enforcement;if(!order?.executionRequired||!definition||seconds<=0)return;
+ if(definition.kind==='recall'&&order.deliveryFactId){
+  order.execution={...order.execution,status:operationsStopped(state,definition.stoppedOperations)?'completed':'awaiting-return'};
+  state.institutionalOrders[order.factId].execution=structuredClone(order.execution);return;
+ }
  const duty=state.duties?.[order.factId];
  if(duty){order.execution={...order.execution,status:['stationed','completed'].includes(duty.phase)?'completed':'awaiting-deployment',deploymentFactId:duty.arrivalFactId};state.institutionalOrders[order.factId].execution=structuredClone(order.execution);return;}
  const issuer=state.npcs[order.authority],recipient=state.npcs[definition.actorId],meeting=worldSite(content,definition.meetingId);
@@ -136,6 +158,10 @@ export function advanceFieldOrder(state,content,spec,process,seconds){
    if(reserved(recipient)||recipient.dutyAssignment||!canSee(content,issuer,recipient,6))return {};
    const fact=rememberAction(state,content,'field-order-delivered',{actorId:issuer.id,targetId:recipient.id,payload:{orderId:order.factId,postId:definition.postId}});
    recipient.knowledge.push({id:`order-copy:${order.factId}`,kind:'document',text:definition.text,source:{type:'received-document',actorId:issuer.id,documentId:order.factId,factId:fact.id},observedAt:state.time,disclosure:{visibility:'private'}});
+   if(definition.kind==='recall'){
+    for(const id of definition.stoppedOperations||[]){const op=state.actorOperations[id],binding=(content.actorOperations||[]).find(o=>o.id===id);if(op&&!op.legacyDormant&&binding?.actorId===recipient.id){op.recallOrderId=order.factId;op.recallReceivedAt=state.time;}}
+    order.deliveryFactId=fact.id;order.execution={...order.execution,status:'awaiting-return',deliveryFactId:fact.id};return {complete:true};
+   }
    state.duties[order.factId]={...structuredClone(definition),kind:'guard',orderId:order.factId,authorityId:issuer.id,phase:'deploying',deliveryFactId:fact.id,deliveredAt:state.time};
    delete recipient.plan;recipient.path=[];delete recipient.pathTarget;
    order.execution={...order.execution,status:'awaiting-deployment',deliveryFactId:fact.id};return {complete:true};}

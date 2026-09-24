@@ -231,7 +231,7 @@ function advanceNpcs(state,content,gameDelta) {
       if(distance(npc.position,state.player.position)<18&&hasLineOfSight(idx.regions.get(npc.region),npc.position,state.player.position))npc.escortObservation=[...state.player.position];
       if(npc.escortObservation)followPath(idx.regions.get(npc.region),npc,npc.escortObservation,realDelta*2.4);
     }
-    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.reviewAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.custodyAssignment||npc.captive||npc.operationAssignment||npc.dutyAssignment||npc.detention?.status==='held'||npc.care?.status==='injured'||npc.companionOf)continue;
+    if(npc.rescueAssignment||npc.causalAssignment||npc.entrapment||npc.aftermathAssignment||npc.reviewAssignment||npc.institutionalAssignment||npc.transportAssignment||npc.custodyAssignment||npc.captive||npc.operationAssignment||npc.operationMember||npc.dutyAssignment||npc.detention?.status==='held'||npc.care?.status==='injured'||npc.companionOf)continue;
     if(advanceSocialPlan(state,content,npc,gameDelta))continue;
     const original=idx.npcs.get(npc.id);if(!original)continue;let template=npc.displacedHome?{...original,home:npc.displacedHome,work:npc.displacementCause?original.work:npc.displacedHome}:{...original};
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}

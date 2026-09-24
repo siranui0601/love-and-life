@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-25c5a7733444",
+  "revision": "world-10d-7447e1bcfa30",
   "time": {
     "days": 10,
     "scale": 60,
@@ -20893,6 +20893,10 @@
         "row": 44,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC040"
+      },
+      "possessions": {
+        "supplies": 3,
+        "EQP-W-0001": 1
       }
     },
     {
@@ -20934,7 +20938,15 @@
         "row": 45,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC041"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_FORT_BARRACKS",
+          "startsAt": 460800,
+          "endsAt": 478800,
+          "activity": "事前に指定された部隊の集合時刻に兵舎へ向かう"
+        }
+      ]
     },
     {
       "id": "NPC042",
@@ -23107,7 +23119,15 @@
         "row": 98,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC094"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_FORT_BARRACKS",
+          "startsAt": 460800,
+          "endsAt": 478800,
+          "activity": "事前に指定された部隊の集合時刻に兵舎へ向かう"
+        }
+      ]
     },
     {
       "id": "NPC095",
@@ -24953,7 +24973,24 @@
       ],
       "reviewers": [
         "NPC039"
-      ]
+      ],
+      "enforcement": {
+        "kind": "recall",
+        "actorId": "NPC040",
+        "meetingId": "LOC_FORT_BARRACKS",
+        "postId": "LOC_BLACKRIDGE_GATE",
+        "protectActorId": "NPC107",
+        "routeIds": [
+          "R02"
+        ],
+        "modes": [
+          "foot"
+        ],
+        "stoppedOperations": [
+          "disputed-sortie"
+        ],
+        "text": "報告の不一致が確認された。越境部隊の出撃を中止し、兵舎へ帰還せよ。"
+      }
     },
     {
       "id": "customs-cargo",
@@ -25211,6 +25248,33 @@
       ],
       "restraintItemId": "rope",
       "windupSeconds": 120
+    },
+    {
+      "id": "disputed-sortie",
+      "actorId": "NPC040",
+      "memberIds": [
+        "NPC041",
+        "NPC094"
+      ],
+      "assemblySiteId": "LOC_FORT_BARRACKS",
+      "requiredResources": {
+        "supplies": 3
+      },
+      "targetActorId": "NPC107",
+      "targetSiteId": "LOC_BLACKRIDGE_GATE",
+      "intention": "襲撃報告を根拠に、二人の兵を連れて黒嶺の門へ出撃する。",
+      "partyInstruction": "食料を受け取り、将校とともに黒嶺の外門へ向かう。",
+      "departAt": 464400,
+      "searchSeconds": 28800,
+      "routeIds": [
+        "R02"
+      ],
+      "modes": [
+        "foot"
+      ],
+      "weaponItemId": "EQP-W-0001",
+      "windupSeconds": 300,
+      "damage": 30
     }
   ],
   "skills": [

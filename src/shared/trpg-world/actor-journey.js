@@ -33,7 +33,16 @@ export function advanceActorJourney(state,content,actor,targetId,seconds,{routeI
  if(party.some(n=>distance(n.position,actor.position)>4||!hasLineOfSight(region,n.position,actor.position)))return {waiting:'party-catching-up'};
  const near=point=>distance(actor.position,point)<3&&hasLineOfSight(region,actor.position,point);
  const together=point=>party.every(n=>distance(n.position,point)<4&&hasLineOfSight(region,n.position,point));
- if(actor.region===target.region){followPath(region,actor,target.position,budget);return {complete:near(target.position)&&together(target.position)};}
+ const moveTogether=point=>{
+  if(!party.length){followPath(region,actor,point,budget);return;}
+  followPath(region,actor,point,0);
+  const waypoint=actor.path?.find(p=>distance(p,actor.position)>.08)||point;
+  // Communicate the next corner while everyone is together. Stop there rather
+  // than rounding another corner out of sight during one coarse simulation tick.
+  for(const member of party)member.journeyFollowObservation={leaderId:actor.id,region:actor.region,position:[...waypoint],source:'agreed-waypoint'};
+  followPath(region,actor,point,Math.min(budget,distance(actor.position,waypoint)));
+ };
+ if(actor.region===target.region){moveTogether(target.position);return {complete:near(target.position)&&together(target.position)};}
  const queue=[{region:actor.region,path:[]}],seen=new Set();let path;
  while(queue.length){const current=queue.shift();if(current.region===target.region){path=current.path;break;}
   if(seen.has(current.region))continue;seen.add(current.region);
@@ -42,7 +51,7 @@ export function advanceActorJourney(state,content,actor,targetId,seconds,{routeI
  }
  if(!path?.length)return {failed:'no-known-itinerary'};
  const route=path[0],portal=region.portals.find(p=>p.routeId===route.id);if(!portal)return {failed:'departure-missing'};
- followPath(region,actor,portal.position,budget);
+ moveTogether(portal.position);
  if(near(portal.position)&&together(portal.position)){
   actor.travel={from:actor.region,to:portal.to,routeId:route.id,mode:route.modes.find(m=>modes.includes(m)),departedAt:state.time,arrivesAt:state.time+route.minutes*60};
   actor.path=[];delete actor.pathTarget;

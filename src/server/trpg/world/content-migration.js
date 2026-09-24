@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 // Explicitly observed historical content versions, never a wildcard compatibility rule.
 const versions=new Map([
+ ['world-10d-25c5a7733444','54c487dd467dce5c7a7a944e1d842f0f01cdd14b336f9bd32a5e8943b7223bc0'],
  ['world-10d-30a9cef5f426','336695fb99c010735c5cbb837ad1551a04eb5c67c45a04e39419923e8fe9948d'],
  ['world-10d-be0609b3b3b0','2d5c4f51ab6aaa306d41d58640fed69cf41a66bb4a6f2ebddfa33d86e96a4da5'],
  ['world-10d-4de4bc7caf72','e0eedf7e177b01de941d7c01431a2b37aa9f23c029e20dda2e1de6776ef082e2'],
@@ -15,6 +16,7 @@ const versions=new Map([
  ['world-10d-ec2c41296f3c','095e3f7e79de4ae8d7e86d0bbd405afa0203dfbd70ded2bb78db867697cca388'],
 ]);
 const reviewedTargets=new Map([
+ ['world-10d-7447e1bcfa30','8a5fe8b96466446cc564ee2fa8eba5636dac1f313f907c4c87fed8812d1d0353'],
  ['world-10d-25c5a7733444','54c487dd467dce5c7a7a944e1d842f0f01cdd14b336f9bd32a5e8943b7223bc0'],
  ['world-10d-30a9cef5f426','336695fb99c010735c5cbb837ad1551a04eb5c67c45a04e39419923e8fe9948d'],
  ['world-10d-4de4bc7caf72','e0eedf7e177b01de941d7c01431a2b37aa9f23c029e20dda2e1de6776ef082e2'],
@@ -24,7 +26,7 @@ export function canMigrateContent(record,content) {
  // This additive migration retains existing outcomes and introduces the shaft
  // only in the reviewed target generation. It is not permission for any future
  // content revision to reinterpret the checkpoint's save.
- if(['world-10d-30a9cef5f426','world-10d-be0609b3b3b0','world-10d-4de4bc7caf72','world-10d-1620f79180c0','world-10d-c0ca1f03faba','world-10d-940b5356c6a8','world-10d-24de1ef85209','world-10d-10c3365b9e26','world-10d-ec2c41296f3c'].includes(record.contentRevision)&&createHash('sha256').update(JSON.stringify(content)).digest('hex')!==reviewedTargets.get(content.revision))return false;
+ if(['world-10d-25c5a7733444','world-10d-30a9cef5f426','world-10d-be0609b3b3b0','world-10d-4de4bc7caf72','world-10d-1620f79180c0','world-10d-c0ca1f03faba','world-10d-940b5356c6a8','world-10d-24de1ef85209','world-10d-10c3365b9e26','world-10d-ec2c41296f3c'].includes(record.contentRevision)&&createHash('sha256').update(JSON.stringify(content)).digest('hex')!==reviewedTargets.get(content.revision))return false;
  if(!versions.has(record.contentRevision)||record.state?.schemaVersion!==1&&record.state?.schemaVersion!==2)return false;
  if((record.contentHash??null)!==versions.get(record.contentRevision))return false;
  const s=record.state;

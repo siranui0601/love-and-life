@@ -83,10 +83,11 @@ for(const object of regions.flatMap(r=>r.objects))if(publicSiteDescriptions[obje
 
 const processes=structuredClone(DEFAULT_PROCESSES);
 for(const process of processes)if(process.kind==='inquiry'&&!process.reviewers)process.reviewers=npcs.filter(n=>n.region===process.region&&n.workFacilityId===process.targetId).map(n=>n.id);
-for(const operation of DEFAULT_ACTOR_OPERATIONS){const actor=npcs.find(n=>n.id===operation.actorId),item=operation.restraintItemId||operation.weaponItemId;if(actor&&item)actor.possessions={...actor.possessions,[item]:1};}
+for(const operation of DEFAULT_ACTOR_OPERATIONS){const actor=npcs.find(n=>n.id===operation.actorId),item=operation.restraintItemId||operation.weaponItemId;if(actor)actor.possessions={...actor.possessions,...operation.requiredResources,...(item?{[item]:1}:{})};}
 // Published duties keep their actual participants at the relevant venue;
 // danger, urgent needs and already accepted field work can still interrupt.
 const king=npcs.find(n=>n.id==='NPC016');if(king)king.appointments=[{siteId:'LOC_CAP_CASTLE',startsAt:7*86400+11*3600,endsAt:7*86400+17*3600,activity:'王城で予定されていた謁見を行う'}];
+for(const operation of DEFAULT_ACTOR_OPERATIONS)for(const id of operation.memberIds||[]){const actor=npcs.find(n=>n.id===id);if(actor){actor.appointments||=[];actor.appointments.push({siteId:operation.assemblySiteId,startsAt:operation.departAt-3600,endsAt:operation.departAt+4*3600,activity:'事前に指定された部隊の集合時刻に兵舎へ向かう'});}}
 const content={version:1,revision:'pending',time:{days:10,scale:60,startSeconds:25200},regions,routes,npcs,events,causalScenarios:DEFAULT_CAUSAL_SCENARIOS,structures:[...DEFAULT_STRUCTURES,...DEFAULT_PROCESS_STRUCTURES],processes,shipments:DEFAULT_SHIPMENTS,actorOperations:DEFAULT_ACTOR_OPERATIONS,skills,items,recipes,jobs,...combat,
  provenance:{sourceUrl:source.sourceUrl,retrievedAt:source.retrievedAt,policy:'Source material, not legacy rules. No Human Virtue ledger or replay used.',eventPolicy:'19 causes regrouped into 8 crises; deadlines and balance authored anew.',assets:'Kenney CC0 Fantasy Town Kit 2.0 and Blocky Characters 2.0.'}};
 content.revision='world-10d-'+createHash('sha256').update(JSON.stringify(content)).digest('hex').slice(0,12);

@@ -88,11 +88,16 @@ export function auditWorldContent(content) {
     if(!op.intention||!Number.isFinite(op.departAt)||!(op.windupSeconds>0)||(op.kind!=='seize-person'&&!(op.damage>0)))errors.push(`${op.id}: missing intention/action timing`);
     if(op.weaponItemId&&!ids.items.has(op.weaponItemId)&&!ids.equipment.has(op.weaponItemId))errors.push(`${op.id}: missing weapon`);
     if(op.kind==='seize-person'&&(!ids.items.has(op.restraintItemId)||!objects.has(op.holdingSiteId)))errors.push(`${op.id}: missing restraint or holding site`);
+    if(op.assemblySiteId&&!objects.has(op.assemblySiteId))errors.push(`${op.id}: missing assembly location`);
+    for(const id of op.memberIds||[])if(!ids.npcs.has(id)||id===op.actorId)errors.push(`${op.id}: missing or duplicate member ${id}`);
+    if(new Set(op.memberIds||[]).size!==(op.memberIds||[]).length)errors.push(`${op.id}: duplicate party member`);
+    for(const [id,count] of Object.entries(op.requiredResources||{}))if(!ids.items.has(id)||!Number.isInteger(count)||count<=0)errors.push(`${op.id}: unavailable preparation resource`);
     for(const id of op.routeIds||[])if(!(content.routes||[]).some(r=>r.id===id&&r.modes.some(m=>op.modes?.includes(m))))errors.push(`${op.id}: invalid known itinerary`);
   }
   for(const process of content.processes||[])if(process.enforcement){const d=process.enforcement;
     if(!ids.npcs.has(d.actorId)||!ids.npcs.has(d.protectActorId)||!objects.has(d.meetingId)||!objects.has(d.postId))errors.push(`${process.id}: missing enforcement actor or location`);
     if(d.custodySiteId&&!objects.has(d.custodySiteId))errors.push(`${process.id}: missing detention destination`);
+    if(d.kind==='recall'&&(d.stoppedOperations||[]).some(id=>!(content.actorOperations||[]).some(o=>o.id===id&&o.actorId===d.actorId&&o.assemblySiteId)))errors.push(`${process.id}: recall needs actual leader and return site`);
     for(const id of d.stoppedOperations||[])if(!operations.has(id))errors.push(`${process.id}: missing threat operation ${id}`);
   }
   for(const shipment of content.shipments||[]) {
