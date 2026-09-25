@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
 import {performAt} from './validation/action-domain.mjs';
+import {sourceSituation} from '../../src/shared/trpg-world/encounter-sources.js';
 
 function fixture(){return {revision:'occupancy-contract',time:{scale:60,startSeconds:25200},regions:[{id:'farm',name:'町',size:160,spawn:[0,0,0],obstacles:[],portals:[],objects:[
  {id:'office',name:'役所',kind:'landmark',position:[0,0,1]},{id:'original',name:'原本',kind:'landmark',position:[1,0,0]},
@@ -60,6 +61,7 @@ test('canonical claimants notify real residents and both orphanage and quarter d
  c.time.startSeconds=6*86400+8*3600;const r=new WorldReplay(c,{seed:4});
  const inn=c.regions.find(region=>region.id==='farm').objects.find(o=>o.kind==='inn');assert(!performAt(r,inn,'rest').error);
  for(const spec of c.occupancyClaims){const claim=r.state.occupancyClaims[spec.id];assert(claim.takeoverFactId,JSON.stringify({claim,npcs:spec.residentIds.map(id=>({id,position:r.state.npcs[id].position,activity:r.state.npcs[id].activity,relocation:r.state.npcs[id].relocationAssignment})),actor:r.state.npcs[spec.actorId]}));for(const id of spec.residentIds)assert.equal(claim.residents[id].phase,'displaced');assert.equal(r.state.facilities[spec.facilityId].occupierId,spec.actorId);}
+ assert.equal(sourceSituation(r.state,c,c.events.find(e=>e.id==='crown'),'T10').aftermath,true);
  assert(r.state.player.hp>0);assert.deepEqual(r.defects,[]);
 });
 

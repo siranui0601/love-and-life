@@ -14,7 +14,7 @@ export function sourceSituation(state,content,event,sourceId){
   let present=false,aftermath=false;
   if(definition.type==='ecosystem'){present=c.coreInPool&&!c.coreSealed;aftermath=c.treeIntegrity<=0&&c.forestBarrier===false;}
   if(definition.type==='return-person'){present=c.phase!=='reunited'&&state.npcs[definition.personId]?.hp>0;aftermath=present&&current.status==='failed';}
-  if(definition.type==='institution'){present=c.tenure==='disputed';aftermath=c.tenure==='evicted';}
+  if(definition.type==='institution'){present=['disputed','displaced'].includes(c.tenure);aftermath=['evicted','displaced'].includes(c.tenure);}
   if(definition.type==='infrastructure'){
    const structures=(definition.structures||[]).map(id=>(content.structures||[]).find(s=>s.id===id)).filter(Boolean);
    present=structures.some(s=>state.structures[s.id]&&!structureSafe(state,s));
