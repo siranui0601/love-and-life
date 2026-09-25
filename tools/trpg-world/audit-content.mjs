@@ -96,8 +96,10 @@ export function auditWorldContent(content) {
   const operations=new Set();
   for(const op of content.actorOperations||[]){
     if(operations.has(op.id))errors.push(`${op.id}: duplicate actor operation`);operations.add(op.id);
-    if(!ids.npcs.has(op.actorId)||!ids.npcs.has(op.targetActorId)||!objects.has(op.targetSiteId))errors.push(`${op.id}: missing actor or destination`);
-    if(!op.intention||!Number.isFinite(op.departAt)||!(op.windupSeconds>0)||(op.kind!=='seize-person'&&!(op.damage>0)))errors.push(`${op.id}: missing intention/action timing`);
+    if(!ids.npcs.has(op.actorId)||op.kind!=='ignite-structure'&&!ids.npcs.has(op.targetActorId)||!objects.has(op.targetSiteId))errors.push(`${op.id}: missing actor or destination`);
+    if(!op.intention||!Number.isFinite(op.departAt)||!(op.windupSeconds>0)||(!['seize-person','ignite-structure','administer-substance'].includes(op.kind)&&!(op.damage>0)))errors.push(`${op.id}: missing intention/action timing`);
+    if(op.kind==='ignite-structure'&&!(content.structures||[]).some(s=>s.id===op.structureId&&s.targetId===op.targetSiteId&&s.causeOperations?.includes(op.id)))errors.push(`${op.id}: missing combustible structure binding`);
+    if(op.kind==='administer-substance'&&!(content.processes||[]).some(p=>p.id===op.patientProcessId&&p.kind==='patient'&&p.actorId===op.targetActorId&&p.causeOperations?.includes(op.id)))errors.push(`${op.id}: missing medication binding`);
     if(op.weaponItemId&&!ids.items.has(op.weaponItemId)&&!ids.equipment.has(op.weaponItemId))errors.push(`${op.id}: missing weapon`);
     if(op.kind==='seize-person'&&(!ids.items.has(op.restraintItemId)||!objects.has(op.holdingSiteId)))errors.push(`${op.id}: missing restraint or holding site`);
     if(op.assemblySiteId&&!objects.has(op.assemblySiteId))errors.push(`${op.id}: missing assembly location`);

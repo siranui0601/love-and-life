@@ -7,10 +7,10 @@ Legend: **VERIFIED** means an actual runtime chain has command/replay evidence; 
 | Source | Cause → actor / knowledge / resource / location → execution | Existing result / aftermath | Missing edge / status |
 |---|---|---|---|
 | T01 | Excursion → actual child, predator, injury → local treatment and physical family escort | Actual reunion; overdue/injured person persists | VERIFIED local chain; upstream pack is T03 |
-| T02 | Combustible grain store → real structure, water/rope/timber, workers → maintenance or fire exposure | Fire, evacuation, treatment, clearance, reopening | VERIFIED physical chain; authored debtor/arson actor is not represented |
+| T02 | Actual arsonist carries ignition material → known granary → timed local ignition of existing fuel; cleanup/material removal prevents execution | Real fire/casualties feed evacuation, treatment, clearance and reopening | Shared actor chain and canonical ignition VERIFIED; employer/debt-contract consequences remain partial |
 | T03 | Displaced wolves → forest predator / pack migration → livestock route | Only gate repair and source-scoped encounter population | PARTIAL: predator ecology, pack movement/relocation |
 | T04 | Damaged powered sender → actual person in its volume → persisted active interval → authored receiver → physical injury, observation, care | Isolation prevents new displacement; actual medicine/escort or knowledgeable doctor recovers the person; missed deadline leaves an ongoing rescue | Shared chain and canonical NPC055 displacement VERIFIED; full canonical preparation/return route still needs combined witness. Machine currently simulates NPC exposure; player-body exposure remains PARTIAL |
-| T05 | Poisoned medicine → living lord / antidote → actual treatment | Poison injury, declining HP, death or recovery | PARTIAL: poisoner acquisition/administration; patient chain works |
+| T05 | Existing servant carries an authored medicine packet → approaches actual lord → timed administration → exposure; actual treatment secures replacement medicine | Injury and declining HP require the exposure; antidote consumption or material theft can prevent it | Shared actor chain and canonical administration VERIFIED; upstream employer/acquisition and wider political response remain partial |
 | T06 | Unpaid labor → deposit / physically present workers → payment and food | Actual money and meal receipts; port closure after failure | VERIFIED receipt chain after unclaimed-stock fix; institutional labor response remains partial |
 | T07 | Coerced contract → trafficker carries actual rope along known routes → observes and restrains actual person → party travels to holding site; delivered protection order sends guard to that site | Physical release, restraint of captor, return custody journey; ordinary player restraint removal and escort | Shared chain VERIFIED by command/save tests; canonical capture and multi-region transport VERIFIED; canonical full review/guard round trip and personal recovery still need integration evidence |
 | T08 | Breakdown of passage agreement → elder / documents → official walks to barrier | Actual access order enacted at barrier | PARTIAL: exclusion/enforcement and affected travellers |
@@ -129,3 +129,13 @@ The machine currently handles NPC inhabitants, not player-body displacement. Can
 - Initial full check before the final canonical integration test: **187 PASS / 0 FAIL / 0 SKIP**, audit/assets/build PASS. Final results are recorded in the continuation report after completion. Browser SKIP; paid/live LLM 0.
 
 Remaining P1: ecological population movement, fleet/blockade, summoning/colossus evolution, counterpart mobilisation, upstream arson/poison actors, plus the full canonical combined itinerary and Day10 certificate. No new user decision is required; Phase 2 remains incomplete.
+
+## Material-consuming physical attempts — 2026-09-25
+
+- Occupancy checkpoint `65c61e4b` safely pushed with 188/188 full tests.
+- Existing temporal actor operations now execute two closed physical verbs: ignition of exposed fuel and administration of a carried substance to an actually present person. Each uses a private authored intention, actual inventory, physical travel, local LOS/range, persisted windup, fresh validation and one-time resource consumption. No command assigns an event outcome.
+- T02 binds NPC006 and a fire kit to the real granary; T05 binds NPC012 and a medicine packet to NPC009. A mere clock/deadline cannot fabricate the missing actor action. Cleanup, medication replacement or ordinary theft of the actual material can remove the cause. Symptoms are not exposed before administration.
+- Eight focused cases PASS: two saved temporal executions, two normal theft preventions, fuel cleanup, absent cross-region actors past deadline, bought antidote/replacement and both canonical generated-map actors. Full `world:check`: **196 PASS / 0 FAIL / 0 SKIP**, audit/assets/build PASS, exit 0. Browser SKIP.
+- Canonical `world-10d-b656d4dcc281`, parsed SHA256 `a56d020f664a98680ecc9cd4cf0c46b9fdcaaf22320aa801ca4cf4d384983fd7`. Old saves retain their prior causality; newly authored hostile operations are dormant.
+
+These complete the local physical cause edges, not the employer/debt network or a combined new-game witness. No new long blind run or Day10 certificate. Paid/live LLM 0; USER DECISION REQUIRED none.

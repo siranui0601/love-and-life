@@ -45,7 +45,7 @@ export function processSafe(state,spec){
   if(spec.enforcement)return !!state.duties?.[p.order.factId]?.arrivalFactId&&state.npcs[spec.enforcement.protectActorId]?.hp>0&&operationsStopped(state,p.order.stoppedOperations);
   return p.order.execution?.status==='completed'&&state.facilities[spec.access.targetId]?.orderId===p.order.factId&&state.facilities[spec.access.targetId]?.closed===spec.access.closed&&(spec.restoresClaims||[]).every(id=>occupancyRestored(state,id))&&(p.order.impoundShipments||[]).every(id=>shipmentSecured(state,id,p.order.factId));
  }
- if(spec.kind==='patient')return !!p.treated&&state.npcs[spec.actorId]?.hp>0;
+ if(spec.kind==='patient')return state.npcs[spec.actorId]?.hp>0&&(!!p.treated||!p.exposed&&spec.causeOperations?.length&&spec.causeOperations.every(id=>!state.actorOperations?.[id]?.legacyDormant)&&operationsStopped(state,spec.causeOperations));
  return false;
 }
 export function processHazard(state,spec){
@@ -69,7 +69,7 @@ export function processDescription(state,spec){
  const p=state.processes[spec.id],structure=linkedStructure(state,spec),integrity=structure?.integrity??p.integrity;
  const physical=spec.kind==='device'?`${p.powered?'機構へ動力が流れ続けている。':'動力線は切り離されている。'}${integrity<80?'固定具は傷んでいる。':'固定具は補修されている。'}`:
  spec.kind==='supply'?`保管と受領の記録：${Object.entries(spec.required).map(([id,n])=>`${spec.resourceNames?.[id]||id} ${Math.min(n,(p.receipts||p.stock)[id]||0)}/${n}`).join('、')}。`:
- spec.kind==='patient'?(state.npcs[spec.actorId]?.hp<=0?'呼吸がなく、呼びかけにも反応しない。':p.treated?'処置を受け、呼吸が落ち着いている。':p.exposed?'顔色が悪く、手足が震えている。':'飲食物の封には傷があり、異臭がする。'):
+ spec.kind==='patient'?(state.npcs[spec.actorId]?.hp<=0?'呼吸がなく、呼びかけにも反応しない。':p.treated?'処置を受け、呼吸が落ち着いている。':p.exposed?'顔色が悪く、手足が震えている。':spec.causeOperations?.length?'服薬前の薬包と処方を確認できる。':'飲食物の封には傷があり、異臭がする。'):
  p.order?.status==='issued'?'提出された記録の審理が終わり、是正命令が交付されている。':p.documents.length?'提出された書類は担当者の審理を待っている。':'照合する原本と証言の提出を窓口で受け付けている。';
  return `${spec.observation} ${physical}${p.failedAt!==undefined?' 被害の後始末はまだ続いている。':''}`;
 }
@@ -130,7 +130,7 @@ export function finishProcessWork(state,content,{spec,op}){
  if(op.verb==='isolate'){p.powered=false;if(linkedStructure(state,spec))state.structures[spec.structureId].operating=false;}
  if(op.verb==='repair')p.integrity=100;
  if(op.verb.startsWith('deliver-')){const id=op.verb.slice(8);p.stock[id]=(p.stock[id]||0)+(id==='gold'?op.requirements.gold:1);}
- if(op.verb==='treat'){const npc=state.npcs[spec.actorId];if(!npc||npc.hp<=0){recordMilestone(state,p,'treatment-failed-patient-died');return;}p.treated=true;npc.hp=Math.max(npc.hp,40);if(npc.injury?.kind==='poison')npc.injury.treated=true;}
+ if(op.verb==='treat'){const npc=state.npcs[spec.actorId];if(!npc||npc.hp<=0){recordMilestone(state,p,'treatment-failed-patient-died');return;}p.treated=true;p.medicineSecured=true;npc.hp=Math.max(npc.hp,40);if(npc.injury?.kind==='poison')npc.injury.treated=true;}
  const fact=rememberAction(state,content,op.verb==='submit'?'documents-submitted':'facility-work',{targetId:spec.targetId,payload:{operation:op.verb,resources:copy(op.requirements)}});
  if(op.verb==='submit'){
   const docs=spec.documents.filter(d=>state.knowledge.some(k=>k.documentId===d.id)).map(d=>d.id);
@@ -156,7 +156,9 @@ export function advanceProcesses(state,content,seconds){
     recordMilestone(state,p,'wages-and-rations-received');
    }
   }
-  if(active&&spec.kind==='patient'&&!p.treated){const npc=state.npcs[spec.actorId];if(!p.exposed){p.exposed=true;npc.injury={kind:'poison',treated:false,at:state.time};npc.hp=Math.min(npc.hp,40);}npc.hp=Math.max(0,npc.hp-seconds/3600*(spec.damagePerHour||1));}
+  if(active&&spec.kind==='patient'&&!p.treated){const npc=state.npcs[spec.actorId];
+   if(!p.exposed&&!spec.causeOperations?.some(id=>state.actorOperations?.[id]&&!state.actorOperations[id].legacyDormant)){p.exposed=true;npc.injury={kind:'poison',treated:false,at:state.time};npc.hp=Math.min(npc.hp,40);}
+   if(p.exposed)npc.hp=Math.max(0,npc.hp-seconds/3600*(spec.damagePerHour||1));}
   if(spec.kind==='inquiry'&&!p.order&&spec.documents.every(d=>p.documents.includes(d.id))&&seconds>0){
    const clerk=Object.values(state.npcs).find(n=>n.hp>0&&!n.travel&&!n.rescueAssignment&&!n.institutionalAssignment&&!n.transportAssignment&&!n.operationAssignment&&!n.dutyAssignment&&!n.entrapment&&(!n.reviewAssignment||n.reviewAssignment===spec.id)&&n.region===spec.region&&distance(n.position,point.position)<8&&hasLineOfSight(content.regions.find(r=>r.id===spec.region),n.position,point.position)&&(spec.reviewers?.length?spec.reviewers.includes(n.id):content.npcs.find(t=>t.id===n.id)?.workFacilityId===spec.targetId));
    if(p.reviewerId&&p.reviewerId!==clerk?.id&&state.npcs[p.reviewerId]?.reviewAssignment===spec.id)delete state.npcs[p.reviewerId].reviewAssignment;

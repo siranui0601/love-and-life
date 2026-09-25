@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-6b5f929bc4d6",
+  "revision": "world-10d-b656d4dcc281",
   "time": {
     "days": 10,
     "scale": 60,
@@ -19485,6 +19485,9 @@
         "row": 10,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC006"
+      },
+      "possessions": {
+        "igniter": 1
       }
     },
     {
@@ -19608,7 +19611,15 @@
         "row": 13,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC009"
-      }
+      },
+      "appointments": [
+        {
+          "siteId": "LOC_TRADE_LORD_MANOR",
+          "startsAt": 198000,
+          "endsAt": 219600,
+          "activity": "屋敷で診察と朝の用務を受ける"
+        }
+      ]
     },
     {
       "id": "NPC010",
@@ -19731,6 +19742,9 @@
         "row": 16,
         "url": "https://docs.google.com/spreadsheets/d/15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk/edit#gid=5001",
         "id": "NPC012"
+      },
+      "possessions": {
+        "tainted-dose": 1
       }
     },
     {
@@ -24525,6 +24539,9 @@
             "integrity": 100
           }
         }
+      ],
+      "causeOperations": [
+        "grain-ignition"
       ]
     },
     {
@@ -24859,8 +24876,11 @@
       "targetId": "NPC009",
       "actorId": "NPC009",
       "name": "領主の容体と薬",
-      "observation": "本人の手元の薬に沈殿があり、処方の封が破れている。",
+      "observation": "本人が服用する薬包と処方箋が置かれている。",
       "kind": "patient",
+      "causeOperations": [
+        "tainted-medication"
+      ],
       "initial": {
         "treated": false,
         "exposed": false
@@ -25345,6 +25365,43 @@
       "weaponItemId": "EQP-W-0001",
       "windupSeconds": 300,
       "damage": 30
+    },
+    {
+      "id": "grain-ignition",
+      "kind": "ignite-structure",
+      "actorId": "NPC006",
+      "targetSiteId": "LOC_FARM_GRANARY",
+      "structureId": "grain-store",
+      "intention": "穀倉に残る油へ火を付ける依頼を引き受けている。",
+      "departAt": 151200,
+      "searchSeconds": 14400,
+      "routeIds": [],
+      "modes": [
+        "foot"
+      ],
+      "windupSeconds": 180,
+      "requiredResources": {
+        "igniter": 1
+      }
+    },
+    {
+      "id": "tainted-medication",
+      "kind": "administer-substance",
+      "actorId": "NPC012",
+      "targetActorId": "NPC009",
+      "targetSiteId": "LOC_TRADE_LORD_MANOR",
+      "patientProcessId": "lord-treatment",
+      "intention": "渡された薬包を領主に服用させるよう頼まれている。",
+      "departAt": 201600,
+      "searchSeconds": 14400,
+      "routeIds": [],
+      "modes": [
+        "foot"
+      ],
+      "windupSeconds": 180,
+      "requiredResources": {
+        "tainted-dose": 1
+      }
     }
   ],
   "occupancyClaims": [
@@ -25525,6 +25582,19 @@
       "name": "飛行箒",
       "kind": "mount",
       "price": 190
+    },
+    {
+      "id": "igniter",
+      "name": "火付け用の小箱",
+      "kind": "tool",
+      "price": 6
+    },
+    {
+      "id": "tainted-dose",
+      "name": "封の割れた薬包",
+      "kind": "material",
+      "price": 1,
+      "saleOnly": true
     }
   ],
   "recipes": [

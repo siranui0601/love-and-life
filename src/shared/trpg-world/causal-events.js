@@ -133,7 +133,10 @@ export function failCausality(state,content,event) {
   current.pendingFailureEffects=true;
   if(['resolved','prevented'].includes(causal.componentStatus))return;
   if(definition?.type==='infrastructure')for(const id of definition.structures||[]) {
-    const spec=(content.structures||[]).find(s=>s.id===id);if(spec){damageStructure(state,content,spec);causal.aftermath.push({kind:'damaged-structure',structureId:id,at:state.time});}
+    const spec=(content.structures||[]).find(s=>s.id===id);if(spec){
+      // A missed response horizon cannot fabricate an absent actor's ignition.
+      if(spec.causeOperations?.some(id=>state.actorOperations?.[id]&&!state.actorOperations[id].legacyDormant)&&state.structures[id].damageAt===undefined){causal.aftermath.push({kind:'unresolved-site-hazard',structureId:id,at:state.time});continue;}
+      damageStructure(state,content,spec);causal.aftermath.push({kind:'damaged-structure',structureId:id,at:state.time});}
   }
   if(definition?.type==='return-person') {
     // A missed return is an overdue person, not a physical cause of death.

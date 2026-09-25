@@ -6,7 +6,7 @@ const inquiry=(id,eventId,sourceId,region,targetId,name,observation,order,docume
 export const DEFAULT_PROCESSES=[
  device('pasture-gate','lost-road','T03','farm','LOC_FARM_NORTH_FENCE','壊れた退避柵','獣道と家畜の通路が重なり、開いた退避柵に引っかいた跡がある。'),
  device('pilgrim-transfer','resonance','T04','temple','LOC_TEMPLE_CORRIDOR','転移回廊の送出系','床の文字を踏むと送出環が発光する。固定具が割れ、行き先を示す針が定まらない。',true),
- {id:'lord-treatment',eventId:'harbor',sourceId:'T05',region:'trade',targetId:'NPC009',actorId:'NPC009',name:'領主の容体と薬',observation:'本人の手元の薬に沈殿があり、処方の封が破れている。',kind:'patient',initial:{treated:false,exposed:false},damagePerHour:1,aftermath:{closedTarget:'LOC_TRADE_LORD_MANOR'}},
+ {id:'lord-treatment',eventId:'harbor',sourceId:'T05',region:'trade',targetId:'NPC009',actorId:'NPC009',name:'領主の容体と薬',observation:'本人が服用する薬包と処方箋が置かれている。',kind:'patient',causeOperations:['tainted-medication'],initial:{treated:false,exposed:false},damagePerHour:1,aftermath:{closedTarget:'LOC_TRADE_LORD_MANOR'}},
  supply('dock-payroll','harbor','T06','trade','LOC_TRADE_PORT','港の賃金供託と配給','支払簿には未払分が残り、仕事中の配給箱も空になっている。',{gold:60,supplies:3}),
  inquiry('bond-review','roots','T07','capital','LOC_CAP_OFFICE','身柄引渡契約の審理','人を貨物として引き渡す契約が持ち込まれている。本人の同意書と運送契約は別の筆跡だ。','void-coerced-bond',[
   ['contract','LOC_CRIME_SLAVE_MARKET','契約原本にはリュシアの名があるが、署名欄は代理人が代筆している。'],
@@ -60,7 +60,9 @@ export const DEFAULT_ACTOR_OPERATIONS=[{id:'palace-assault',actorId:'NPC020',tar
  intention:'代筆した契約を使い、本人を探して市場へ連れ戻すつもりだ。',departAt:2*86400+8*3600,searchSeconds:24*3600,routeIds:['R08','R06','R13','R14'],modes:['foot','ship'],restraintItemId:'rope',windupSeconds:120},
  {id:'disputed-sortie',actorId:'NPC040',memberIds:['NPC041','NPC094'],assemblySiteId:'LOC_FORT_BARRACKS',requiredResources:{supplies:3},
  targetActorId:'NPC107',targetSiteId:'LOC_BLACKRIDGE_GATE',intention:'襲撃報告を根拠に、二人の兵を連れて黒嶺の門へ出撃する。',partyInstruction:'食料を受け取り、将校とともに黒嶺の外門へ向かう。',
- departAt:5*86400+9*3600,searchSeconds:8*3600,routeIds:['R02'],modes:['foot'],weaponItemId:'EQP-W-0001',windupSeconds:300,damage:30}];
+ departAt:5*86400+9*3600,searchSeconds:8*3600,routeIds:['R02'],modes:['foot'],weaponItemId:'EQP-W-0001',windupSeconds:300,damage:30},
+ {id:'grain-ignition',kind:'ignite-structure',actorId:'NPC006',targetSiteId:'LOC_FARM_GRANARY',structureId:'grain-store',intention:'穀倉に残る油へ火を付ける依頼を引き受けている。',departAt:86400+18*3600,searchSeconds:4*3600,routeIds:[],modes:['foot'],windupSeconds:180,requiredResources:{igniter:1}},
+ {id:'tainted-medication',kind:'administer-substance',actorId:'NPC012',targetActorId:'NPC009',targetSiteId:'LOC_TRADE_LORD_MANOR',patientProcessId:'lord-treatment',intention:'渡された薬包を領主に服用させるよう頼まれている。',departAt:2*86400+8*3600,searchSeconds:4*3600,routeIds:[],modes:['foot'],windupSeconds:180,requiredResources:{'tainted-dose':1}}];
 
 // Claimants carry their notices and must meet the actual residents. These
 // assertions of control do not change legal ownership or evict remote people.

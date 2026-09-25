@@ -21,7 +21,9 @@ export function initializeStructures(state,content) {
  for(const spec of content.structures||[])state.structures[spec.id]||={...structuredClone(spec.initial),milestones:[],...(spec.processId&&state.contentRevision!==content.revision?{legacyDormant:true}:{})};
 }
 export function structureSafe(state,spec) {
- const s=state.structures?.[spec.id];return !!s&&Object.entries(spec.safe).every(([key,value])=>key==='integrity'?s[key]>=value:key==='water'?s[key]<=value:s[key]===value);
+ const s=state.structures?.[spec.id];
+ if(s&&spec.causeOperations?.length&&spec.causeOperations.every(id=>!state.actorOperations?.[id]?.legacyDormant&&['withdrawn','restrained','incapacitated'].includes(state.actorOperations?.[id]?.phase))&&s.integrity>=80&&!s.blocked&&!(s.fire>0))return true;
+ return !!s&&Object.entries(spec.safe).every(([key,value])=>key==='integrity'?s[key]>=value:key==='water'?s[key]<=value:s[key]===value);
 }
 function workDefinitions(state,spec) {
  const s=state.structures[spec.id];
@@ -33,7 +35,8 @@ export function advanceStructures(state,content,seconds) {
  for(const spec of content.structures||[]) {
   const s=state.structures[spec.id];if(s.legacyDormant)continue;const hazard=content.events.find(e=>e.id===spec.hazardEventId);
   if(!spec.processId&&hazard&&state.time>=hazard.startsAt&&s.operating&&s.water>spec.safe.water)s.integrity=Math.max(0,s.integrity-seconds/3600*(spec.damagePerHour||3));
-  if(!spec.processId&&hazard&&state.time>=hazard.startsAt&&s.fuel&&s.damageAt===undefined)s.fire=100;
+  const actualIgnition=spec.causeOperations?.some(id=>state.actorOperations?.[id]&&!state.actorOperations[id].legacyDormant);
+  if(!spec.processId&&!actualIgnition&&hazard&&state.time>=hazard.startsAt&&s.fuel&&s.damageAt===undefined)s.fire=100;
   state.facilities||={};state.facilities[spec.targetId]={...state.facilities[spec.targetId],closed:!s.operating||s.integrity<=0};
  }
 }

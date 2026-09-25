@@ -4,6 +4,7 @@ import {searchPlan,advanceActionPlan} from './npc-planner.js';
 import {rememberAction} from './relationships.js';
 import {activeCustody,restrainPerson,releasePerson} from './person-custody.js';
 import {assembleOperationParty,followOperationParty,releaseOperationParty} from './operation-party.js';
+import {advancePhysicalOperation} from './physical-operations.js';
 
 const reserved=n=>n.rescueAssignment||n.aftermathAssignment||n.institutionalAssignment||n.transportAssignment||n.custodyAssignment||n.captive||n.causalAssignment||n.entrapment||n.companionOf||n.care?.status==='injured'||n.detention?.status==='held';
 const canSee=(content,a,b,range)=>a&&b&&!a.travel&&!b.travel&&a.region===b.region&&distance(a.position,b.position)<range&&hasLineOfSight(content.regions.find(r=>r.id===a.region),a.position,b.position);
@@ -83,6 +84,7 @@ export function advanceActorOperations(state,content,seconds){
   }
   followOperationParty(state,content,spec,actor,seconds);
   if(op.phase==='holding-position'){actor.activity='部隊とともに現地へ留まっている';continue;}
+  if(['ignite-structure','administer-substance'].includes(spec.kind)){advancePhysicalOperation(state,content,spec,op,actor,seconds);continue;}
   const victim=state.npcs[spec.targetActorId];
   if(!victim||!canSee(content,actor,victim,18)){
    delete op.hitAt;actor.activity='現地で会う相手を探している';
