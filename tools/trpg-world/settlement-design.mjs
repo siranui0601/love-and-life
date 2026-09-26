@@ -74,6 +74,7 @@ export const spatialBoundaries={
 export function bindSettlementDesign(region){
  const design=settlementDesigns[region.id];if(!design)return;
  region.settlement=structuredClone(design);
+ for(const ward of region.settlement.districts)ward.sites.push(...region.objects.filter(o=>o.placement==='authored-household'&&o.districtId===ward.id).map(o=>o.id));
  region.settlement.status='functional-layout-foundation';
  const assigned=new Set();
  for(const ward of region.settlement.districts)for(const id of ward.sites){

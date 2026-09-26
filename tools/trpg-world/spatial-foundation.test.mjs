@@ -21,6 +21,41 @@ test('source semantic sites and actual entrances remain reachable after street a
  }
 });
 
+test('every authored inhabitant has an explicit residence or nonresidential base with a reachable room',()=>{
+ const rooms=new Set();
+ for(const n of content.npcs){
+  const region=content.regions.find(r=>r.id===n.region),home=region.residences.find(h=>h.id===n.residenceId);
+  assert(home?.residentIds.includes(n.id),n.id);assert.equal(home.siteId,n.homeFacilityId);assert(!rooms.has(n.roomId));rooms.add(n.roomId);
+  const site=region.objects.find(o=>o.id===home.siteId);assert(site);assert(canOccupy(region,n.home));
+  const commute=findStreetPath(region,n.home,n.work);assert(commute.length,n.id);assert(pathIsTraversable(region,n.home,commute),n.id);
+ }
+ const n=id=>content.npcs.find(n=>n.id===id);
+ assert.equal(n('NPC001').residenceId,n('NPC002').residenceId,'Finn lives with his mother');
+ assert.equal(n('NPC016').homeFacilityId,'LOC_CAP_CASTLE','king does not live in orphanage');
+ for(const id of ['NPC021','NPC022','NPC071','NPC072'])assert.equal(n(id).homeFacilityId,'LOC_CAP_ORPHANAGE');
+ assert.notEqual(n('NPC064').residenceId,n('NPC015').residenceId,'innkeeper and visiting envoy are not a household');
+ assert.equal(n('NPC034').residenceMode,'habitat');assert.equal(n('NPC057').residenceMode,'depot');
+});
+
+test('residents leave their authored home for work through ordinary world advancement and keep the commute across reload',()=>{
+ const run=new WorldReplay(content,{seed:1}),template=content.npcs.find(n=>n.id==='NPC067');
+ assert.deepEqual(run.state.npcs.NPC067.position,template.home);run.command({type:'resume'});run.advance(30);
+ assert(distance(run.state.npcs.NPC067.position,template.home)>1);
+ const saved=run.fork();for(const r of [run,saved]){r.advance(150);assert(distance(r.state.npcs.NPC067.position,template.work)<2);}
+ assert.equal(digest(run.state),digest(saved.state));assert.equal(digest(replay(content,run.export()).state),digest(run.state));
+});
+
+test('an employed resident physically returns from work and evening rest to their own home at night',()=>{
+ // Isolate the commute from a late-start crisis attack at the player's spawn.
+ // This is a planner fixture, not an all-crisis survival worldline.
+ const c={...content,monsters:[],time:{...content.time,startSeconds:16*3600}},r=new WorldReplay(c,{seed:1}),n=content.npcs.find(n=>n.id==='NPC067');
+ r.command({type:'resume'});r.advance(60);assert(distance(r.state.npcs.NPC067.position,n.work)<2);
+ const inn=r.view().region.objects.find(o=>o.id==='LOC_FARM_INN'),rest=performAt(r,inn,'rest');assert(!rest.error,JSON.stringify(rest));
+ r.command({type:'resume'});r.advance(60);
+ assert.equal(r.state.npcs.NPC067.goal,'sleep');assert(distance(r.state.npcs.NPC067.position,n.home)<2);
+ assert.notEqual(n.homeFacilityId,'LOC_CAP_LOWER_INN');assert.equal(digest(replay(c,r.export()).state),digest(r.state));
+});
+
 test('street locomotion keeps authored bends and falls back safely when a street is blocked',()=>{
  const region={size:80,obstacles:[],spatial:{stage:'street-cluster'},terrain:{paths:[{points:[[0,0,0],[0,0,20],[20,0,20]],width:4}]}};
  const path=findStreetPath(region,[0,0,0],[20,0,20]);assert(path.some(p=>p[0]===0&&p[2]===20));

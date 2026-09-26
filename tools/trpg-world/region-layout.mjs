@@ -1,5 +1,6 @@
 import {streetPlans} from './spatial-authoring.mjs';
 import {bindSettlementDesign,spatialBoundaries} from './settlement-design.mjs';
+import {addDwellings} from './residence-authoring.mjs';
 import {canOccupy,findPath,distance} from '../../src/shared/trpg-world/navigation.js';
 
 // Coordinates are authored staging, not coordinates claimed by the source sheet.
@@ -51,6 +52,7 @@ export function createRegion(spec,sheet,sourceUrl){
  });
  region.objects.push({id:`${id}:trainer`,name:id==='farm'?'旅支度の稽古場':'地域の師匠',kind:'trainer',position:[8,0,17],asset:'stall',skills:['combat','investigation','riding','magic','broom','negotiation','crafting','tracking','stealth','survival'],description:'学んだ技能は、旅の手段と事件への関わり方を変える。',placement:'authored-service'});
  region.objects.push({id:`${id}:board`,name:'旅人の掲示板',kind:'board',position:[-7,0,8],asset:'sign',description:'この土地に届いた知らせと、地元の仕事が掲示されている。',placement:'authored-service'});
+ addDwellings(region);
  region.terrain.water=region.terrain.water.map(w=>w.kind==='sea'?{...w,depth:region.size,width:region.size/2-52,x:Math.sign(w.x)*(52+(region.size/2-52)/2)}:{...w,depth:region.size});
  addWaterObstacles(region);
  region.terrain.boundaries=(spatialBoundaries[id]||[]).map(({purpose,...body})=>({...body,id:`${id}:${body.id}`}));
@@ -72,14 +74,11 @@ export function createPortal(region,target,route){
  }
  return {id:`${region.id}:${route.id}`,to:target.id,routeId:route.id,position,approach,radius:3,bearing:[dx,dz],kind:route.modes.includes('boat')?'harbor':'road'};
 }
-export function placeNPC(reg,npcRow,index){
+export function placeNPC(reg,npcRow){
  const primary=reg.objects.find(o=>o.id===npcRow[21]),related=reg.objects.find(o=>String(npcRow[22]||'').includes(o.id)),fallback=reg.objects.find(o=>o.kind==='board');
  const workObject=primary||related||fallback,work=[...workObject.position];
- const residences=reg.objects.filter(o=>o.buildingPosition&&(/INN|HOUSE|ORPHANAGE|GUEST|BARRACKS|CHIEF|CAMP/.test(o.id)));
- const homeObject=residences[index%Math.max(1,residences.length)]||reg.objects.find(o=>o.buildingPosition);
- const target=homeObject?point(homeObject.buildingPosition[0]+(index%3-1)*1.5,homeObject.buildingPosition[2]+1.2):point(work[0]+1.5,work[2]+2);
- const home=canOccupy(reg,target)&&findPath(reg,work,target).length?target:[...work];
- return {home,work,workFacilityId:workObject.id,homeFacilityId:homeObject?.id||workObject.id,placement:'source-workplace-authored-residence',scheduleSource:npcRow[15]||''};
+ // The household pass must supply home/room IDs before content can be emitted.
+ return {work,workFacilityId:workObject.id,scheduleSource:npcRow[15]||''};
 }
 const segmentDistance=(p,a,b)=>{const dx=b[0]-a[0],dz=b[2]-a[2],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[2]-a[2])*dz)/(dx*dx+dz*dz||1)));return Math.hypot(p[0]-a[0]-t*dx,p[2]-a[2]-t*dz);};
 export function finalizeRegions(regions,npcs,events){

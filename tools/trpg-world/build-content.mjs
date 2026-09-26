@@ -1,5 +1,6 @@
 import {authorCorridors,authorHabitats} from './spatial-authoring.mjs';
 import {compileSettlementTraffic} from './settlement-design.mjs';
+import {assignResidences} from './residence-authoring.mjs';
 import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
@@ -41,6 +42,7 @@ const npcs=rows('NPC一覧').filter(r=>/^NPC\d{3}$/.test(r[0]||'')).map((r,i)=>{
  // It guides simulation, never an automatically public biography or rumor.
  return {id:r[0],name:r[1],region:id,role:r[11],species:r[4],personality:r[13],...placeNPC(reg,r,i),knowledge:[{id:`private-background:${r[0]}`,kind:'secret',text:r[17]||'',disclosure:{visibility:'private',requiresKnownFacts:[]}}],voice:r[20],sourceId:r[0],source:{sheet:'NPC一覧',row:rows('NPC一覧').indexOf(r)+1,url:source.sheets.find(s=>s.title==='NPC一覧').url,id:r[0]}};
 });
+assignResidences(regions,npcs);
 const jobs=rows('仕事マスター').filter(r=>/^JOB-/.test(r[0]||'')).map(r=>({id:r[0],name:r[3],region:regionId(r[1]),facilityId:r[2],minutes:Math.max(30,Number(r[5])*25),pay:Math.max(22,Number(r[6])*6),xp:32,description:r[11],source:{sheet:'仕事マスター',row:rows('仕事マスター').indexOf(r)+1}})).filter(j=>j.region);
 const items=[{id:'supplies',name:'食料と生活物資',kind:'food',price:10,nutrition:40},{id:'medicine',name:'傷薬',kind:'consumable',price:14,heal:45},{id:'food',name:'旅人の温かい弁当',kind:'food',price:6,nutrition:40},{id:'rope',name:'丈夫な縄',kind:'tool',price:8},{id:'timber',name:'補修用木材',kind:'material',price:12},{id:'antidote',name:'解毒薬',kind:'consumable',price:25},{id:'crystal',name:'調律結晶',kind:'material',price:28},{id:'horse',name:'街道馬',kind:'mount',price:140},{id:'broom',name:'飛行箒',kind:'mount',price:190}];
 items.push({id:'igniter',name:'火付け用の小箱',kind:'tool',price:6},{id:'tainted-dose',name:'封の割れた薬包',kind:'material',price:1,saleOnly:true});
