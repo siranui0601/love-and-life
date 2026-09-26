@@ -35,6 +35,10 @@ class Journey {
       // React to the refusal with the same offered attacks/guard/healing as a player.
       const result = secureArea(this);
       assert(!result.error, `Cannot safely continue the journey: ${JSON.stringify(result)}`);
+      // Fighting can physically move us away from the approached gate/service.
+      // Return on foot before retrying; never relax the runtime distance check.
+      const destination=command.type==='travel'?this.region.portals.find(p=>p.id===command.portalId):this.region.objects.find(o=>o.id===command.targetId);
+      if(destination&&distance(this.player.position,destination.position)>2)this.walk(destination.position);
       this.commands++;
       return applyCommand(this.state, content, command);
     }

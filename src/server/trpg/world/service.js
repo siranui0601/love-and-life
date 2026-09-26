@@ -1,3 +1,4 @@
+import {reconcileGeometry} from './geometry-migration.js';
 import {canMigrateContent} from "./content-migration.js";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -119,6 +120,7 @@ export class PersistentWorldService {
       }
       if (this.sim === simulationRuntime) migrateWorld(record.state, this.content);
       if(record.contentRevision!==this.content.revision){
+        record.geometryMigration={from:record.contentRevision,to:this.content.revision,relocations:reconcileGeometry(record.state,this.content)};
         // Cached response wording can contain retired generated biographies.
         // Preserve receipts for audit, but never replay an obsolete public reply.
         record.legacyReceipts=record.receipts;record.receipts=[];

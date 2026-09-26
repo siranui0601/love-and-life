@@ -1,3 +1,4 @@
+import {arrivalPosition} from './travel-space.js';
 import {distance,hasLineOfSight,followPath} from './navigation.js';
 
 const indexes=new WeakMap();
@@ -18,7 +19,8 @@ export function advanceActorJourney(state,content,actor,targetId,seconds,{routeI
   if(party.some(n=>!n.travel||n.travel.leaderId!==actor.id||n.travel.departedAt!==actor.travel.departedAt||n.travel.routeId!==actor.travel.routeId))return {failed:'party-separated-in-transit'};
   if(state.time<actor.travel.arrivesAt)return {};
   const destination=content.regions.find(r=>r.id===actor.travel.to);if(!destination)return {failed:'arrival-region-missing'};
-  for(const member of [actor,...party]){member.region=destination.id;member.position=[...(destination.spawn||[0,0,0])];member.travel=null;member.path=[];delete member.pathTarget;}
+  const landing=arrivalPosition(content,actor.travel);
+  for(const member of [actor,...party]){member.region=destination.id;member.position=[...landing];member.travel=null;member.path=[];delete member.pathTarget;}
   // Arrival is a real route transition, never same-coordinate proximity.
   return {};
  }

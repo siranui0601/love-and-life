@@ -1,3 +1,5 @@
+import {authorCorridors,authorHabitats} from './spatial-authoring.mjs';
+import {compileSettlementTraffic} from './settlement-design.mjs';
 import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {DEFAULT_CAUSAL_SCENARIOS} from '../../src/shared/trpg-world/causal-events.js';
@@ -28,6 +30,7 @@ const byRegion=Object.fromEntries(regions.map(r=>[r.id,r]));
 const routeRows=rows('距離一覧').filter(r=>/^R\d{2}$/.test(r[0]||''));
 const routeSheet=source.sheets.find(s=>s.title==='距離一覧');
 const routes=routeRows.map(r=>({id:r[0],from:regionId(r[1]),to:regionId(r[2]),minutes:Math.max(12,Math.round(Number(r[3])*24)),modes:r[5]==='船'?['boat','ship','broom']:['foot','horse','carriage','wagon','broom'],risk:/危険/.test(r[7]||'')?.25:.06,sourceMinutes:Number(r[3])*60,source:{sheet:routeSheet.title,row:routeSheet.rows.indexOf(r)+1,url:routeSheet.url,id:r[0]},description:r[6],sourceCondition:r[7]||'',durationPolicy:'authored-10-day-compression'}));
+authorCorridors(routes);
 for(const region of regions){const links=routes.filter(r=>r.from===region.id||r.to===region.id);links.forEach((route,i)=>{
  const to=route.from===region.id?route.to:route.from;
  region.portals.push(createPortal(region,byRegion[to],route));
@@ -74,6 +77,8 @@ const events=eventSpecs.map((s,i)=>{
  };
 });
 finalizeRegions(regions,npcs,events);
+authorHabitats(regions);
+compileSettlementTraffic(regions,npcs);
 const publicSiteDescriptions={
  LOC_FARM_GRANARY:'穀物袋が積まれ、奥へ続く作業用の通路がある。',
  LOC_FARM_EDGE:'草地に踏み跡が続き、村の柵の向こうへ抜けている。',

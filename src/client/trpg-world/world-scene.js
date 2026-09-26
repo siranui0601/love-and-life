@@ -49,6 +49,12 @@ export class WorldScene {
   }
   for(const water of region.terrain?.water||[]){const mesh=this.ground('water',water.width,water.depth,[water.x,.04,water.z],'#4b8798',this.regionRoot);mesh.material.alpha=.88;mesh.material.specularColor=new Color3(.6,.6,.6);}
   const tasks=[];
+  // Functional courtyard boundaries share exact dimensions with collision/LOS.
+  for(const wall of region.terrain?.boundaries||[]){
+   const mesh=MeshBuilder.CreateBox(wall.id,{width:wall.width,height:wall.height,depth:wall.depth},this.scene);
+   mesh.position=new Vector3(wall.x,wall.height/2,wall.z);mesh.parent=this.regionRoot;
+   mesh.material=this.material(wall.id,'#8d897c');mesh.metadata={cameraBlock:true};mesh.receiveShadows=true;this.shadows.addShadowCaster(mesh);
+  }
   for(const bridge of region.terrain?.bridges||[])tasks.push(this.prop('town/planks.glb',{position:[bridge.x,.02,bridge.z],size:[bridge.width,.15,bridge.depth],name:bridge.id||'bridge'}));
   for(const r of region.terrain?.ridges||[])tasks.push(this.prop('town/rock-large.glb',{position:[r.x,0,r.z],size:[r.radius*2,r.height,r.radius*2],name:'ridge',cameraBlock:true}));
   for(const o of region.objects){

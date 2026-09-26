@@ -1,3 +1,5 @@
+import {habitatActivity} from './habitats.js';
+import {arrivalPosition} from './travel-space.js';
 import {siteAppearance} from './site-appearance.js';
 import {encounterEligible,encounterSourceIds} from './encounter-sources.js';
 import {playerPerception} from './perception.js';
@@ -82,8 +84,9 @@ function initializeMonsters(state,content) {
       const template = candidates[i], locations = [[-50,0,-45],[48,0,40],[-46,0,46],[48,0,-42]];
       let spawn = locations[i];
       if (!canOccupy(region,spawn)) spawn = locations.find(p=>canOccupy(region,p)) || [0,0,-55];
+      const habitat=region.habitats?.find(h=>h.templateIds.includes(template.id));if(habitat)spawn=habitat.nest;
       const id = `creature:${region.id}:${i}`;
-      state.monsters[id] = {id,templateId:template.id,region:region.id,position:[...spawn],home:[...spawn],hp:template.hp,maxHp:template.hp,
+      state.monsters[id] = {id,templateId:template.id,...(habitat?{habitatId:habitat.id}:{}),region:region.id,position:[...spawn],home:[...spawn],hp:template.hp,maxHp:template.hp,
         activity:'roam',cooldown:0,respawnAt:0,lastThreat:0,heading:0,mp:20+template.level*3,maxMp:20+template.level*3};
     }
   }
@@ -199,7 +202,7 @@ function updateKnowledgeFromSight(state,content) {
 function chooseGoal(state,content,npc,template) {
   const region = index(content).regions.get(npc.region), h = hour(state);
   const danger = values(state.monsters).find(m=>m.region===npc.region && m.hp>0 && distance(m.position,npc.position)<11 && m.activity==='attack');
-  const localProblem = (content.events || []).find(e=>e.region===npc.region && ['active','critical'].includes(state.events[e.id]?.status) && npc.knowledge.some(k=>k.eventId===e.id));
+  const localProblem = npc.lastHelpDay===Math.floor(state.time/DAY)?null:(content.events || []).find(e=>e.region===npc.region && ['active','critical'].includes(state.events[e.id]?.status) && npc.knowledge.some(k=>k.eventId===e.id));
   const guardian = /衛|兵|騎士|冒険|狩人/.test(template.role || '');
   const utilities = [
     {goal:'flee',utility:danger&&!guardian?120:0,target:template.home,activity:'危険から避難'},
@@ -237,7 +240,7 @@ function advanceNpcs(state,content,gameDelta) {
     if(npc.region!==template.region&&!npc.displacedHome){template.home=idx.regions.get(npc.region)?.spawn||[0,0,0];template.work=template.home;}
     if (npc.travel) {
       if (state.time>=npc.travel.arrivesAt) {
-        npc.region=npc.travel.to; npc.position=[...(idx.regions.get(npc.region)?.spawn || [0,0,0])]; npc.travel=null; npc.path=[];delete npc.pathTarget;npc.nextDecision=0;delete npc.plan;template={...original,home:idx.regions.get(npc.region).spawn,work:idx.regions.get(npc.region).spawn};
+        const landing=arrivalPosition(content,npc.travel);npc.region=npc.travel.to; npc.position=landing; npc.travel=null; npc.path=[];delete npc.pathTarget;npc.nextDecision=0;delete npc.plan;template={...original,home:idx.regions.get(npc.region).spawn,work:idx.regions.get(npc.region).spawn};
       } else { npc.activity='街道を旅している'; continue; }
     }
     const region = idx.regions.get(npc.region); if (!region) continue;
@@ -274,7 +277,7 @@ function advanceNpcs(state,content,gameDelta) {
         npc.goal='travel'; npc.activity='街道へ向かう'; npc.goalTarget=portal.position;
         followPath(region,npc,portal.position,realDelta*1.8);
         if(distance(npc.position,portal.position)<3) {
-          npc.travel={to:route.from===npc.region?route.to:route.from,arrivesAt:state.time+finite(route.minutes,60)*60};
+          npc.travel={from:npc.region,routeId:route.id,departedAt:state.time,mode:route.modes.includes('foot')?'foot':'ship',to:route.from===npc.region?route.to:route.from,arrivesAt:state.time+finite(route.minutes,60)*60};
           npc.lastTradeDay=day; npc.path=[];
         }
       }
@@ -349,7 +352,7 @@ function advanceMonsters(state,content,gameDelta) {
       monster.activity='attack';monster.heading=Math.atan2(p.position[0]-monster.position[0],p.position[2]-monster.position[2]);
       if(near>finite(template.range,2.8)) followPath(region,monster,[p.position[0],0,p.position[2]],dt*finite(template.speed,2));
       else if(monster.cooldown<=0 && !monster.intent) startEnemyAction(state,content,monster,template);
-    } else { monster.activity='roam'; if(distance(monster.position,monster.home)>1) followPath(region,monster,monster.home,dt); }
+    } else if(!habitatActivity(state,content,monster,gameDelta)) { monster.activity='roam'; if(distance(monster.position,monster.home)>1) followPath(region,monster,monster.home,dt); }
   }
 }
 function combatNearby(state,content) {
@@ -691,7 +694,7 @@ export function applyCommand(state,content,command) {
       return {message:'出発地点付近で体調を崩し、旅を中断した。'};
     }
     const hazard=resolveTravelHazard(state,content,route,mode,originRegion);
-    p.region=destination.id;p.position=[...(destination.spawn||[0,0,8])];p.mode=['horse','broom'].includes(mode)?mode:'foot';
+    p.region=destination.id;p.position=arrivalPosition(content,{from:originRegion,to:destination.id,routeId:route.id});p.mode=['horse','broom'].includes(mode)?mode:'foot';
     for(const n of companions)if(n.hp>0&&n.travel?.leaderId==='player'&&n.travel.departedAt===departedAt){n.region=destination.id;n.position=[...p.position];n.travel=null;n.path=[];delete n.pathTarget;delete n.escortObservation;}
     if(!state.visits.includes(p.region)){state.visits.push(p.region);awardXp(state,35,`region:${p.region}`);}
     updateKnowledgeFromSight(state,content);log(state,`${destination.name}へ到着した。旅の間にも時間が流れた。`,'travel');

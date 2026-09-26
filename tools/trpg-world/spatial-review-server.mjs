@@ -1,0 +1,12 @@
+import express from 'express';
+import {build} from 'esbuild';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+const output=await fs.mkdtemp(path.join(os.tmpdir(),'trpg-spatial-review-'));
+await build({entryPoints:['tools/trpg-world/spatial-review-client.mjs'],outfile:path.join(output,'review.js'),bundle:true,format:'esm',platform:'browser',target:'es2022',logLevel:'warning'});
+const app=express();
+app.get('/spatial-review',(_,res)=>res.type('html').send('<!doctype html><html lang="ja"><meta charset="utf-8"><title>TRPG（仮）空間設計レビュー</title><body><script type="module" src="/spatial-review/review.js"></script></body></html>'));
+app.get('/spatial-review/content',(_,res)=>res.sendFile(path.resolve('src/server/trpg/world/content/world-content.json')));
+app.use('/spatial-review',express.static(output));app.use(express.static('public'));
+const port=Number(process.env.PORT||3103);app.listen(port,'127.0.0.1',()=>console.log(`Authoring review only: http://127.0.0.1:${port}/spatial-review`));

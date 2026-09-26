@@ -129,9 +129,65 @@ export function findPath(region, from, target) {
   }
   return [];
 }
-export function followPath(region, entity, target, metres) {
-  if (!entity.path || !entity.pathTarget || distance(entity.pathTarget,target) > 1.5) {
-    entity.path = findPath(region,entity.position,target); entity.pathTarget = [...target];
+// The street graph is geometry, not an NPC itinerary. It is rebuilt from the
+// same polylines that are drawn in 3D. Exact endpoints use local collision paths.
+const streetGraphs = new WeakMap();
+function streetGraph(region) {
+  if(streetGraphs.has(region))return streetGraphs.get(region);
+  const nodes=[],byKey=new Map(),segments=[];
+  const node=p=>{const key=p.map(v=>Math.round(v*1e6)).join(',');if(!byKey.has(key)){byKey.set(key,nodes.length);nodes.push({p,edges:[]});}return byKey.get(key);};
+  for(const road of region.terrain?.paths||[])for(let i=1;i<road.points.length;i++){
+    const a=road.points[i-1],b=road.points[i];if(distance(a,b)>.001)segments.push({a,b,cuts:[0,1]});
+  }
+  const cross=(x,z,u,v)=>x*v-z*u;
+  const project=(p,s)=>((p[0]-s.a[0])*(s.b[0]-s.a[0])+(p[2]-s.a[2])*(s.b[2]-s.a[2]))/distance(s.a,s.b)**2;
+  const point=(s,t)=>s.a.map((v,i)=>v+(s.b[i]-v)*t);
+  // An at-grade crossing or T junction is connected even if neither polyline
+  // happened to author a vertex there. Grade-separated crossings stay separate.
+  for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++){
+    const s=segments[i],q=segments[j],dx=s.b[0]-s.a[0],dz=s.b[2]-s.a[2],ux=q.b[0]-q.a[0],uz=q.b[2]-q.a[2],den=cross(dx,dz,ux,uz);
+    if(Math.abs(den)>1e-8){
+      const vx=q.a[0]-s.a[0],vz=q.a[2]-s.a[2],t=cross(vx,vz,ux,uz)/den,u=cross(vx,vz,dx,dz)/den;
+      if(t>=0&&t<=1&&u>=0&&u<=1&&Math.abs(point(s,t)[1]-point(q,u)[1])<.01){s.cuts.push(t);q.cuts.push(u);}
+    }else for(const [p,target] of [[s.a,q],[s.b,q],[q.a,s],[q.b,s]]){
+      const t=project(p,target);if(t>0&&t<1&&distance(p,point(target,t))<.001)target.cuts.push(t);
+    }
+  }
+  for(const segment of segments){
+    const divisions=Math.ceil(distance(segment.a,segment.b)/8);
+    for(let i=1;i<divisions;i++)segment.cuts.push(i/divisions);
+    const cuts=[...new Set(segment.cuts)].sort((a,b)=>a-b);
+    for(let i=1;i<cuts.length;i++){
+      const a=node(point(segment,cuts[i-1])),b=node(point(segment,cuts[i]));if(a===b)continue;
+      const cost=distance(nodes[a].p,nodes[b].p);
+      if(lineClear(region,nodes[a].p,nodes[b].p)){nodes[a].edges.push({to:b,cost});nodes[b].edges.push({to:a,cost});}
+    }
+  }
+  streetGraphs.set(region,nodes);return nodes;
+}
+export function findStreetPath(region,from,target) {
+  const nodes=streetGraph(region);if(!nodes.length||distance(from,target)<10)return findPath(region,from,target);
+  // Attach to a nearby visible road, never cut through a building to reach it.
+  const attach=p=>nodes.map((n,i)=>({i,d:distance(p,n.p)})).sort((a,b)=>a.d-b.d).slice(0,6)
+    .filter(n=>lineClear(region,p,nodes[n.i].p)).slice(0,2);
+  const starts=attach(from),ends=attach(target);if(!starts.length||!ends.length)return findPath(region,from,target);
+  const scores=new Map(starts.map(n=>[n.i,n.d])),parents=new Map(),open=starts.map(n=>n.i),closed=new Set();
+  while(open.length){open.sort((a,b)=>scores.get(a)-scores.get(b)||a-b);const current=open.shift();if(closed.has(current))continue;closed.add(current);
+    for(const e of nodes[current].edges){const cost=scores.get(current)+e.cost;if(cost<(scores.get(e.to)??Infinity)){scores.set(e.to,cost);parents.set(e.to,current);open.push(e.to);}}
+  }
+  const end=ends.filter(n=>scores.has(n.i)).sort((a,b)=>scores.get(a.i)+a.d-scores.get(b.i)-b.d||a.i-b.i)[0];
+  if(!end)return findPath(region,from,target);
+  const path=[[...target]];let cursor=end.i;
+  while(cursor!==undefined){path.push([...nodes[cursor].p]);cursor=parents.get(cursor);}path.reverse();
+  // Retain bends. LOS smoothing would cut across fields and erase the street.
+  return path.filter((p,i)=>distance(i?path[i-1]:from,p)>.01);
+}
+export function pathIsTraversable(region,from,path){return path.every((p,i)=>lineClear(region,i?path[i-1]:from,p));}
+export function followPath(region, entity, target, metres, {street=true}={}) {
+  const usesStreets=street&&region.spatial?.stage==='street-cluster'&&!entity.templateId&&!['flee','combat','rescue'].includes(entity.goal);
+  if (!entity.path || (!entity.path.length && distance(entity.position,target) > .1) || !entity.pathTarget || distance(entity.pathTarget,target) > 1.5 || entity.pathUsesStreets!==usesStreets) {
+    entity.pathUsesStreets=usesStreets;
+    entity.path = (usesStreets?findStreetPath:findPath)(region,entity.position,target); entity.pathTarget = [...target];
   }
   let budget = Math.min(metres, (region.size || 160) * 4);
   while (entity.path.length && budget > 0) {

@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 // Explicitly observed historical content versions, never a wildcard compatibility rule.
 const versions=new Map([
+ ['world-10d-b656d4dcc281','a56d020f664a98680ecc9cd4cf0c46b9fdcaaf22320aa801ca4cf4d384983fd7'],
  ['world-10d-6b5f929bc4d6','5f81b7b160480aab144138ce9093a339820d6e14b3ba8b1954ce9aad03cb065e'],
  ['world-10d-8cc8c18b05b7','e91dabb3a30f29e81b894b81b89c11b33801f979542b8b45f3b09a9d58c47d1b'],
  ['world-10d-7447e1bcfa30','8a5fe8b96466446cc564ee2fa8eba5636dac1f313f907c4c87fed8812d1d0353'],
@@ -19,6 +20,8 @@ const versions=new Map([
  ['world-10d-ec2c41296f3c','095e3f7e79de4ae8d7e86d0bbd405afa0203dfbd70ded2bb78db867697cca388'],
 ]);
 const reviewedTargets=new Map([
+ ['world-10d-4ea0666e0b73','2c12532e069fae3a6f509fd63aea29ba72c44d91ec8abed3277f6b0f04112684'],
+ ['world-10d-740140a68f8a','0519ba57f3b1f558a028b038f635d6f9917afb7fbf90a5e9bf59c5da43ab8961'],
  ['world-10d-b656d4dcc281','a56d020f664a98680ecc9cd4cf0c46b9fdcaaf22320aa801ca4cf4d384983fd7'],
  ['world-10d-6b5f929bc4d6','5f81b7b160480aab144138ce9093a339820d6e14b3ba8b1954ce9aad03cb065e'],
  ['world-10d-8cc8c18b05b7','e91dabb3a30f29e81b894b81b89c11b33801f979542b8b45f3b09a9d58c47d1b'],
@@ -32,7 +35,7 @@ export function canMigrateContent(record,content) {
  // This additive migration retains existing outcomes and introduces the shaft
  // only in the reviewed target generation. It is not permission for any future
  // content revision to reinterpret the checkpoint's save.
- if(['world-10d-6b5f929bc4d6','world-10d-8cc8c18b05b7','world-10d-7447e1bcfa30','world-10d-25c5a7733444','world-10d-30a9cef5f426','world-10d-be0609b3b3b0','world-10d-4de4bc7caf72','world-10d-1620f79180c0','world-10d-c0ca1f03faba','world-10d-940b5356c6a8','world-10d-24de1ef85209','world-10d-10c3365b9e26','world-10d-ec2c41296f3c'].includes(record.contentRevision)&&createHash('sha256').update(JSON.stringify(content)).digest('hex')!==reviewedTargets.get(content.revision))return false;
+ if(['world-10d-b656d4dcc281','world-10d-6b5f929bc4d6','world-10d-8cc8c18b05b7','world-10d-7447e1bcfa30','world-10d-25c5a7733444','world-10d-30a9cef5f426','world-10d-be0609b3b3b0','world-10d-4de4bc7caf72','world-10d-1620f79180c0','world-10d-c0ca1f03faba','world-10d-940b5356c6a8','world-10d-24de1ef85209','world-10d-10c3365b9e26','world-10d-ec2c41296f3c'].includes(record.contentRevision)&&createHash('sha256').update(JSON.stringify(content)).digest('hex')!==reviewedTargets.get(content.revision))return false;
  if(!versions.has(record.contentRevision)||record.state?.schemaVersion!==1&&record.state?.schemaVersion!==2)return false;
  if((record.contentHash??null)!==versions.get(record.contentRevision))return false;
  const s=record.state;

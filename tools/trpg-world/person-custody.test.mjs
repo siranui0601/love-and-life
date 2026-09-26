@@ -72,7 +72,10 @@ test('canonical trafficker finds the real person, captures and transports them t
  const c=JSON.parse(fs.readFileSync(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url)));
  c.time.startSeconds=c.actorOperations.find(o=>o.id==='coerced-transfer').departAt-600;const r=new WorldReplay(c,{seed:4});
  const inn=r.view().region.objects.find(o=>o.kind==='inn');
- for(let i=0;i<4&&r.state.actorOperations['coerced-transfer'].phase!=='holding';i++){
+ // Reciprocal road-mouth arrivals now require crossing each settlement on
+ // both legs. Allow two days of real travel and the target's overnight absence;
+ // the previous four-rest budget assumed arrival at every settlement centre.
+ for(let i=0;i<8&&r.state.actorOperations['coerced-transfer'].phase!=='holding';i++){
   if(r.state.player.hunger>45){const meal=r.options().find(o=>o.command.type==='eat');assert(meal);assert(!r.select(meal).error);}
   assert(!performAt(r,inn,'rest').error);
  }

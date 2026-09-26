@@ -28,7 +28,7 @@ function intercept(state,content,attacker,victim,operation,seconds){
   if(!canSee(content,guard,attacker,18)||!canSee(content,guard,victim,18))continue;
   guard.activity='目の前の襲撃を止めようとしている';
   duty.phase='responding';duty.threatId=attacker.id;
-  followPath(content.regions.find(r=>r.id===guard.region),guard,attacker.position,seconds/(content.time?.scale||60)*1.8);
+  followPath(content.regions.find(r=>r.id===guard.region),guard,attacker.position,seconds/(content.time?.scale||60)*1.8,{street:false});
   if(!canSee(content,guard,attacker,3))return false;
   const fact=rememberAction(state,content,'assault-restrained',{actorId:guard.id,targetId:attacker.id,payload:{protectedActorId:victim.id,attemptFactId:operation.attemptFactId,orderId:duty.orderId}});
   if(activeCustody(state,victim)?.holderId===attacker.id&&canSee(content,guard,victim,5))releasePerson(state,content,victim,guard,fact.id);
@@ -98,7 +98,7 @@ export function advanceActorOperations(state,content,seconds){
   if(!op.attemptFactId){const fact=rememberAction(state,content,spec.kind==='seize-person'?'seizure-attempt':'assault-attempt',{actorId:actor.id,targetId:victim.id});op.attemptFactId=fact.id;}
   if(intercept(state,content,actor,victim,op,seconds))continue;
   if(!canSee(content,actor,victim,2.5)){
-   delete op.hitAt;followPath(content.regions.find(r=>r.id===actor.region),actor,victim.position,seconds/(content.time?.scale||60)*1.65);continue;
+   delete op.hitAt;followPath(content.regions.find(r=>r.id===actor.region),actor,victim.position,seconds/(content.time?.scale||60)*1.65,{street:false});continue;
   }
   if(op.hitAt===undefined){op.hitAt=state.time+(spec.windupSeconds||60);continue;}
   if(state.time<op.hitAt)continue;

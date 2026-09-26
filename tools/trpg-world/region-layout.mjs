@@ -1,3 +1,5 @@
+import {streetPlans} from './spatial-authoring.mjs';
+import {bindSettlementDesign,spatialBoundaries} from './settlement-design.mjs';
 import {canOccupy,findPath,distance} from '../../src/shared/trpg-world/navigation.js';
 
 // Coordinates are authored staging, not coordinates claimed by the source sheet.
@@ -16,7 +18,7 @@ const layouts={
  blackridge:{identity:'水路を挟む共同市場と連合評議場',sites:[[-40,36],[-16,33],[33,27],[-24,-43],[41,-44],[23,-21],[-45,-24],[34,49],[-10,-23],[1,-9]],spine:[[-53,16],[-16,8],[0,8],[16,8],[36,8],[47,-17]],water:[{id:'common-canal',x:15,z:0,width:8,depth:160,kind:'canal'}],bridges:[{id:'market-bridge',x:15,z:8,width:11,depth:12}],ridges:[[-65,-48,10,18],[65,-50,10,22],[62,49,9,18]]},
 };
 const outdoor=/(SQUARE|FIELD|FARM|WELL|EDGE|FENCE|RIVER|POOL|WORLD_TREE|MAZE|NEST|PATH|HERB_GARDEN|ARCHERY_GROVE|BARRIER_STONE|NOTICE|BOARD|HORSE_TIE|HORSE_POST|WATERWAY|NEWSPAPER|DOCK|PORT|WALL)$/;
-const kindOf=r=>/INN|REST|GUEST|HUT/.test(r[0])?'inn':/STABLE|HORSE|BEAST/.test(r[0])?'stable':/BOARD|NOTICE|SQUARE|CHIEF|COUNCIL|COMMAND|OFFICE/.test(r[0])?'board':/FORGE|MAGE|ARCHERY|ENGINEER/.test(r[0])?'trainer':/MARKET|SHOP|APOTHECARY|BAKERY|REPAIR|SOUVENIR|GAMBLING|FORGER/.test(r[0])?'shop':/FIELD|FARM|SUPPLY|PORT|WAREHOUSE|GRANARY|SHIPYARD/.test(r[0])?'job':'landmark';
+const kindOf=r=>/(?:^|_)(INN|REST|GUEST|HUT)(?:_|$)/.test(r[0])?'inn':/STABLE|HORSE|BEAST/.test(r[0])?'stable':/BOARD|NOTICE|SQUARE|CHIEF|COUNCIL|COMMAND|OFFICE/.test(r[0])?'board':/FORGE|MAGE|ARCHERY|ENGINEER/.test(r[0])?'trainer':/MARKET|SHOP|APOTHECARY|BAKERY|REPAIR|SOUVENIR|GAMBLING|FORGER/.test(r[0])?'shop':/FIELD|SUPPLY|PORT|WAREHOUSE|GRANARY|SHIPYARD/.test(r[0])?'job':'landmark';
 const point=(x,z)=>[x,0,z];
 const footprint=o=>({id:`${o.id}:footprint`,x:o.buildingPosition[0],z:o.buildingPosition[2],width:o.width,depth:o.depth,height:o.height});
 function roadRegion(region,width=3.2){return {...region,obstacles:[...region.obstacles.filter(o=>!/:left$|:right$|:back$/.test(o.id)),...region.objects.filter(o=>o.buildingPosition).map(footprint)].map(o=>({...o,width:o.width+width-.9,depth:o.depth+width-.9}))};}
@@ -25,7 +27,7 @@ function addRoad(region,from,to,width=3.2,kind='lane'){
  if(distance(from,to)<.2)return;
  const navigation=roadRegion(region,width),path=findPath(navigation,from,to);
  if(!canOccupy(navigation,from)||!path.length||!path.every((p,i)=>clearLine(navigation,i?path[i-1]:from,p)))throw new Error(`${region.id}: cannot author ${kind} road ${from} → ${to}`);
- region.terrain.paths.push({points:[from,...path],width,kind});
+ region.terrain.paths.push({id:`${region.id}:road:${region.terrain.paths.length}`,points:[from,...path],width,kind});
 }
 function addWaterObstacles(region){
  for(const water of region.terrain.water){
@@ -39,7 +41,7 @@ function addWaterObstacles(region){
 export function createRegion(spec,sheet,sourceUrl){
  const [id,name,biome,color,worldPosition,description]=spec,layout=layouts[id],facilities=sheet.rows.filter(r=>/^LOC_/.test(r[0]||''));
  if(facilities.length!==layout.sites.length)throw new Error(`${id}: authored site count no longer matches source`);
- const region={id,name,biome,color,worldPosition,description,size:160,spawn:[0,0,8],identity:layout.identity,obstacles:[],objects:[],portals:[],source:{sheet:name,url:sheet.url||sourceUrl},terrain:{paths:[],water:layout.water||[],bridges:layout.bridges||[],ridges:(layout.ridges||[]).map(([x,z,radius,height])=>({x,z,radius,height})),plots:(layout.plots||[]).map(([x,z,width,depth])=>({x,z,width,depth,color:id==='farm'?'#b8a050':'#9b885a'})),trees:[]}};
+ const region={id,name,biome,color,worldPosition,description,size:streetPlans[id]?240:160,spawn:[0,0,8],identity:layout.identity,obstacles:[],objects:[],portals:[],source:{sheet:name,url:sheet.url||sourceUrl},terrain:{paths:[],water:layout.water||[],bridges:layout.bridges||[],ridges:(layout.ridges||[]).map(([x,z,radius,height])=>({x,z,radius,height})),plots:(layout.plots||[]).map(([x,z,width,depth])=>({x,z,width,depth,color:id==='farm'?'#b8a050':'#9b885a'})),trees:[]}};
  facilities.forEach((r,i)=>{
   const [x,z]=layout.sites[i],kind=kindOf(r),built=!outdoor.test(r[0]),width=/CASTLE|COLOSSUS/.test(r[0])?15:biome==='city'?11:10,depth=/CASTLE|COLOSSUS/.test(r[0])?12:9,height=/CASTLE|MAGE_TOWER|COLOSSUS/.test(r[0])?8:['city','ruins'].includes(biome)?5:3.8;
   const position=point(x,built?z+depth/2+3.5:z),asset=built?'building':kind==='board'?'sign':/WELL|POOL/.test(r[0])?'well':/FIELD|FARM/.test(r[0])?'field':/WORLD_TREE/.test(r[0])?'world-tree':'landmark';
@@ -49,7 +51,10 @@ export function createRegion(spec,sheet,sourceUrl){
  });
  region.objects.push({id:`${id}:trainer`,name:id==='farm'?'旅支度の稽古場':'地域の師匠',kind:'trainer',position:[8,0,17],asset:'stall',skills:['combat','investigation','riding','magic','broom','negotiation','crafting','tracking','stealth','survival'],description:'学んだ技能は、旅の手段と事件への関わり方を変える。',placement:'authored-service'});
  region.objects.push({id:`${id}:board`,name:'旅人の掲示板',kind:'board',position:[-7,0,8],asset:'sign',description:'この土地に届いた知らせと、地元の仕事が掲示されている。',placement:'authored-service'});
+ region.terrain.water=region.terrain.water.map(w=>w.kind==='sea'?{...w,depth:region.size,width:region.size/2-52,x:Math.sign(w.x)*(52+(region.size/2-52)/2)}:{...w,depth:region.size});
  addWaterObstacles(region);
+ region.terrain.boundaries=(spatialBoundaries[id]||[]).map(({purpose,...body})=>({...body,id:`${id}:${body.id}`}));
+ region.obstacles.push(...region.terrain.boundaries);
  for(const r of region.terrain.ridges)region.obstacles.push({id:`ridge:${r.x}:${r.z}`,x:r.x,z:r.z,width:r.radius*2,depth:r.radius*2,height:r.height});
  return region;
 }
@@ -59,7 +64,13 @@ export function createPortal(region,target,route){
  if(route.modes.includes('boat')&&dock)position=[...dock];
  else for(const radius of [70,66,61,56,51,46]){for(const turn of [0,.12,-.12,.24,-.24,.36,-.36]){const candidate=point(Math.round(Math.cos(angle+turn)*radius),Math.round(Math.sin(angle+turn)*radius));if(canOccupy(navigation,candidate)&&findPath(navigation,region.spawn,candidate).length){position=candidate;break;}}if(position)break;}
  if(!position)throw new Error(`${region.id}/${route.id}: no reachable exit`);
- return {id:`${region.id}:${route.id}`,to:target.id,routeId:route.id,position,radius:3,bearing:[dx,dz],kind:route.modes.includes('boat')?'harbor':'road'};
+ const approach=[...position];
+ if(streetPlans[region.id]&&!route.modes.includes('boat')){
+  for(const turn of [.18,-.18,0]){const a=Math.atan2(position[2],position[0])+turn,candidate=point(Math.round(Math.cos(a)*106),Math.round(Math.sin(a)*106));
+   if(canOccupy(navigation,candidate)&&findPath(navigation,approach,candidate).length){position=candidate;break;}
+  }
+ }
+ return {id:`${region.id}:${route.id}`,to:target.id,routeId:route.id,position,approach,radius:3,bearing:[dx,dz],kind:route.modes.includes('boat')?'harbor':'road'};
 }
 export function placeNPC(reg,npcRow,index){
  const primary=reg.objects.find(o=>o.id===npcRow[21]),related=reg.objects.find(o=>String(npcRow[22]||'').includes(o.id)),fallback=reg.objects.find(o=>o.kind==='board');
@@ -75,8 +86,12 @@ export function finalizeRegions(regions,npcs,events){
  for(const region of regions){
   const spine=layouts[region.id].spine.map(([x,z])=>point(x,z));
   for(let i=1;i<spine.length;i++)addRoad(region,spine[i-1],spine[i],region.id==='capital'?5:3.5,'main');
-  const targets=[...region.objects.map(o=>({id:o.id,position:o.position})),...region.portals,...events.filter(e=>e.region===region.id)];
+  for(const [kind,width,points] of streetPlans[region.id]||[]){for(let i=1;i<points.length;i++)addRoad(region,point(...points[i-1]),point(...points[i]),width,kind);}
+  const targets=[...region.objects.map(o=>({id:o.id,position:o.position})),...region.portals.map(p=>({...p,position:p.approach})),...events.filter(e=>e.region===region.id)];
   for(const target of targets){const anchors=[region.spawn,...region.terrain.paths.flatMap(p=>p.points)].sort((a,b)=>distance(a,target.position)-distance(b,target.position));addRoad(region,anchors[0],target.position,target.routeId?4:3.2,target.routeId?'exit':'access');}
+  for(const portal of region.portals)if(distance(portal.approach,portal.position)>5)addRoad(region,portal.approach,portal.position,4,'approach');
+  region.spatial={geometryRevision:'graybox-streets-v2',stage:streetPlans[region.id]?'street-cluster':'legacy-blockout',arrivalPolicy:'reciprocal-route-mouth'};
+  bindSettlementDesign(region);
   const reserved=[region.spawn,...targets.map(o=>o.position),...npcs.filter(n=>n.region===region.id).flatMap(n=>[n.home,n.work])],built=region.objects.filter(o=>o.buildingPosition).map(footprint);
   const count=['forest','grove'].includes(region.biome)?90:region.biome==='city'?20:['cave','ruins','snow','volcanic'].includes(region.biome)?22:46;
   for(let i=0;i<400&&region.terrain.trees.length<count;i++){
