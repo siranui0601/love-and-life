@@ -77,6 +77,25 @@ function lineClear(region, from, to) {
   return true;
 }
 export function findPath(region, from, target) {
+  if(!canOccupy(region,from)||!canOccupy(region,target))return [];
+  if(lineClear(region,from,target))return [[...target]];
+  // Exact doorway connectors keep a walkable opening usable even when the
+  // coarse outdoor grid misses it. Both directions still sweep the same body
+  // against real collision; closing a doorway invalidates this connection.
+  const room=p=>(region.objects||[]).find(o=>o.interior?.threshold&&o.buildingPosition&&
+    Math.abs(p[0]-o.buildingPosition[0])<o.width/2&&Math.abs(p[2]-o.buildingPosition[2])<o.depth/2);
+  const a=room(from),b=room(target);
+  if(a!==b&&(a||b)){
+    const start=a?.interior.threshold,end=b?.interior.threshold;
+    const prefix=start?findGridPath(region,from,start.inside):[],suffix=end?findGridPath(region,end.inside,target):[];
+    if(start&&(!prefix.length||!lineClear(region,start.inside,start.approach))||end&&(!suffix.length||!lineClear(region,end.approach,end.inside)))return [];
+    const middle=findGridPath(region,start?.approach||from,end?.approach||target);
+    if(!middle.length)return [];
+    return [...prefix,...(start?[start.approach]:[]),...middle,...(end?[end.inside,...suffix]:[])].map(p=>[...p]);
+  }
+  return findGridPath(region,from,target);
+}
+function findGridPath(region, from, target) {
   if (!canOccupy(region, from) || !canOccupy(region, target)) return [];
   if (lineClear(region, from, target)) return [[...target]];
   const step = 2, bound = Math.floor(((region.size || 160) / 2 - 1) / step);
@@ -166,6 +185,19 @@ function streetGraph(region) {
   streetGraphs.set(region,nodes);return nodes;
 }
 export function findStreetPath(region,from,target) {
+  // A resident behind a frontage must first leave through their doorway, then
+  // join the public street network. Falling back for the whole commute would
+  // make every enclosed home silently opt out of street-based NPC movement.
+  const room=p=>(region.objects||[]).find(o=>o.interior?.threshold&&o.buildingPosition&&
+    Math.abs(p[0]-o.buildingPosition[0])<o.width/2&&Math.abs(p[2]-o.buildingPosition[2])<o.depth/2);
+  const fromRoom=room(from),toRoom=room(target);
+  if(fromRoom!==toRoom&&(fromRoom||toRoom)){
+    const a=fromRoom?.interior.threshold,b=toRoom?.interior.threshold;
+    const prefix=a?findPath(region,from,a.approach):[],suffix=b?findPath(region,b.approach,target):[];
+    if(a&&!prefix.length||b&&!suffix.length)return [];
+    const middle=findStreetPath(region,a?.approach||from,b?.approach||target);
+    return middle.length?[...prefix,...middle,...suffix]:[];
+  }
   const nodes=streetGraph(region);if(!nodes.length||distance(from,target)<10)return findPath(region,from,target);
   // Attach to a nearby visible road, never cut through a building to reach it.
   const attach=p=>nodes.map((n,i)=>({i,d:distance(p,n.p)})).sort((a,b)=>a.d-b.d).slice(0,6)

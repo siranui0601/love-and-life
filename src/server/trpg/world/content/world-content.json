@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-534227bca032",
+  "revision": "world-10d-0d38993b18b0",
   "time": {
     "days": 10,
     "scale": 60,
@@ -310,6 +310,198 @@
           "x": -39,
           "z": 53.5,
           "width": 8,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_INN:front:left",
+          "x": -21.3,
+          "z": 24.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_INN:front:right",
+          "x": -14.7,
+          "z": 24.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_BAKERY:front:left",
+          "x": 13.7,
+          "z": 31.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_BAKERY:front:right",
+          "x": 20.3,
+          "z": 31.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_GRANARY:front:left",
+          "x": -40.5,
+          "z": -20.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_GRANARY:front:right",
+          "x": -33.5,
+          "z": -20.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_CHIEF:front:left",
+          "x": -20.3,
+          "z": -33.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_CHIEF:front:right",
+          "x": -13.7,
+          "z": -33.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_STABLE:front:left",
+          "x": 34.5,
+          "z": 34.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_STABLE:front:right",
+          "x": 41.5,
+          "z": 34.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_REPAIR:front:left",
+          "x": 26.7,
+          "z": -22.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_FARM_REPAIR:front:right",
+          "x": 33.3,
+          "z": -22.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:mira-house:front:left",
+          "x": -20.45,
+          "z": -54.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:mira-house:front:right",
+          "x": -15.55,
+          "z": -54.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:eda-house:front:left",
+          "x": -67.45,
+          "z": 13.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:eda-house:front:right",
+          "x": -62.55,
+          "z": 13.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:granary-house:front:left",
+          "x": -59.45,
+          "z": -34.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:granary-house:front:right",
+          "x": -54.55,
+          "z": -34.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:hunter-house:front:left",
+          "x": 60.55,
+          "z": -18.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:hunter-house:front:right",
+          "x": 65.45,
+          "z": -18.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:well-house:front:left",
+          "x": 26.55,
+          "z": 8.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:well-house:front:right",
+          "x": 31.45,
+          "z": 8.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:south-house:front:left",
+          "x": -41.45,
+          "z": 60.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "farm:south-house:front:right",
+          "x": -36.55,
+          "z": 60.5,
+          "width": 3.1,
           "depth": 0.4,
           "height": 3.8
         },
@@ -736,7 +928,49 @@
               24.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_FARM_INN:front:left",
+                  "x": -21.3,
+                  "z": 24.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_FARM_INN:front:right",
+                  "x": -14.7,
+                  "z": 24.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -18,
+                0,
+                26.5
+              ],
+              "inside": [
+                -18,
+                0,
+                22.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "麦穂亭",
+            "position": [
+              -18,
+              3.4,
+              24.75
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "road-services"
         },
@@ -773,7 +1007,49 @@
               31.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_FARM_BAKERY:front:left",
+                  "x": 13.7,
+                  "z": 31.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_FARM_BAKERY:front:right",
+                  "x": 20.3,
+                  "z": 31.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                17,
+                0,
+                33.5
+              ],
+              "inside": [
+                17,
+                0,
+                29.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "村のパン屋",
+            "position": [
+              17,
+              3.4,
+              31.75
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "road-services"
         },
@@ -830,7 +1106,39 @@
               -20.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_FARM_GRANARY:front:left",
+                  "x": -40.5,
+                  "z": -20.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_FARM_GRANARY:front:right",
+                  "x": -33.5,
+                  "z": -20.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -37,
+                0,
+                -18.5
+              ],
+              "inside": [
+                -37,
+                0,
+                -22.5
+              ]
+            }
           },
           "districtId": "production",
           "sourceDesignNotes": "穀物保管、T02調査"
@@ -888,7 +1196,39 @@
               -33.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_FARM_CHIEF:front:left",
+                  "x": -20.3,
+                  "z": -33.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_FARM_CHIEF:front:right",
+                  "x": -13.7,
+                  "z": -33.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -17,
+                0,
+                -31.5
+              ],
+              "inside": [
+                -17,
+                0,
+                -35.5
+              ]
+            }
           },
           "districtId": "commons"
         },
@@ -925,7 +1265,39 @@
               34.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_FARM_STABLE:front:left",
+                  "x": 34.5,
+                  "z": 34.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_FARM_STABLE:front:right",
+                  "x": 41.5,
+                  "z": 34.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                38,
+                0,
+                36.5
+              ],
+              "inside": [
+                38,
+                0,
+                32.5
+              ]
+            }
           },
           "skills": [
             "riding"
@@ -1006,7 +1378,49 @@
               -22.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_FARM_REPAIR:front:left",
+                  "x": 26.7,
+                  "z": -22.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_FARM_REPAIR:front:right",
+                  "x": 33.3,
+                  "z": -22.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                30,
+                0,
+                -20.5
+              ],
+              "inside": [
+                30,
+                0,
+                -24.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "農具修理屋「鋤刃」",
+            "position": [
+              30,
+              3.4,
+              -22.25
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "crafting": true,
           "districtId": "road-services"
@@ -1074,7 +1488,39 @@
               -54.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "farm:mira-house:front:left",
+                  "x": -20.45,
+                  "z": -54.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "farm:mira-house:front:right",
+                  "x": -15.55,
+                  "z": -54.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -18,
+                0,
+                -52.5
+              ],
+              "inside": [
+                -18,
+                0,
+                -56.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "commons",
@@ -1105,7 +1551,39 @@
               13.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "farm:eda-house:front:left",
+                  "x": -67.45,
+                  "z": 13.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "farm:eda-house:front:right",
+                  "x": -62.55,
+                  "z": 13.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -65,
+                0,
+                15.5
+              ],
+              "inside": [
+                -65,
+                0,
+                11.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "production",
@@ -1136,7 +1614,39 @@
               -34.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "farm:granary-house:front:left",
+                  "x": -59.45,
+                  "z": -34.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "farm:granary-house:front:right",
+                  "x": -54.55,
+                  "z": -34.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -57,
+                0,
+                -32.5
+              ],
+              "inside": [
+                -57,
+                0,
+                -36.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "production",
@@ -1167,7 +1677,39 @@
               -18.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "farm:hunter-house:front:left",
+                  "x": 60.55,
+                  "z": -18.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "farm:hunter-house:front:right",
+                  "x": 65.45,
+                  "z": -18.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                63,
+                0,
+                -16.5
+              ],
+              "inside": [
+                63,
+                0,
+                -20.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "fringe",
@@ -1198,7 +1740,39 @@
               8.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "farm:well-house:front:left",
+                  "x": 26.55,
+                  "z": 8.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "farm:well-house:front:right",
+                  "x": 31.45,
+                  "z": 8.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                29,
+                0,
+                10.5
+              ],
+              "inside": [
+                29,
+                0,
+                6.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "commons",
@@ -1229,7 +1803,39 @@
               60.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "farm:south-house:front:left",
+                  "x": -41.45,
+                  "z": 60.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "farm:south-house:front:right",
+                  "x": -36.55,
+                  "z": 60.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -39,
+                0,
+                62.5
+              ],
+              "inside": [
+                -39,
+                0,
+                58.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "road-services",
@@ -4140,6 +4746,278 @@
           "height": 3.8
         },
         {
+          "id": "LOC_CAP_CASTLE:front:left",
+          "x": -4.550000000000001,
+          "z": -45,
+          "width": 5.9,
+          "depth": 0.4,
+          "height": 8
+        },
+        {
+          "id": "LOC_CAP_CASTLE:front:right",
+          "x": 4.550000000000001,
+          "z": -45,
+          "width": 5.9,
+          "depth": 0.4,
+          "height": 8
+        },
+        {
+          "id": "LOC_CAP_MAGE_TOWER:front:left",
+          "x": 25.45,
+          "z": -39.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 8
+        },
+        {
+          "id": "LOC_CAP_MAGE_TOWER:front:right",
+          "x": 32.55,
+          "z": -39.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 8
+        },
+        {
+          "id": "LOC_CAP_LOWER_INN:front:left",
+          "x": -42.55,
+          "z": 32.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_LOWER_INN:front:right",
+          "x": -35.45,
+          "z": 32.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_MARKET:front:left",
+          "x": -3.55,
+          "z": -15.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_MARKET:front:right",
+          "x": 3.55,
+          "z": -15.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_WEAPON_SHOP:front:left",
+          "x": -27.55,
+          "z": -23.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_WEAPON_SHOP:front:right",
+          "x": -20.45,
+          "z": -23.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_APOTHECARY:front:left",
+          "x": 25.45,
+          "z": -17.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_APOTHECARY:front:right",
+          "x": 32.55,
+          "z": -17.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_ORPHANAGE:front:left",
+          "x": -44.55,
+          "z": 55.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_ORPHANAGE:front:right",
+          "x": -37.45,
+          "z": 55.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_BIG_STORE:front:left",
+          "x": -23.55,
+          "z": 52.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_BIG_STORE:front:right",
+          "x": -16.45,
+          "z": 52.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_OFFICE:front:left",
+          "x": -34.55,
+          "z": -47.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_OFFICE:front:right",
+          "x": -27.45,
+          "z": -47.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_STABLE:front:left",
+          "x": -1.75,
+          "z": 62.5,
+          "width": 3.5,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_STABLE:front:right",
+          "x": 5.75,
+          "z": 62.5,
+          "width": 3.5,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_AJIN_QUARTER:front:left",
+          "x": 33.45,
+          "z": 33.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "LOC_CAP_AJIN_QUARTER:front:right",
+          "x": 40.55,
+          "z": 33.5,
+          "width": 3.9,
+          "depth": 0.4,
+          "height": 5
+        },
+        {
+          "id": "capital:noble-house:front:left",
+          "x": 32.55,
+          "z": -61.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:noble-house:front:right",
+          "x": 37.45,
+          "z": -61.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:guard-quarters:front:left",
+          "x": 0.5499999999999998,
+          "z": -72.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:guard-quarters:front:right",
+          "x": 5.45,
+          "z": -72.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:clerk-house:front:left",
+          "x": -64.45,
+          "z": -50.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:clerk-house:front:right",
+          "x": -59.55,
+          "z": -50.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:news-house:front:left",
+          "x": 27.55,
+          "z": 70.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:news-house:front:right",
+          "x": 32.45,
+          "z": 70.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:stable-house:front:left",
+          "x": 17.55,
+          "z": 87.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:stable-house:front:right",
+          "x": 22.45,
+          "z": 87.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:market-house:front:left",
+          "x": -33.45,
+          "z": 12.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "capital:market-house:front:right",
+          "x": -28.55,
+          "z": 12.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
           "id": "water:great-river:0",
           "x": 60,
           "z": -59,
@@ -4366,7 +5244,39 @@
               -45
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_CASTLE:front:left",
+                  "x": -4.550000000000001,
+                  "z": -45,
+                  "width": 5.9,
+                  "depth": 0.4,
+                  "height": 8
+                },
+                {
+                  "id": "LOC_CAP_CASTLE:front:right",
+                  "x": 4.550000000000001,
+                  "z": -45,
+                  "width": 5.9,
+                  "depth": 0.4,
+                  "height": 8
+                }
+              ],
+              "approach": [
+                0,
+                0,
+                -43
+              ],
+              "inside": [
+                0,
+                0,
+                -47
+              ]
+            }
           },
           "districtId": "civic"
         },
@@ -4403,7 +5313,39 @@
               -39.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_MAGE_TOWER:front:left",
+                  "x": 25.45,
+                  "z": -39.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 8
+                },
+                {
+                  "id": "LOC_CAP_MAGE_TOWER:front:right",
+                  "x": 32.55,
+                  "z": -39.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 8
+                }
+              ],
+              "approach": [
+                29,
+                0,
+                -37.5
+              ],
+              "inside": [
+                29,
+                0,
+                -41.5
+              ]
+            }
           },
           "districtId": "civic"
         },
@@ -4440,7 +5382,49 @@
               32.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_LOWER_INN:front:left",
+                  "x": -42.55,
+                  "z": 32.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_LOWER_INN:front:right",
+                  "x": -35.45,
+                  "z": 32.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                -39,
+                0,
+                34.5
+              ],
+              "inside": [
+                -39,
+                0,
+                30.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "下層の安宿",
+            "position": [
+              -39,
+              3.5,
+              32.75
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "lower"
         },
@@ -4477,7 +5461,49 @@
               -15.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_MARKET:front:left",
+                  "x": -3.55,
+                  "z": -15.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_MARKET:front:right",
+                  "x": 3.55,
+                  "z": -15.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                0,
+                0,
+                -13.5
+              ],
+              "inside": [
+                0,
+                0,
+                -17.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "中央市場",
+            "position": [
+              0,
+              3.5,
+              -15.25
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "market"
         },
@@ -4514,7 +5540,49 @@
               -23.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_WEAPON_SHOP:front:left",
+                  "x": -27.55,
+                  "z": -23.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_WEAPON_SHOP:front:right",
+                  "x": -20.45,
+                  "z": -23.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                -24,
+                0,
+                -21.5
+              ],
+              "inside": [
+                -24,
+                0,
+                -25.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "王都武器屋",
+            "position": [
+              -24,
+              3.5,
+              -23.25
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "market"
         },
@@ -4551,7 +5619,49 @@
               -17.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_APOTHECARY:front:left",
+                  "x": 25.45,
+                  "z": -17.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_APOTHECARY:front:right",
+                  "x": 32.55,
+                  "z": -17.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                29,
+                0,
+                -15.5
+              ],
+              "inside": [
+                29,
+                0,
+                -19.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "王都薬屋",
+            "position": [
+              29,
+              3.5,
+              -17.25
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "crafting": true,
           "districtId": "market"
@@ -4589,7 +5699,39 @@
               55.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_ORPHANAGE:front:left",
+                  "x": -44.55,
+                  "z": 55.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_ORPHANAGE:front:right",
+                  "x": -37.45,
+                  "z": 55.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                -41,
+                0,
+                57.5
+              ],
+              "inside": [
+                -41,
+                0,
+                53.5
+              ]
+            }
           },
           "districtId": "lower",
           "sourceDesignNotes": "子ども、T10相談、裏路地情報"
@@ -4627,7 +5769,39 @@
               52.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_BIG_STORE:front:left",
+                  "x": -23.55,
+                  "z": 52.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_BIG_STORE:front:right",
+                  "x": -16.45,
+                  "z": 52.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                -20,
+                0,
+                54.5
+              ],
+              "inside": [
+                -20,
+                0,
+                50.5
+              ]
+            }
           },
           "districtId": "lower"
         },
@@ -4664,7 +5838,39 @@
               -47.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_OFFICE:front:left",
+                  "x": -34.55,
+                  "z": -47.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_OFFICE:front:right",
+                  "x": -27.45,
+                  "z": -47.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                -31,
+                0,
+                -45.5
+              ],
+              "inside": [
+                -31,
+                0,
+                -49.5
+              ]
+            }
           },
           "districtId": "civic"
         },
@@ -4721,7 +5927,39 @@
               62.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_CAP_STABLE:front:left",
+                  "x": -1.75,
+                  "z": 62.5,
+                  "width": 3.5,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_STABLE:front:right",
+                  "x": 5.75,
+                  "z": 62.5,
+                  "width": 3.5,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                2,
+                0,
+                64.5
+              ],
+              "inside": [
+                2,
+                0,
+                60.5
+              ]
+            }
           },
           "skills": [
             "riding"
@@ -4761,7 +5999,39 @@
               33.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CAP_AJIN_QUARTER:front:left",
+                  "x": 33.45,
+                  "z": 33.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                },
+                {
+                  "id": "LOC_CAP_AJIN_QUARTER:front:right",
+                  "x": 40.55,
+                  "z": 33.5,
+                  "width": 3.9,
+                  "depth": 0.4,
+                  "height": 5
+                }
+              ],
+              "approach": [
+                37,
+                0,
+                35.5
+              ],
+              "inside": [
+                37,
+                0,
+                31.5
+              ]
+            }
           },
           "districtId": "river-homes"
         },
@@ -4828,7 +6098,39 @@
               -61.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "capital:noble-house:front:left",
+                  "x": 32.55,
+                  "z": -61.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "capital:noble-house:front:right",
+                  "x": 37.45,
+                  "z": -61.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                35,
+                0,
+                -59.5
+              ],
+              "inside": [
+                35,
+                0,
+                -63.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "civic",
@@ -4859,7 +6161,39 @@
               -72.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "capital:guard-quarters:front:left",
+                  "x": 0.5499999999999998,
+                  "z": -72.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "capital:guard-quarters:front:right",
+                  "x": 5.45,
+                  "z": -72.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                3,
+                0,
+                -70.5
+              ],
+              "inside": [
+                3,
+                0,
+                -74.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "civic",
@@ -4890,7 +6224,39 @@
               -50.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "capital:clerk-house:front:left",
+                  "x": -64.45,
+                  "z": -50.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "capital:clerk-house:front:right",
+                  "x": -59.55,
+                  "z": -50.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -62,
+                0,
+                -48.5
+              ],
+              "inside": [
+                -62,
+                0,
+                -52.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "civic",
@@ -4921,7 +6287,39 @@
               70.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "capital:news-house:front:left",
+                  "x": 27.55,
+                  "z": 70.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "capital:news-house:front:right",
+                  "x": 32.45,
+                  "z": 70.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                30,
+                0,
+                72.5
+              ],
+              "inside": [
+                30,
+                0,
+                68.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "arrival",
@@ -4952,7 +6350,39 @@
               87.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "capital:stable-house:front:left",
+                  "x": 17.55,
+                  "z": 87.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "capital:stable-house:front:right",
+                  "x": 22.45,
+                  "z": 87.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                20,
+                0,
+                89.5
+              ],
+              "inside": [
+                20,
+                0,
+                85.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "arrival",
@@ -4983,7 +6413,39 @@
               12.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "capital:market-house:front:left",
+                  "x": -33.45,
+                  "z": 12.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "capital:market-house:front:right",
+                  "x": -28.55,
+                  "z": 12.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -31,
+                0,
+                14.5
+              ],
+              "inside": [
+                -31,
+                0,
+                10.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "market",
@@ -8532,6 +9994,230 @@
           "height": 3.8
         },
         {
+          "id": "LOC_TRADE_FISH_MARKET:front:left",
+          "x": -28.3,
+          "z": 28.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_FISH_MARKET:front:right",
+          "x": -21.7,
+          "z": 28.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_INN:front:left",
+          "x": -8.3,
+          "z": 49.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_INN:front:right",
+          "x": -1.7000000000000002,
+          "z": 49.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_LORD_MANOR:front:left",
+          "x": 28.7,
+          "z": -39.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_LORD_MANOR:front:right",
+          "x": 35.3,
+          "z": -39.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_GUILD:front:left",
+          "x": 8.7,
+          "z": -17.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_GUILD:front:right",
+          "x": 15.3,
+          "z": -17.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_WAREHOUSE:front:left",
+          "x": -46.5,
+          "z": -38.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_WAREHOUSE:front:right",
+          "x": -39.5,
+          "z": -38.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_CUSTOMS:front:left",
+          "x": -18.3,
+          "z": -37.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_CUSTOMS:front:right",
+          "x": -11.7,
+          "z": -37.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_APOTHECARY:front:left",
+          "x": 29.7,
+          "z": 35.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_APOTHECARY:front:right",
+          "x": 36.3,
+          "z": 35.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_STABLE:front:left",
+          "x": 27.5,
+          "z": 56.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_STABLE:front:right",
+          "x": 34.5,
+          "z": 56.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_SHIPYARD:front:left",
+          "x": -45.5,
+          "z": 47.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_TRADE_SHIPYARD:front:right",
+          "x": -38.5,
+          "z": 47.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:workers-house:front:left",
+          "x": -28.45,
+          "z": -61.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:workers-house:front:right",
+          "x": -23.55,
+          "z": -61.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:customs-house:front:left",
+          "x": 9.55,
+          "z": -56.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:customs-house:front:right",
+          "x": 14.45,
+          "z": -56.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:guild-house:front:left",
+          "x": -2.45,
+          "z": -38.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:guild-house:front:right",
+          "x": 2.45,
+          "z": -38.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:stable-house:front:left",
+          "x": 45.55,
+          "z": 53.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:stable-house:front:right",
+          "x": 50.45,
+          "z": 53.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:shipwright-house:front:left",
+          "x": -25.45,
+          "z": 60.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "trade:shipwright-house:front:right",
+          "x": -20.55,
+          "z": 60.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
           "id": "water:western-sea:0",
           "x": -86,
           "z": 0,
@@ -8962,7 +10648,49 @@
               28.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_FISH_MARKET:front:left",
+                  "x": -28.3,
+                  "z": 28.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_FISH_MARKET:front:right",
+                  "x": -21.7,
+                  "z": 28.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -25,
+                0,
+                30.5
+              ],
+              "inside": [
+                -25,
+                0,
+                26.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "魚市場",
+            "position": [
+              -25,
+              3.4,
+              28.75
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "waterfront"
         },
@@ -8999,7 +10727,49 @@
               49.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_INN:front:left",
+                  "x": -8.3,
+                  "z": 49.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_INN:front:right",
+                  "x": -1.7000000000000002,
+                  "z": 49.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -5,
+                0,
+                51.5
+              ],
+              "inside": [
+                -5,
+                0,
+                47.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "潮風宿",
+            "position": [
+              -5,
+              3.4,
+              49.75
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "districtId": "arrival"
         },
@@ -9036,7 +10806,39 @@
               -39.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_LORD_MANOR:front:left",
+                  "x": 28.7,
+                  "z": -39.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_LORD_MANOR:front:right",
+                  "x": 35.3,
+                  "z": -39.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                32,
+                0,
+                -37.5
+              ],
+              "inside": [
+                32,
+                0,
+                -41.5
+              ]
+            }
           },
           "districtId": "exchange"
         },
@@ -9073,7 +10875,39 @@
               -17.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_GUILD:front:left",
+                  "x": 8.7,
+                  "z": -17.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_GUILD:front:right",
+                  "x": 15.3,
+                  "z": -17.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                12,
+                0,
+                -15.5
+              ],
+              "inside": [
+                12,
+                0,
+                -19.5
+              ]
+            }
           },
           "districtId": "exchange"
         },
@@ -9110,7 +10944,39 @@
               -38.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_WAREHOUSE:front:left",
+                  "x": -46.5,
+                  "z": -38.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_WAREHOUSE:front:right",
+                  "x": -39.5,
+                  "z": -38.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -43,
+                0,
+                -36.5
+              ],
+              "inside": [
+                -43,
+                0,
+                -40.5
+              ]
+            }
           },
           "districtId": "freight"
         },
@@ -9147,7 +11013,39 @@
               -37.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_CUSTOMS:front:left",
+                  "x": -18.3,
+                  "z": -37.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_CUSTOMS:front:right",
+                  "x": -11.7,
+                  "z": -37.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -15,
+                0,
+                -35.5
+              ],
+              "inside": [
+                -15,
+                0,
+                -39.5
+              ]
+            }
           },
           "districtId": "freight"
         },
@@ -9184,7 +11082,49 @@
               35.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_APOTHECARY:front:left",
+                  "x": 29.7,
+                  "z": 35.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_APOTHECARY:front:right",
+                  "x": 36.3,
+                  "z": 35.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                33,
+                0,
+                37.5
+              ],
+              "inside": [
+                33,
+                0,
+                33.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "港薬草商",
+            "position": [
+              33,
+              3.4,
+              35.75
+            ],
+            "width": 6,
+            "height": 0.75
           },
           "crafting": true,
           "districtId": "arrival"
@@ -9222,7 +11162,39 @@
               56.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_STABLE:front:left",
+                  "x": 27.5,
+                  "z": 56.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_STABLE:front:right",
+                  "x": 34.5,
+                  "z": 56.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                31,
+                0,
+                58.5
+              ],
+              "inside": [
+                31,
+                0,
+                54.5
+              ]
+            }
           },
           "skills": [
             "riding"
@@ -9262,7 +11234,39 @@
               47.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_TRADE_SHIPYARD:front:left",
+                  "x": -45.5,
+                  "z": 47.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_TRADE_SHIPYARD:front:right",
+                  "x": -38.5,
+                  "z": 47.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -42,
+                0,
+                49.5
+              ],
+              "inside": [
+                -42,
+                0,
+                45.5
+              ]
+            }
           },
           "crafting": true,
           "districtId": "waterfront"
@@ -9330,7 +11334,39 @@
               -61.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "trade:workers-house:front:left",
+                  "x": -28.45,
+                  "z": -61.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "trade:workers-house:front:right",
+                  "x": -23.55,
+                  "z": -61.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -26,
+                0,
+                -59.5
+              ],
+              "inside": [
+                -26,
+                0,
+                -63.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "freight",
@@ -9361,7 +11397,39 @@
               -56.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "trade:customs-house:front:left",
+                  "x": 9.55,
+                  "z": -56.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "trade:customs-house:front:right",
+                  "x": 14.45,
+                  "z": -56.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                12,
+                0,
+                -54.5
+              ],
+              "inside": [
+                12,
+                0,
+                -58.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "exchange",
@@ -9392,7 +11460,39 @@
               -38.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "trade:guild-house:front:left",
+                  "x": -2.45,
+                  "z": -38.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "trade:guild-house:front:right",
+                  "x": 2.45,
+                  "z": -38.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                0,
+                0,
+                -36.5
+              ],
+              "inside": [
+                0,
+                0,
+                -40.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "exchange",
@@ -9423,7 +11523,39 @@
               53.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "trade:stable-house:front:left",
+                  "x": 45.55,
+                  "z": 53.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "trade:stable-house:front:right",
+                  "x": 50.45,
+                  "z": 53.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                48,
+                0,
+                55.5
+              ],
+              "inside": [
+                48,
+                0,
+                51.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "arrival",
@@ -9454,7 +11586,39 @@
               60.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "trade:shipwright-house:front:left",
+                  "x": -25.45,
+                  "z": 60.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "trade:shipwright-house:front:right",
+                  "x": -20.55,
+                  "z": 60.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -23,
+                0,
+                62.5
+              ],
+              "inside": [
+                -23,
+                0,
+                58.5
+              ]
+            }
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "waterfront",

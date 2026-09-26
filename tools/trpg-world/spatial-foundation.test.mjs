@@ -3,11 +3,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {canOccupy,distance,findPath,findStreetPath,followPath,pathIsTraversable,hasLineOfSight} from '../../src/shared/trpg-world/navigation.js';
 import {arrivalPosition,journeyLocation} from '../../src/shared/trpg-world/travel-space.js';
-import {createWorld,advanceWorld} from '../../src/shared/trpg-world/simulation.js';
+import {createWorld,advanceWorld,projectWorld} from '../../src/shared/trpg-world/simulation.js';
 import {reconcileGeometry} from '../../src/server/trpg/world/geometry-migration.js';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
 import {performAt} from './validation/action-domain.mjs';
+import {createRegion} from './region-layout.mjs';
 const content=JSON.parse(fs.readFileSync(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url)));
+
+test('reordering source facility rows cannot move semantic places or silently substitute a new site',()=>{
+ const source=JSON.parse(fs.readFileSync(new URL('./sources/world.json',import.meta.url)));
+ for(const r of content.regions){
+  const sheet=source.sheets.find(s=>s.title===r.name),spec=[r.id,r.name,r.biome,r.color,r.worldPosition,r.description];
+  const reordered=createRegion(spec,{...sheet,rows:[...sheet.rows].reverse()},source.sourceUrl);
+  for(const site of reordered.objects.filter(o=>o.source?.id)){
+   const canonical=r.objects.find(o=>o.id===site.id);assert.deepEqual(site.position,canonical.position);assert.deepEqual(site.buildingPosition,canonical.buildingPosition);
+  }
+  const broken=structuredClone(sheet),row=broken.rows.find(row=>/^LOC_/.test(row[0]||''));row[0]+='_RENAMED';
+  assert.throws(()=>createRegion(spec,broken,source.sourceUrl),/site IDs/);
+ }
+});
 
 test('source semantic sites and actual entrances remain reachable after street and outskirts rebuilding',()=>{
  const source=JSON.parse(fs.readFileSync(new URL('./sources/world.json',import.meta.url)));
@@ -62,6 +76,32 @@ test('street locomotion keeps authored bends and falls back safely when a street
  const npc={id:'resident',position:[0,0,0]};followPath(region,npc,[20,0,20],10);assert.equal(npc.position[0],0);assert(npc.position[2]>9);
  const blocked=structuredClone(region);blocked.obstacles=[{x:0,z:10,width:4,depth:2,height:5}];
  const detour=findStreetPath(blocked,[0,0,0],[20,0,20]);assert(detour.length);assert(pathIsTraversable(blocked,[0,0,0],detour));
+});
+
+test('functional thresholds have usable two-way doors without exposing a whole room to the street',()=>{
+ for(const region of content.regions)for(const o of region.objects.filter(o=>o.interior?.threshold)){
+  const t=o.interior.threshold;
+  for(const [a,b] of [[o.position,t.inside],[t.inside,o.position]]){const path=findPath(region,a,b);assert(path.length,o.id);assert(pathIsTraversable(region,a,path),o.id);}
+  const wall=t.walls[0],outside=[wall.x,0,wall.z+2],inside=[wall.x,0,wall.z-2];
+  assert(!hasLineOfSight(region,outside,inside),`${o.id}: solid frontage must screen its interior`);
+  assert(hasLineOfSight(region,t.approach,t.inside),`${o.id}: an open door remains visible`);
+ }
+ const region=content.regions.find(r=>r.id==='farm'),house=region.objects.find(o=>o.id==='farm:eda-house'),t=house.interior.threshold;
+ assert.equal(t.opening,1.8);assert.equal(house.buildingPosition[0]%2,-1,'door is deliberately between coarse grid columns');
+ const blocked={...region,obstacles:[...region.obstacles,{id:'closed-door',x:house.buildingPosition[0],z:house.interior.entrance[2],width:t.opening,depth:.4,height:3.8}]};
+ assert.equal(findPath(blocked,house.position,t.inside).length,0,'connector cannot pass a physical closure');
+});
+
+test('a house front occludes its resident in the actual player projection; signs expose only business identification',()=>{
+ const state=createWorld(content,{seed:1}),region=content.regions.find(r=>r.id==='farm'),n=state.npcs.NPC004;
+ const house=region.objects.find(o=>o.id==='farm:eda-house'),front=house.interior.entrance[2];
+ // Initial viewing position is a perception fixture, not an executed worldline.
+ state.player.position=[n.position[0],0,front+2];
+ assert(!projectWorld(state,content).npcs.some(actor=>actor.id===n.id));
+ const view=projectWorld(state,content),bakery=view.region.objects.find(o=>o.id==='LOC_FARM_BAKERY');
+ assert.equal(bakery.signage.text,bakery.name);assert(!view.region.objects.find(o=>o.id===house.id).signage);
+ assert(!('residences' in view.region));assert(!('settlement' in view.region));
+ const capital=content.regions.find(r=>r.id==='capital');assert(!capital.objects.find(o=>o.id==='LOC_CAP_BIG_STORE').signage,'future land use is not a current shop sign');
 });
 
 test('at-grade street crossings connect without endpoint coincidence and exhausted paths can resume',()=>{

@@ -8,6 +8,7 @@ import {DirectionalLight} from '@babylonjs/core/Lights/directionalLight.js';
 import {ShadowGenerator} from '@babylonjs/core/Lights/Shadows/shadowGenerator.js';
 import {MeshBuilder} from '@babylonjs/core/Meshes/meshBuilder.js';
 import {StandardMaterial} from '@babylonjs/core/Materials/standardMaterial.js';
+import {DynamicTexture} from '@babylonjs/core/Materials/Textures/dynamicTexture.js';
 import {TransformNode} from '@babylonjs/core/Meshes/transformNode.js';
 import {Ray} from '@babylonjs/core/Culling/ray.js';
 import {AssetLibrary} from './assets.js';
@@ -42,6 +43,7 @@ export class WorldScene {
   if(this.region?.id===region.id)return;
   this.loading=true;this.region=region;this.scene.fogColor=C(region.color).scale(.7).add(new Color3(.2,.2,.2));
   this.actors.forEach(a=>a.dispose());this.actors.clear();this.decor.forEach(a=>a.dispose());this.decor=[];this.regionRoot?.dispose();this.regionRoot=new TransformNode(`region:${region.id}`,this.scene);
+  this.signMaterials?.forEach(m=>m.dispose(false,true));this.signMaterials=[];
   this.ground('terrain',region.size+50,region.size+50,[0,-.04,0],region.color,this.regionRoot);
   for(const p of region.terrain?.plots||[])this.ground('field',p.width,p.depth,[p.x,.015,p.z],p.color,this.regionRoot);
   for(const path of region.terrain?.paths||[])for(let i=1;i<path.points.length;i++){
@@ -61,9 +63,21 @@ export class WorldScene {
    if(o.buildingPosition){
     const [x,,z]=o.buildingPosition,w=o.width||10,d=o.depth||9,h=o.height||4;
     this.ground(`${o.id}:floor`,w,d,[x,.05,z],'#b8a586',this.regionRoot);
+    for(const wall of o.interior?.threshold?.walls||[]){
+     const mesh=MeshBuilder.CreateBox(wall.id,{width:wall.width,height:wall.height,depth:wall.depth},this.scene);
+     mesh.position=new Vector3(wall.x,wall.height/2,wall.z);mesh.parent=this.regionRoot;mesh.material=this.material(wall.id,'#b1a38d');
+     mesh.metadata={cameraBlock:true};mesh.receiveShadows=true;this.shadows.addShadowCaster(mesh);
+    }
+    if(o.signage){
+     const s=o.signage,sign=MeshBuilder.CreatePlane(`${o.id}:sign`,{width:s.width,height:s.height,sideOrientation:2},this.scene);
+     sign.position=v(s.position);sign.parent=this.regionRoot;sign.rotation.y=Math.PI;
+     const texture=new DynamicTexture(`${o.id}:sign-text`,{width:1024,height:128},this.scene,false);
+     texture.drawText(s.text,null,84,'bold 60px "Yu Gothic", "Meiryo", sans-serif','#eee4ca','#39362d',true);
+     const material=this.material(`${o.id}:sign`,'#ffffff');material.diffuseTexture=texture;material.emissiveColor=new Color3(.2,.2,.2);sign.material=material;sign.isPickable=false;this.signMaterials.push(material);
+    }
     for(const wall of [{p:[x-w/2,0,z],s:[.35,h,d]},{p:[x+w/2,0,z],s:[.35,h,d]},{p:[x,0,z-d/2],s:[w,h,.35]}])tasks.push(this.prop('town/wall-window-stone.glb',{position:wall.p,size:wall.s,name:o.id,cameraBlock:true}));
     tasks.push(this.prop('town/roof-gable.glb',{position:[x,h,z],size:[w+1,2.1,d+1],name:`${o.id}:roof`,cameraBlock:true}));
-    tasks.push(this.prop(o.kind==='shop'?'town/stall-red.glb':'town/stall-bench.glb',{position:[x,0,z-1],height:o.kind==='shop'?2.2:.8,name:'interior'}));
+    tasks.push(this.prop(o.kind==='shop'?'town/stall-red.glb':'town/stall-bench.glb',{position:o.kind==='residence'?[x+w/2-1.3,0,z-d/2+1.4]:[x,0,z-1],height:o.kind==='shop'?2.2:.8,name:'interior'}));
     tasks.push(this.prop('town/lantern.glb',{position:[x-3,2,z+d/2],height:.7,name:'lantern'}));
    }else{
     const path=o.asset==='world-tree'?'town/tree-high.glb':o.asset==='crate'?'town/cart-high.glb':o.kind==='board'?'town/banner-green.glb':o.kind==='trainer'?'town/stall-green.glb':o.kind==='stable'||o.asset==='field'?'town/cart.glb':o.asset==='well'?'town/fountain-round.glb':'town/rock-small.glb';

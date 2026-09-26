@@ -1,22 +1,24 @@
 import {streetPlans} from './spatial-authoring.mjs';
 import {bindSettlementDesign,spatialBoundaries} from './settlement-design.mjs';
 import {addDwellings} from './residence-authoring.mjs';
+import {authorThresholds} from './threshold-authoring.mjs';
+import {facilitySites} from './facility-sites.mjs';
 import {canOccupy,findPath,distance} from '../../src/shared/trpg-world/navigation.js';
 
 // Coordinates are authored staging, not coordinates claimed by the source sheet.
-// Facility order follows each sheet's LOC rows; no facility is silently omitted.
+// Facility placement is keyed by semantic ID; source rows may be reordered.
 const layouts={
- farm:{identity:'畑から広場へ曲がる村道',sites:[[0,-13],[-18,20],[17,27],[-43,33],[-37,-25],[10,-8],[-17,-38],[38,30],[43,-39],[6,-59],[30,-27]],spine:[[0,63],[5,38],[0,8],[-8,-16],[0,-62]],plots:[[-53,35,17,32],[-51,-11,18,22],[-28,50,18,20]]},
- capital:{identity:'王城と市場を結ぶ大通り・東の大河',sites:[[0,-51],[29,-44],[-39,28],[0,-20],[-24,-28],[29,-22],[-41,51],[-20,48],[-31,-52],[20,43],[2,58],[37,29]],spine:[[0,74],[0,35],[0,8],[0,-8],[16,-8],[16,-48]],water:[{id:'great-river',x:60,z:0,width:12,depth:160,kind:'river'}],bridges:[{id:'east-gate',x:60,z:8,width:15,depth:12}]},
- trade:{identity:'西向きの埠頭・海岸通りと丘の領主館',sites:[[-42,-17],[-25,24],[-5,45],[32,-44],[12,-22],[-43,-43],[-15,-42],[33,31],[31,52],[-42,43]],spine:[[-47,0],[-31,8],[0,8],[12,15],[48,14]],water:[{id:'western-sea',x:-66,z:0,width:28,depth:160,kind:'sea'}],bridges:[],dock:[-49,0,0]},
- crime:{identity:'岩島の東埠頭・折れ曲がる裏通り',sites:[[43,-17],[14,34],[-7,-23],[-33,23],[-34,-27],[22,-41],[43,30],[-24,47],[1,54]],spine:[[49,0],[25,13],[0,8],[-15,18],[-10,43]],water:[{id:'island-sea',x:66,z:0,width:28,depth:160,kind:'sea'}],bridges:[],dock:[49,0,0],ridges:[[-62,-43,9,15],[-63,37,10,12],[-15,-63,9,13]]},
- frontier:{identity:'井戸の集落と北へ伸びる巡礼参道',sites:[[-19,23],[20,-23],[-44,32],[0,-25],[35,29],[-12,-6],[-17,-48],[10,-49]],spine:[[-8,57],[0,29],[0,8],[2,-16],[8,-58]],plots:[[-48,37,19,28],[-45,-25,17,19]],ridges:[[-64,-49,9,8],[62,42,10,6]]},
- temple:{identity:'正門・白石回廊・地下装置の三つの庭',sites:[[0,43],[-29,23],[27,36],[26,17],[-17,-25],[-32,-50],[26,-49],[-29,43],[12,-16]],spine:[[0,66],[0,8],[0,-13],[0,-40],[0,-62]],ridges:[[-62,-42,12,17],[59,-40,12,18],[-58,49,10,12]]},
- forest:{identity:'大河の渡しと樹林を縫う枝道',sites:[[-49,28],[-17,29],[-37,-29],[15,19],[-43,49],[42,-40],[38,38],[-15,-52],[1,-25]],spine:[[-53,19],[-16,17],[0,8],[19,8],[36,8],[44,-13],[30,-40]],water:[{id:'middle-river',x:22,z:0,width:9,depth:160,kind:'river'}],bridges:[{id:'forest-ford',x:22,z:8,width:12,depth:12}]},
- elf:{identity:'世界樹を囲む環状の根道',sites:[[0,-26],[-25,-42],[28,-39],[38,23],[-43,-12],[-31,31],[3,47],[-42,51],[13,31]],spine:[[0,8],[-17,8],[-37,0],[-40,-29],[-9,-47],[21,-47],[39,-18],[39,3],[23,13],[0,8]],water:[{id:'spirit-stream',x:60,z:0,width:7,depth:160,kind:'river'}],bridges:[{id:'root-bridge',x:60,z:8,width:10,depth:12}]},
- fortress:{identity:'北門の検問庭と左右の兵舎区',sites:[[0,-47],[-26,-27],[25,29],[24,-44],[-25,30],[-29,51],[-36,-55],[30,-24],[10,-13]],spine:[[0,72],[0,8],[0,-21],[0,-35]],ridges:[[-64,-41,11,22],[62,-40,12,24],[-61,37,11,16],[61,47,9,13]]},
- dwarf:{identity:'岩の間の坑夫街・三つの工房枝道',sites:[[2,49],[-26,29],[-29,-24],[17,25],[-16,-53],[20,-45],[31,47],[42,-24],[0,-20]],spine:[[0,72],[-9,43],[0,8],[-7,-14],[0,-36],[35,-39]],ridges:[[-63,-30,12,23],[64,-48,11,25],[-47,54,10,21],[57,19,9,19],[4,-72,8,22]]},
- blackridge:{identity:'水路を挟む共同市場と連合評議場',sites:[[-40,36],[-16,33],[33,27],[-24,-43],[41,-44],[23,-21],[-45,-24],[34,49],[-10,-23],[1,-9]],spine:[[-53,16],[-16,8],[0,8],[16,8],[36,8],[47,-17]],water:[{id:'common-canal',x:15,z:0,width:8,depth:160,kind:'canal'}],bridges:[{id:'market-bridge',x:15,z:8,width:11,depth:12}],ridges:[[-65,-48,10,18],[65,-50,10,22],[62,49,9,18]]},
+ farm:{identity:'畑から広場へ曲がる村道',spine:[[0,63],[5,38],[0,8],[-8,-16],[0,-62]],plots:[[-53,35,17,32],[-51,-11,18,22],[-28,50,18,20]]},
+ capital:{identity:'王城と市場を結ぶ大通り・東の大河',spine:[[0,74],[0,35],[0,8],[0,-8],[16,-8],[16,-48]],water:[{id:'great-river',x:60,z:0,width:12,depth:160,kind:'river'}],bridges:[{id:'east-gate',x:60,z:8,width:15,depth:12}]},
+ trade:{identity:'西向きの埠頭・海岸通りと丘の領主館',spine:[[-47,0],[-31,8],[0,8],[12,15],[48,14]],water:[{id:'western-sea',x:-66,z:0,width:28,depth:160,kind:'sea'}],bridges:[],dock:[-49,0,0]},
+ crime:{identity:'岩島の東埠頭・折れ曲がる裏通り',spine:[[49,0],[25,13],[0,8],[-15,18],[-10,43]],water:[{id:'island-sea',x:66,z:0,width:28,depth:160,kind:'sea'}],bridges:[],dock:[49,0,0],ridges:[[-62,-43,9,15],[-63,37,10,12],[-15,-63,9,13]]},
+ frontier:{identity:'井戸の集落と北へ伸びる巡礼参道',spine:[[-8,57],[0,29],[0,8],[2,-16],[8,-58]],plots:[[-48,37,19,28],[-45,-25,17,19]],ridges:[[-64,-49,9,8],[62,42,10,6]]},
+ temple:{identity:'正門・白石回廊・地下装置の三つの庭',spine:[[0,66],[0,8],[0,-13],[0,-40],[0,-62]],ridges:[[-62,-42,12,17],[59,-40,12,18],[-58,49,10,12]]},
+ forest:{identity:'大河の渡しと樹林を縫う枝道',spine:[[-53,19],[-16,17],[0,8],[19,8],[36,8],[44,-13],[30,-40]],water:[{id:'middle-river',x:22,z:0,width:9,depth:160,kind:'river'}],bridges:[{id:'forest-ford',x:22,z:8,width:12,depth:12}]},
+ elf:{identity:'世界樹を囲む環状の根道',spine:[[0,8],[-17,8],[-37,0],[-40,-29],[-9,-47],[21,-47],[39,-18],[39,3],[23,13],[0,8]],water:[{id:'spirit-stream',x:60,z:0,width:7,depth:160,kind:'river'}],bridges:[{id:'root-bridge',x:60,z:8,width:10,depth:12}]},
+ fortress:{identity:'北門の検問庭と左右の兵舎区',spine:[[0,72],[0,8],[0,-21],[0,-35]],ridges:[[-64,-41,11,22],[62,-40,12,24],[-61,37,11,16],[61,47,9,13]]},
+ dwarf:{identity:'岩の間の坑夫街・三つの工房枝道',spine:[[0,72],[-9,43],[0,8],[-7,-14],[0,-36],[35,-39]],ridges:[[-63,-30,12,23],[64,-48,11,25],[-47,54,10,21],[57,19,9,19],[4,-72,8,22]]},
+ blackridge:{identity:'水路を挟む共同市場と連合評議場',spine:[[-53,16],[-16,8],[0,8],[16,8],[36,8],[47,-17]],water:[{id:'common-canal',x:15,z:0,width:8,depth:160,kind:'canal'}],bridges:[{id:'market-bridge',x:15,z:8,width:11,depth:12}],ridges:[[-65,-48,10,18],[65,-50,10,22],[62,49,9,18]]},
 };
 const outdoor=/(SQUARE|FIELD|FARM|WELL|EDGE|FENCE|RIVER|POOL|WORLD_TREE|MAZE|NEST|PATH|HERB_GARDEN|ARCHERY_GROVE|BARRIER_STONE|NOTICE|BOARD|HORSE_TIE|HORSE_POST|WATERWAY|NEWSPAPER|DOCK|PORT|WALL)$/;
 const kindOf=r=>/(?:^|_)(INN|REST|GUEST|HUT)(?:_|$)/.test(r[0])?'inn':/STABLE|HORSE|BEAST/.test(r[0])?'stable':/BOARD|NOTICE|SQUARE|CHIEF|COUNCIL|COMMAND|OFFICE/.test(r[0])?'board':/FORGE|MAGE|ARCHERY|ENGINEER/.test(r[0])?'trainer':/MARKET|SHOP|APOTHECARY|BAKERY|REPAIR|SOUVENIR|GAMBLING|FORGER/.test(r[0])?'shop':/FIELD|SUPPLY|PORT|WAREHOUSE|GRANARY|SHIPYARD/.test(r[0])?'job':'landmark';
@@ -41,10 +43,11 @@ function addWaterObstacles(region){
 }
 export function createRegion(spec,sheet,sourceUrl){
  const [id,name,biome,color,worldPosition,description]=spec,layout=layouts[id],facilities=sheet.rows.filter(r=>/^LOC_/.test(r[0]||''));
- if(facilities.length!==layout.sites.length)throw new Error(`${id}: authored site count no longer matches source`);
+ const sites=facilitySites[id],sourceIds=new Set(facilities.map(r=>r[0]));
+ if(facilities.length!==Object.keys(sites).length||sourceIds.size!==facilities.length||Object.keys(sites).some(key=>!sourceIds.has(key)))throw new Error(`${id}: authored site IDs no longer match source`);
  const region={id,name,biome,color,worldPosition,description,size:streetPlans[id]?240:160,spawn:[0,0,8],identity:layout.identity,obstacles:[],objects:[],portals:[],source:{sheet:name,url:sheet.url||sourceUrl},terrain:{paths:[],water:layout.water||[],bridges:layout.bridges||[],ridges:(layout.ridges||[]).map(([x,z,radius,height])=>({x,z,radius,height})),plots:(layout.plots||[]).map(([x,z,width,depth])=>({x,z,width,depth,color:id==='farm'?'#b8a050':'#9b885a'})),trees:[]}};
  facilities.forEach((r,i)=>{
-  const [x,z]=layout.sites[i],kind=kindOf(r),built=!outdoor.test(r[0]),width=/CASTLE|COLOSSUS/.test(r[0])?15:biome==='city'?11:10,depth=/CASTLE|COLOSSUS/.test(r[0])?12:9,height=/CASTLE|MAGE_TOWER|COLOSSUS/.test(r[0])?8:['city','ruins'].includes(biome)?5:3.8;
+  const [x,z]=sites[r[0]],kind=kindOf(r),built=!outdoor.test(r[0]),width=/CASTLE|COLOSSUS/.test(r[0])?15:biome==='city'?11:10,depth=/CASTLE|COLOSSUS/.test(r[0])?12:9,height=/CASTLE|MAGE_TOWER|COLOSSUS/.test(r[0])?8:['city','ruins'].includes(biome)?5:3.8;
   const position=point(x,built?z+depth/2+3.5:z),asset=built?'building':kind==='board'?'sign':/WELL|POOL/.test(r[0])?'well':/FIELD|FARM/.test(r[0])?'field':/WORLD_TREE/.test(r[0])?'world-tree':'landmark';
   const o={id:r[0],name:r[1],kind,position,asset,source:{sheet:name,row:sheet.rows.indexOf(r)+1,url:sheet.url||sourceUrl,id:r[0]},description:r[3]||r[1],placement:'authored-geography'};
   if(built){o.buildingPosition=point(x,z);Object.assign(o,{width,depth,height,interior:{entrance:point(x,z+depth/2),floorY:0,openFront:true}});region.obstacles.push({id:`${o.id}:left`,x:x-width/2,z,width:.4,depth,height},{id:`${o.id}:right`,x:x+width/2,z,width:.4,depth,height},{id:`${o.id}:back`,x,z:z-depth/2,width,depth:.4,height});}
@@ -53,6 +56,7 @@ export function createRegion(spec,sheet,sourceUrl){
  region.objects.push({id:`${id}:trainer`,name:id==='farm'?'旅支度の稽古場':'地域の師匠',kind:'trainer',position:[8,0,17],asset:'stall',skills:['combat','investigation','riding','magic','broom','negotiation','crafting','tracking','stealth','survival'],description:'学んだ技能は、旅の手段と事件への関わり方を変える。',placement:'authored-service'});
  region.objects.push({id:`${id}:board`,name:'旅人の掲示板',kind:'board',position:[-7,0,8],asset:'sign',description:'この土地に届いた知らせと、地元の仕事が掲示されている。',placement:'authored-service'});
  addDwellings(region);
+ authorThresholds(region);
  region.terrain.water=region.terrain.water.map(w=>w.kind==='sea'?{...w,depth:region.size,width:region.size/2-52,x:Math.sign(w.x)*(52+(region.size/2-52)/2)}:{...w,depth:region.size});
  addWaterObstacles(region);
  region.terrain.boundaries=(spatialBoundaries[id]||[]).map(({purpose,...body})=>({...body,id:`${id}:${body.id}`}));

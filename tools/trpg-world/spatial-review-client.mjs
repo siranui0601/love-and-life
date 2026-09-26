@@ -7,6 +7,7 @@ import {Color3} from '@babylonjs/core/Maths/math.color.js';
 document.body.innerHTML=`<header><strong>空間設計レビュー</strong> <span>実runtimeの地形・建物。NPC生活の実走証明ではありません。</span></header><aside><label>地域 <select id="region"></select></label><p id="purpose"></p><label>生活・物流の動線 <select id="flow"></select></label><p id="reason"></p><button id="previous">前の地点</button> <button id="next">次の地点</button><p id="point"></p><button id="overview">俯瞰</button> <button id="arrival">王都：到着側</button> <button id="reveal">王都：側道</button><p>右ドラッグで視点、ホイールで距離。線は設計上の歩行経路であり、貨物の生成を意味しません。</p></aside><canvas id="canvas"></canvas>`;
 const style=document.createElement('style');style.textContent='html,body{margin:0;height:100%;font:14px sans-serif;background:#242725;color:#eee}header{height:40px;padding:12px;box-sizing:border-box}header span{margin-left:20px;color:#bbb}aside{position:absolute;top:40px;bottom:0;width:250px;padding:16px;box-sizing:border-box;background:#242725;z-index:2}canvas{position:absolute;left:250px;top:40px;width:calc(100% - 250px);height:calc(100% - 40px)}select{display:block;width:100%;margin:8px 0;padding:6px}button{padding:7px;margin-bottom:8px}p{line-height:1.6;color:#ccc}';document.head.append(style);
 const el=id=>document.getElementById(id),world=new WorldScene(el('canvas'),()=>{}),content=await(await fetch('/spatial-review/content')).json();
+const siteLabel=document.createElement('label');siteLabel.textContent='建物の入口 ';const siteSelect=document.createElement('select');siteSelect.id='site';siteLabel.append(siteSelect);document.querySelector('aside').append(siteLabel);
 world.camera.upperRadiusLimit=240; // Authoring overview only; leave the player camera unchanged.
 let selected,flow,points=[],cursor=0,lines=[];
 function option(select,value,label){const o=document.createElement('option');o.value=value;o.textContent=label;select.append(o);}
@@ -19,7 +20,8 @@ function selectFlow(){
  el('reason').textContent=flow?`${flow.reason}。${flow.window}。${flow.stops.map(id=>selected.objects.find(o=>o.id===id)?.name||id).join(' → ')}`:'機能地区の設計接続は未実装';
  el('point').textContent='俯瞰：線の交差点と施設の入口を確認';camera(selected.spawn,110);
 }
-async function selectRegion(){selected=content.regions.find(r=>r.id===el('region').value);await world.loadRegion(selected);el('purpose').textContent=selected.settlement?.role||selected.identity;el('flow').replaceChildren();for(const f of selected.settlement?.flows||[])option(el('flow'),f.id,`${f.kind} / ${f.id}`);selectFlow();}
+async function selectRegion(){selected=content.regions.find(r=>r.id===el('region').value);await world.loadRegion(selected);el('purpose').textContent=selected.settlement?.role||selected.identity;el('flow').replaceChildren();for(const f of selected.settlement?.flows||[])option(el('flow'),f.id,`${f.kind} / ${f.id}`);siteSelect.replaceChildren();for(const o of selected.objects.filter(o=>o.interior?.threshold))option(siteSelect,o.id,o.name);selectFlow();}
+siteSelect.onchange=()=>{const o=selected.objects.find(o=>o.id===siteSelect.value);if(o){camera(o.interior.entrance,10);world.camera.beta=1.42;el('point').textContent=`${o.name}：正面の入口と室内の見通し`;}};
 for(const r of content.regions)option(el('region'),r.id,r.name);
 el('region').onchange=selectRegion;el('flow').onchange=selectFlow;
 el('previous').onclick=()=>{cursor=Math.max(0,cursor-1);showPoint();};el('next').onclick=()=>{cursor=Math.min(points.length-1,cursor+1);showPoint();};
