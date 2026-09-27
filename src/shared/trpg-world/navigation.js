@@ -16,6 +16,7 @@ export function canOccupy(region, position, bodyRadius = radius) {
   if (!validPosition(position) || !Number.isFinite(bodyRadius) || bodyRadius < 0) return false;
   const half = (region.size || 160) / 2 - bodyRadius;
   if (Math.abs(position[0]) > half || Math.abs(position[2]) > half || position[1] < 0 || position[1] > 24) return false;
+  if(region.terrain?.enclosure?.ceilingY!==undefined&&position[1]+1.6>region.terrain.enclosure.ceilingY)return false;
   // Keep a tiny numerical tolerance at an AABB boundary. Swept steps can land
   // one ULP inside an otherwise valid tangent, which would make a doorway or
   // path corner permanently sticky even though the authored clearance is safe.

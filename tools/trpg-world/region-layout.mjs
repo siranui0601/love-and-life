@@ -3,6 +3,7 @@ import {bindSettlementDesign,spatialBoundaries} from './settlement-design.mjs';
 import {addDwellings} from './residence-authoring.mjs';
 import {authorThresholds} from './threshold-authoring.mjs';
 import {facilitySites} from './facility-sites.mjs';
+import {encloseCavern} from './enclosed-space.mjs';
 import {canOccupy,findPath,distance} from '../../src/shared/trpg-world/navigation.js';
 
 // Coordinates are authored staging, not coordinates claimed by the source sheet.
@@ -17,7 +18,7 @@ const layouts={
  forest:{identity:'大河の渡しと樹林を縫う枝道',spine:[[-53,19],[-16,17],[0,8],[19,8],[36,8],[44,-13],[30,-40]],water:[{id:'middle-river',x:22,z:0,width:9,depth:160,kind:'river'}],bridges:[{id:'forest-ford',x:22,z:8,width:12,depth:12}]},
  elf:{identity:'世界樹を囲む環状の根道',spine:[[0,8],[-17,8],[-37,0],[-40,-29],[-9,-47],[21,-47],[39,-18],[39,3],[23,13],[0,8]],water:[{id:'spirit-stream',x:60,z:0,width:7,depth:160,kind:'river'}],bridges:[{id:'root-bridge',x:60,z:8,width:10,depth:12}]},
  fortress:{identity:'北門の検問庭と左右の兵舎区',spine:[[0,72],[0,8],[0,-21],[0,-35]],ridges:[[-64,-41,11,22],[62,-40,12,24],[-61,37,11,16],[61,47,9,13]]},
- dwarf:{identity:'岩の間の坑夫街・三つの工房枝道',spine:[[0,72],[-9,43],[0,8],[-7,-14],[0,-36],[35,-39]],ridges:[[-63,-30,12,23],[64,-48,11,25],[-47,54,10,21],[57,19,9,19],[4,-72,8,22]]},
+ dwarf:{identity:'居住洞・工房洞・採掘坑を結ぶ地下の坑道網',spine:[[0,72],[-9,43],[0,8],[-7,-14],[0,-36],[35,-39]],ridges:[]},
  blackridge:{identity:'水路を挟む共同市場と連合評議場',spine:[[-53,16],[-16,8],[0,8],[16,8],[36,8],[47,-17]],water:[{id:'common-canal',x:15,z:0,width:8,depth:160,kind:'canal'}],bridges:[{id:'market-bridge',x:15,z:8,width:11,depth:12}],ridges:[[-65,-48,10,18],[65,-50,10,22],[62,49,9,18]]},
 };
 const outdoor=/(SQUARE|FIELD|FARM|WELL|EDGE|FENCE|RIVER|POOL|WORLD_TREE|MAZE|NEST|PATH|HERB_GARDEN|ARCHERY_GROVE|BARRIER_STONE|NOTICE|BOARD|HORSE_TIE|HORSE_POST|WATERWAY|NEWSPAPER|DOCK|PORT|WALL)$/;
@@ -45,7 +46,7 @@ export function createRegion(spec,sheet,sourceUrl){
  const [id,name,biome,color,worldPosition,description]=spec,layout=layouts[id],facilities=sheet.rows.filter(r=>/^LOC_/.test(r[0]||''));
  const sites=facilitySites[id],sourceIds=new Set(facilities.map(r=>r[0]));
  if(facilities.length!==Object.keys(sites).length||sourceIds.size!==facilities.length||Object.keys(sites).some(key=>!sourceIds.has(key)))throw new Error(`${id}: authored site IDs no longer match source`);
- const region={id,name,biome,color,worldPosition,description,size:streetPlans[id]?240:160,spawn:[0,0,8],identity:layout.identity,obstacles:[],objects:[],portals:[],source:{sheet:name,url:sheet.url||sourceUrl},terrain:{paths:[],water:layout.water||[],bridges:layout.bridges||[],ridges:(layout.ridges||[]).map(([x,z,radius,height])=>({x,z,radius,height})),plots:(layout.plots||[]).map(([x,z,width,depth])=>({x,z,width,depth,color:id==='farm'?'#b8a050':'#9b885a'})),trees:[]}};
+ const region={id,name,biome,color,worldPosition,description,size:streetPlans[id]&&id!=='dwarf'?240:160,spawn:[0,0,8],identity:layout.identity,obstacles:[],objects:[],portals:[],source:{sheet:name,url:sheet.url||sourceUrl},terrain:{paths:[],water:layout.water||[],bridges:layout.bridges||[],ridges:(layout.ridges||[]).map(([x,z,radius,height])=>({x,z,radius,height})),plots:(layout.plots||[]).map(([x,z,width,depth])=>({x,z,width,depth,color:id==='farm'?'#b8a050':'#9b885a'})),trees:[]}};
  facilities.forEach((r,i)=>{
   const [x,z]=sites[r[0]],kind=kindOf(r),built=!outdoor.test(r[0]),width=/CASTLE|COLOSSUS/.test(r[0])?15:biome==='city'?11:10,depth=/CASTLE|COLOSSUS/.test(r[0])?12:9,height=/CASTLE|MAGE_TOWER|COLOSSUS/.test(r[0])?8:['city','ruins'].includes(biome)?5:3.8;
   const position=point(x,built?z+depth/2+3.5:z),asset=built?'building':kind==='board'?'sign':/WELL|POOL/.test(r[0])?'well':/FIELD|FARM/.test(r[0])?'field':/WORLD_TREE/.test(r[0])?'world-tree':'landmark';
@@ -71,7 +72,7 @@ export function createPortal(region,target,route){
  else for(const radius of [70,66,61,56,51,46]){for(const turn of [0,.12,-.12,.24,-.24,.36,-.36]){const candidate=point(Math.round(Math.cos(angle+turn)*radius),Math.round(Math.sin(angle+turn)*radius));if(canOccupy(navigation,candidate)&&findPath(navigation,region.spawn,candidate).length){position=candidate;break;}}if(position)break;}
  if(!position)throw new Error(`${region.id}/${route.id}: no reachable exit`);
  const approach=[...position];
- if(streetPlans[region.id]&&!route.modes.includes('boat')){
+ if(streetPlans[region.id]&&region.id!=='dwarf'&&!route.modes.includes('boat')){
   for(const turn of [.18,-.18,0]){const a=Math.atan2(position[2],position[0])+turn,candidate=point(Math.round(Math.cos(a)*106),Math.round(Math.sin(a)*106));
    if(canOccupy(navigation,candidate)&&findPath(navigation,approach,candidate).length){position=candidate;break;}
   }
@@ -91,12 +92,13 @@ export function finalizeRegions(regions,npcs,events){
   for(let i=1;i<spine.length;i++)addRoad(region,spine[i-1],spine[i],region.id==='capital'?5:3.5,'main');
   for(const [kind,width,points] of streetPlans[region.id]||[]){for(let i=1;i<points.length;i++)addRoad(region,point(...points[i-1]),point(...points[i]),width,kind);}
   const targets=[...region.objects.map(o=>({id:o.id,position:o.position})),...region.portals.map(p=>({...p,position:p.approach})),...events.filter(e=>e.region===region.id)];
-  for(const target of targets){const anchors=[region.spawn,...region.terrain.paths.flatMap(p=>p.points)].sort((a,b)=>distance(a,target.position)-distance(b,target.position));addRoad(region,anchors[0],target.position,target.routeId?4:3.2,target.routeId?'exit':'access');}
+  for(const target of targets){const anchors=[region.spawn,...region.terrain.paths.flatMap(p=>p.points)].filter(p=>canOccupy(roadRegion(region,target.routeId?4:3.2),p)).sort((a,b)=>distance(a,target.position)-distance(b,target.position));addRoad(region,anchors[0],target.position,target.routeId?4:3.2,target.routeId?'exit':'access');}
   for(const portal of region.portals)if(distance(portal.approach,portal.position)>5)addRoad(region,portal.approach,portal.position,4,'approach');
   region.spatial={geometryRevision:'graybox-streets-v2',stage:streetPlans[region.id]?'street-cluster':'legacy-blockout',arrivalPolicy:'reciprocal-route-mouth'};
   bindSettlementDesign(region);
+  encloseCavern(region,npcs,events);
   const reserved=[region.spawn,...targets.map(o=>o.position),...npcs.filter(n=>n.region===region.id).flatMap(n=>[n.home,n.work])],built=region.objects.filter(o=>o.buildingPosition).map(footprint);
-  const count=['forest','grove'].includes(region.biome)?90:region.biome==='city'?20:['cave','ruins','snow','volcanic'].includes(region.biome)?22:46;
+  const count=region.terrain.enclosure?0:['forest','grove'].includes(region.biome)?90:region.biome==='city'?20:['cave','ruins','snow','volcanic'].includes(region.biome)?22:46;
   for(let i=0;i<400&&region.terrain.trees.length<count;i++){
    const x=((i*47+region.id.length*19)%149)-74,z=((i*71+23)%149)-74,p=point(x,z),rock=['desert','cave','ruins','volcanic'].includes(region.biome),clearance=rock?3.5:4;
    if(reserved.some(q=>distance(p,q)<6)||[...region.obstacles,...built].some(o=>Math.abs(x-o.x)<o.width/2+clearance&&Math.abs(z-o.z)<o.depth/2+clearance))continue;

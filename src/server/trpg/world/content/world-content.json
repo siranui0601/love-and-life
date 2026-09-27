@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-0d38993b18b0",
+  "revision": "world-10d-638eb7f05795",
   "time": {
     "days": 10,
     "scale": 60,
@@ -5050,6 +5050,38 @@
           "height": 4
         },
         {
+          "id": "capital:lower-court-west",
+          "x": -49,
+          "z": 26,
+          "width": 1,
+          "depth": 14,
+          "height": 4
+        },
+        {
+          "id": "capital:lower-court-return",
+          "x": -43,
+          "z": 17,
+          "width": 13,
+          "depth": 1,
+          "height": 4
+        },
+        {
+          "id": "capital:tenement-yard-east",
+          "x": -19,
+          "z": 13,
+          "width": 1,
+          "depth": 16,
+          "height": 4
+        },
+        {
+          "id": "capital:lower-garden-wall",
+          "x": -30,
+          "z": 40,
+          "width": 10,
+          "depth": 1,
+          "height": 3.5
+        },
+        {
           "id": "tree:capital:foliage:4",
           "x": -51,
           "z": -65,
@@ -6689,6 +6721,11 @@
                 8
               ],
               [
+                -16,
+                0,
+                2
+              ],
+              [
                 -25,
                 0,
                 0
@@ -6962,6 +6999,11 @@
                 -48,
                 0,
                 42
+              ],
+              [
+                -34,
+                0,
+                38
               ],
               [
                 -28,
@@ -7358,7 +7400,17 @@
                 8
               ],
               [
-                -26,
+                -16,
+                0,
+                2
+              ],
+              [
+                -24,
+                0,
+                4
+              ],
+              [
+                -24,
                 0,
                 16
               ],
@@ -7776,6 +7828,38 @@
             "width": 1,
             "depth": 18,
             "height": 4
+          },
+          {
+            "id": "capital:lower-court-west",
+            "x": -49,
+            "z": 26,
+            "width": 1,
+            "depth": 14,
+            "height": 4
+          },
+          {
+            "id": "capital:lower-court-return",
+            "x": -43,
+            "z": 17,
+            "width": 13,
+            "depth": 1,
+            "height": 4
+          },
+          {
+            "id": "capital:tenement-yard-east",
+            "x": -19,
+            "z": 13,
+            "width": 1,
+            "depth": 16,
+            "height": 4
+          },
+          {
+            "id": "capital:lower-garden-wall",
+            "x": -30,
+            "z": 40,
+            "width": 10,
+            "depth": 1,
+            "height": 3.5
           }
         ]
       },
@@ -8156,14 +8240,14 @@
                     42
                   ],
                   [
-                    -41.333333333333336,
+                    -41,
                     0,
-                    40.666666666666664
+                    40
                   ],
                   [
-                    -34.66666666666667,
+                    -34,
                     0,
-                    39.333333333333336
+                    38
                   ],
                   [
                     -28,
@@ -8221,7 +8305,7 @@
                     66
                   ]
                 ],
-                "metres": 162.13447782863375
+                "metres": 162.29861955282365
               },
               {
                 "fromId": "LOC_CAP_STABLE",
@@ -8416,7 +8500,12 @@
                   [
                     -20.5,
                     0,
-                    4
+                    1
+                  ],
+                  [
+                    -16,
+                    0,
+                    2
                   ],
                   [
                     -16,
@@ -8454,7 +8543,7 @@
                     -12
                   ]
                 ],
-                "metres": 155.04693179698538
+                "metres": 158.224881675486
               },
               {
                 "fromId": "LOC_CAP_MARKET",
@@ -8496,9 +8585,14 @@
                     8
                   ],
                   [
+                    -16,
+                    0,
+                    2
+                  ],
+                  [
                     -20.5,
                     0,
-                    4
+                    1
                   ],
                   [
                     -25,
@@ -8521,7 +8615,7 @@
                     -20
                   ]
                 ],
-                "metres": 68.06657897329309
+                "metres": 71.24452885179367
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -8751,14 +8845,14 @@
                     42
                   ],
                   [
-                    -41.333333333333336,
+                    -41,
                     0,
-                    40.666666666666664
+                    40
                   ],
                   [
-                    -34.66666666666667,
+                    -34,
                     0,
-                    39.333333333333336
+                    38
                   ],
                   [
                     -28,
@@ -8816,7 +8910,7 @@
                     66
                   ]
                 ],
-                "metres": 162.13447782863375
+                "metres": 162.29861955282365
               },
               {
                 "fromId": "LOC_CAP_STABLE",
@@ -8878,14 +8972,14 @@
                     38
                   ],
                   [
-                    -34.66666666666667,
+                    -34,
                     0,
-                    39.333333333333336
+                    38
                   ],
                   [
-                    -41.333333333333336,
+                    -41,
                     0,
-                    40.666666666666664
+                    40
                   ],
                   [
                     -39,
@@ -8893,7 +8987,7 @@
                     36
                   ]
                 ],
-                "metres": 87.71415828007491
+                "metres": 86.65152680727473
               },
               {
                 "fromId": "LOC_CAP_LOWER_INN",
@@ -8905,14 +8999,14 @@
                     36
                   ],
                   [
-                    -41.333333333333336,
+                    -41,
                     0,
-                    40.666666666666664
+                    40
                   ],
                   [
-                    -34.66666666666667,
+                    -34,
                     0,
-                    39.333333333333336
+                    38
                   ],
                   [
                     -28,
@@ -8985,7 +9079,7 @@
                     -12
                   ]
                 ],
-                "metres": 105.51572709796882
+                "metres": 104.45309562516864
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -9361,14 +9455,14 @@
                     42
                   ],
                   [
-                    -41.333333333333336,
+                    -41,
                     0,
-                    40.666666666666664
+                    40
                   ],
                   [
-                    -34.66666666666667,
+                    -34,
                     0,
-                    39.333333333333336
+                    38
                   ],
                   [
                     -28,
@@ -9446,7 +9540,7 @@
                     37
                   ]
                 ],
-                "metres": 133.89959384648873
+                "metres": 134.06373557067863
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -14475,12 +14569,260 @@
           "height": 3.8
         },
         {
+          "id": "crime:quay-tenement:left",
+          "x": -2,
+          "z": -6,
+          "width": 0.4,
+          "depth": 7,
+          "height": 3.8
+        },
+        {
+          "id": "crime:quay-tenement:right",
+          "x": 6,
+          "z": -6,
+          "width": 0.4,
+          "depth": 7,
+          "height": 3.8
+        },
+        {
+          "id": "crime:quay-tenement:back",
+          "x": 2,
+          "z": -9.5,
+          "width": 8,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "crime:scribes-tenement:left",
+          "x": -35,
+          "z": -2,
+          "width": 0.4,
+          "depth": 7,
+          "height": 3.8
+        },
+        {
+          "id": "crime:scribes-tenement:right",
+          "x": -27,
+          "z": -2,
+          "width": 0.4,
+          "depth": 7,
+          "height": 3.8
+        },
+        {
+          "id": "crime:scribes-tenement:back",
+          "x": -31,
+          "z": -5.5,
+          "width": 8,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_BACK_INN:front:left",
+          "x": 10.7,
+          "z": 38.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_BACK_INN:front:right",
+          "x": 17.3,
+          "z": 38.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_WEAPON_MARKET:front:left",
+          "x": -10.3,
+          "z": -18.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_WEAPON_MARKET:front:right",
+          "x": -3.7,
+          "z": -18.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_INFO_STREET:front:left",
+          "x": -36.3,
+          "z": 27.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_INFO_STREET:front:right",
+          "x": -29.7,
+          "z": 27.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_SLAVE_MARKET:front:left",
+          "x": -37.3,
+          "z": -22.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_SLAVE_MARKET:front:right",
+          "x": -30.7,
+          "z": -22.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_FORGER:front:left",
+          "x": 18.7,
+          "z": -36.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_FORGER:front:right",
+          "x": 25.3,
+          "z": -36.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_WAREHOUSE:front:left",
+          "x": 39.5,
+          "z": 34.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_WAREHOUSE:front:right",
+          "x": 46.5,
+          "z": 34.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_STABLE:front:left",
+          "x": -27.5,
+          "z": 51.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_STABLE:front:right",
+          "x": -20.5,
+          "z": 51.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_GAMBLING:front:left",
+          "x": -2.3,
+          "z": 58.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_CRIME_GAMBLING:front:right",
+          "x": 4.3,
+          "z": 58.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "crime:quay-tenement:front:left",
+          "x": -0.4500000000000002,
+          "z": -2.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "crime:quay-tenement:front:right",
+          "x": 4.45,
+          "z": -2.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "crime:scribes-tenement:front:left",
+          "x": -33.45,
+          "z": 1.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "crime:scribes-tenement:front:right",
+          "x": -28.55,
+          "z": 1.5,
+          "width": 3.1,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
           "id": "water:island-sea:0",
           "x": 86,
           "z": 0,
           "width": 68,
           "depth": 240,
           "height": 0.15
+        },
+        {
+          "id": "crime:warehouse-loading-return",
+          "x": 32,
+          "z": 28,
+          "width": 1,
+          "depth": 18,
+          "height": 4
+        },
+        {
+          "id": "crime:inn-service-yard",
+          "x": 9,
+          "z": 26,
+          "width": 13,
+          "depth": 1,
+          "height": 3.5
+        },
+        {
+          "id": "crime:market-court-return",
+          "x": -17,
+          "z": -19,
+          "width": 1,
+          "depth": 18,
+          "height": 4
+        },
+        {
+          "id": "crime:western-court",
+          "x": -43,
+          "z": 22,
+          "width": 1,
+          "depth": 20,
+          "height": 4
+        },
+        {
+          "id": "crime:north-yard-return",
+          "x": -34,
+          "z": 10,
+          "width": 16,
+          "depth": 1,
+          "height": 3.5
         },
         {
           "id": "ridge:-62:-43",
@@ -14539,14 +14881,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:crime:foliage:9",
-          "x": -3,
-          "z": -8,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:crime:foliage:10",
           "x": 44,
           "z": 63,
@@ -14558,14 +14892,6 @@
           "id": "tree:crime:foliage:11",
           "x": -58,
           "z": -15,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:crime:foliage:15",
-          "x": -19,
-          "z": -29,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -14587,14 +14913,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:crime:foliage:24",
-          "x": -43,
-          "z": 14,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:crime:foliage:25",
           "x": 4,
           "z": -64,
@@ -14606,14 +14924,6 @@
           "id": "tree:crime:foliage:27",
           "x": -51,
           "z": -71,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:crime:foliage:28",
-          "x": -4,
-          "z": 0,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -14659,14 +14969,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:crime:foliage:34",
-          "x": -20,
-          "z": -21,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:crime:foliage:35",
           "x": 27,
           "z": 50,
@@ -14678,14 +14980,6 @@
           "id": "tree:crime:foliage:40",
           "x": -36,
           "z": -42,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:crime:foliage:43",
-          "x": -44,
-          "z": 22,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -14742,14 +15036,6 @@
           "id": "tree:crime:foliage:52",
           "x": -68,
           "z": 65,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:crime:foliage:53",
-          "x": -21,
-          "z": -13,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -14873,6 +15159,62 @@
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:90",
+          "x": -70,
+          "z": -68,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:92",
+          "x": 24,
+          "z": 74,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:94",
+          "x": -31,
+          "z": 67,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:95",
+          "x": 16,
+          "z": -11,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:100",
+          "x": -47,
+          "z": 46,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:101",
+          "x": 0,
+          "z": -32,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:crime:foliage:105",
+          "x": 39,
+          "z": -46,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
         }
       ],
       "objects": [
@@ -14893,7 +15235,8 @@
             "id": "LOC_CRIME_DOCK"
           },
           "description": "犯罪都市入出港、密輸、搬送",
-          "placement": "authored-geography"
+          "placement": "authored-geography",
+          "districtId": "quays"
         },
         {
           "id": "LOC_CRIME_BACK_INN",
@@ -14928,8 +15271,51 @@
               38.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_BACK_INN:front:left",
+                  "x": 10.7,
+                  "z": 38.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_BACK_INN:front:right",
+                  "x": 17.3,
+                  "z": 38.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                14,
+                0,
+                40.5
+              ],
+              "inside": [
+                14,
+                0,
+                36.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "黒灯亭",
+            "position": [
+              14,
+              3.4,
+              38.75
+            ],
+            "width": 6,
+            "height": 0.75
+          },
+          "districtId": "lodging"
         },
         {
           "id": "LOC_CRIME_WEAPON_MARKET",
@@ -14964,8 +15350,51 @@
               -18.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_WEAPON_MARKET:front:left",
+                  "x": -10.3,
+                  "z": -18.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_WEAPON_MARKET:front:right",
+                  "x": -3.7,
+                  "z": -18.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -7,
+                0,
+                -16.5
+              ],
+              "inside": [
+                -7,
+                0,
+                -20.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "武器密売市場",
+            "position": [
+              -7,
+              3.4,
+              -18.25
+            ],
+            "width": 6,
+            "height": 0.75
+          },
+          "districtId": "exchange"
         },
         {
           "id": "LOC_CRIME_INFO_STREET",
@@ -15000,8 +15429,41 @@
               27.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_INFO_STREET:front:left",
+                  "x": -36.3,
+                  "z": 27.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_INFO_STREET:front:right",
+                  "x": -29.7,
+                  "z": 27.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -33,
+                0,
+                29.5
+              ],
+              "inside": [
+                -33,
+                0,
+                25.5
+              ]
+            }
+          },
+          "districtId": "exchange"
         },
         {
           "id": "LOC_CRIME_SLAVE_MARKET",
@@ -15036,8 +15498,51 @@
               -22.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_SLAVE_MARKET:front:left",
+                  "x": -37.3,
+                  "z": -22.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_SLAVE_MARKET:front:right",
+                  "x": -30.7,
+                  "z": -22.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -34,
+                0,
+                -20.5
+              ],
+              "inside": [
+                -34,
+                0,
+                -24.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "人買い市場",
+            "position": [
+              -34,
+              3.4,
+              -22.25
+            ],
+            "width": 6,
+            "height": 0.75
+          },
+          "districtId": "exchange"
         },
         {
           "id": "LOC_CRIME_FORGER",
@@ -15072,8 +15577,41 @@
               -36.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_FORGER:front:left",
+                  "x": 18.7,
+                  "z": -36.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_FORGER:front:right",
+                  "x": 25.3,
+                  "z": -36.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                22,
+                0,
+                -34.5
+              ],
+              "inside": [
+                22,
+                0,
+                -38.5
+              ]
+            }
+          },
+          "districtId": "exchange"
         },
         {
           "id": "LOC_CRIME_WAREHOUSE",
@@ -15108,8 +15646,41 @@
               34.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_WAREHOUSE:front:left",
+                  "x": 39.5,
+                  "z": 34.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_WAREHOUSE:front:right",
+                  "x": 46.5,
+                  "z": 34.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                43,
+                0,
+                36.5
+              ],
+              "inside": [
+                43,
+                0,
+                32.5
+              ]
+            }
+          },
+          "districtId": "quays"
         },
         {
           "id": "LOC_CRIME_STABLE",
@@ -15144,11 +15715,44 @@
               51.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_STABLE:front:left",
+                  "x": -27.5,
+                  "z": 51.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_STABLE:front:right",
+                  "x": -20.5,
+                  "z": 51.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -24,
+                0,
+                53.5
+              ],
+              "inside": [
+                -24,
+                0,
+                49.5
+              ]
+            }
           },
           "skills": [
             "riding"
-          ]
+          ],
+          "districtId": "lodging"
         },
         {
           "id": "LOC_CRIME_GAMBLING",
@@ -15183,8 +15787,51 @@
               58.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_CRIME_GAMBLING:front:left",
+                  "x": -2.3,
+                  "z": 58.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_CRIME_GAMBLING:front:right",
+                  "x": 4.3,
+                  "z": 58.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                1,
+                0,
+                60.5
+              ],
+              "inside": [
+                1,
+                0,
+                56.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "賭場",
+            "position": [
+              1,
+              3.4,
+              58.75
+            ],
+            "width": 6,
+            "height": 0.75
+          },
+          "districtId": "lodging"
         },
         {
           "id": "crime:trainer",
@@ -15223,6 +15870,132 @@
           "asset": "sign",
           "description": "この土地に届いた知らせと、地元の仕事が掲示されている。",
           "placement": "authored-service"
+        },
+        {
+          "id": "crime:quay-tenement",
+          "name": "港裏の借家",
+          "kind": "residence",
+          "asset": "building",
+          "position": [
+            2,
+            0,
+            1
+          ],
+          "buildingPosition": [
+            2,
+            0,
+            -6
+          ],
+          "width": 8,
+          "depth": 7,
+          "height": 3.8,
+          "interior": {
+            "entrance": [
+              2,
+              0,
+              -2.5
+            ],
+            "floorY": 0,
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "crime:quay-tenement:front:left",
+                  "x": -0.4500000000000002,
+                  "z": -2.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "crime:quay-tenement:front:right",
+                  "x": 4.45,
+                  "z": -2.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                2,
+                0,
+                -0.5
+              ],
+              "inside": [
+                2,
+                0,
+                -4.5
+              ]
+            }
+          },
+          "description": "住民の生活に使われている家。通りに入口がある。",
+          "districtId": "lodging",
+          "placement": "authored-household"
+        },
+        {
+          "id": "crime:scribes-tenement",
+          "name": "情報街の長屋",
+          "kind": "residence",
+          "asset": "building",
+          "position": [
+            -31,
+            0,
+            5
+          ],
+          "buildingPosition": [
+            -31,
+            0,
+            -2
+          ],
+          "width": 8,
+          "depth": 7,
+          "height": 3.8,
+          "interior": {
+            "entrance": [
+              -31,
+              0,
+              1.5
+            ],
+            "floorY": 0,
+            "openFront": false,
+            "threshold": {
+              "use": "domestic",
+              "opening": 1.8,
+              "walls": [
+                {
+                  "id": "crime:scribes-tenement:front:left",
+                  "x": -33.45,
+                  "z": 1.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "crime:scribes-tenement:front:right",
+                  "x": -28.55,
+                  "z": 1.5,
+                  "width": 3.1,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -31,
+                0,
+                3.5
+              ],
+              "inside": [
+                -31,
+                0,
+                -0.5
+              ]
+            }
+          },
+          "description": "住民の生活に使われている家。通りに入口がある。",
+          "districtId": "exchange",
+          "placement": "authored-household"
         }
       ],
       "portals": [
@@ -15535,7 +16308,17 @@
                 22
               ],
               [
-                6,
+                0,
+                0,
+                24
+              ],
+              [
+                0,
+                0,
+                30
+              ],
+              [
+                8,
                 0,
                 42
               ],
@@ -15720,6 +16503,40 @@
             ],
             "width": 3.2,
             "kind": "access"
+          },
+          {
+            "id": "crime:road:26",
+            "points": [
+              [
+                0,
+                0,
+                8
+              ],
+              [
+                2,
+                0,
+                1
+              ]
+            ],
+            "width": 3.2,
+            "kind": "access"
+          },
+          {
+            "id": "crime:road:27",
+            "points": [
+              [
+                -19,
+                0,
+                5
+              ],
+              [
+                -31,
+                0,
+                5
+              ]
+            ],
+            "width": 3.2,
+            "kind": "access"
           }
         ],
         "water": [
@@ -15792,15 +16609,6 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "crime:foliage:9",
-            "x": -3,
-            "z": -8,
-            "height": 7.3,
-            "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "crime:foliage:10",
             "x": 44,
             "z": 63,
@@ -15815,15 +16623,6 @@
             "z": -15,
             "height": 9.9,
             "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "crime:foliage:15",
-            "x": -19,
-            "z": -29,
-            "height": 9.9,
-            "asset": "town/tree-high.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
           },
@@ -15846,15 +16645,6 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "crime:foliage:24",
-            "x": -43,
-            "z": 14,
-            "height": 6,
-            "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "crime:foliage:25",
             "x": 4,
             "z": -64,
@@ -15869,15 +16659,6 @@
             "z": -71,
             "height": 9.9,
             "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "crime:foliage:28",
-            "x": -4,
-            "z": 0,
-            "height": 6,
-            "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
           },
@@ -15927,15 +16708,6 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "crime:foliage:34",
-            "x": -20,
-            "z": -21,
-            "height": 8.6,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "crime:foliage:35",
             "x": 27,
             "z": 50,
@@ -15949,15 +16721,6 @@
             "x": -36,
             "z": -42,
             "height": 6,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "crime:foliage:43",
-            "x": -44,
-            "z": 22,
-            "height": 9.9,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
@@ -16021,15 +16784,6 @@
             "x": -68,
             "z": 65,
             "height": 6,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "crime:foliage:53",
-            "x": -21,
-            "z": -13,
-            "height": 7.3,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
@@ -16168,23 +16922,136 @@
             "asset": "town/tree-high.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:90",
+            "x": -70,
+            "z": -68,
+            "height": 8.6,
+            "asset": "town/tree-high.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:92",
+            "x": 24,
+            "z": 74,
+            "height": 6,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:94",
+            "x": -31,
+            "z": 67,
+            "height": 8.6,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:95",
+            "x": 16,
+            "z": -11,
+            "height": 9.9,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:100",
+            "x": -47,
+            "z": 46,
+            "height": 6,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:101",
+            "x": 0,
+            "z": -32,
+            "height": 7.3,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:105",
+            "x": 39,
+            "z": -46,
+            "height": 7.3,
+            "asset": "town/tree-high.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
           }
         ],
-        "boundaries": []
+        "boundaries": [
+          {
+            "id": "crime:warehouse-loading-return",
+            "x": 32,
+            "z": 28,
+            "width": 1,
+            "depth": 18,
+            "height": 4
+          },
+          {
+            "id": "crime:inn-service-yard",
+            "x": 9,
+            "z": 26,
+            "width": 13,
+            "depth": 1,
+            "height": 3.5
+          },
+          {
+            "id": "crime:market-court-return",
+            "x": -17,
+            "z": -19,
+            "width": 1,
+            "depth": 18,
+            "height": 4
+          },
+          {
+            "id": "crime:western-court",
+            "x": -43,
+            "z": 22,
+            "width": 1,
+            "depth": 20,
+            "height": 4
+          },
+          {
+            "id": "crime:north-yard-return",
+            "x": -34,
+            "z": 10,
+            "width": 16,
+            "depth": 1,
+            "height": 3.5
+          }
+        ]
       },
       "residences": [
         {
           "id": "island-tenants",
           "region": "crime",
-          "siteId": "LOC_CRIME_BACK_INN",
+          "siteId": "crime:quay-tenement",
           "mode": "rented-room",
           "residentIds": [
             "NPC033",
-            "NPC049",
+            "NPC049"
+          ],
+          "reason": "裏港での継続的な部屋借り"
+        },
+        {
+          "id": "island-information-tenants",
+          "region": "crime",
+          "siteId": "crime:scribes-tenement",
+          "mode": "rented-room",
+          "residentIds": [
             "NPC051",
             "NPC081"
           ],
-          "reason": "裏港での継続的な部屋借り"
+          "reason": "情報街で働く人々の長期借室。宿泊客とは別の生活拠点"
         },
         {
           "id": "island-arms-house",
@@ -16251,6 +17118,607 @@
         "geometryRevision": "graybox-streets-v2",
         "stage": "street-cluster",
         "arrivalPolicy": "reciprocal-route-mouth"
+      },
+      "settlement": {
+        "role": "岩島の港湾市街。荷役・宿泊・取引の表通りから、作業庭と生活路地が枝分かれする。住民の出自を犯罪性に結び付けない。",
+        "districts": [
+          {
+            "id": "quays",
+            "name": "荷揚げ・保管",
+            "sites": [
+              "LOC_CRIME_DOCK",
+              "LOC_CRIME_WAREHOUSE"
+            ],
+            "purpose": "岸壁から荷受け庭へ運ぶ。倉庫裏は宿への通りと壁で分ける。",
+            "workerIds": [
+              "NPC081",
+              "NPC082"
+            ],
+            "residentIds": [
+              "NPC082"
+            ]
+          },
+          {
+            "id": "lodging",
+            "name": "宿・交通",
+            "sites": [
+              "LOC_CRIME_BACK_INN",
+              "LOC_CRIME_STABLE",
+              "LOC_CRIME_GAMBLING",
+              "crime:quay-tenement"
+            ],
+            "purpose": "御者と船客の食事・滞在。帰路には通り抜けと生活路地を選べる。",
+            "workerIds": [
+              "NPC080",
+              "NPC083"
+            ],
+            "residentIds": [
+              "NPC033",
+              "NPC049",
+              "NPC080",
+              "NPC083"
+            ]
+          },
+          {
+            "id": "exchange",
+            "name": "取引・情報街",
+            "sites": [
+              "LOC_CRIME_WEAPON_MARKET",
+              "LOC_CRIME_INFO_STREET",
+              "LOC_CRIME_SLAVE_MARKET",
+              "LOC_CRIME_FORGER",
+              "crime:scribes-tenement"
+            ],
+            "purpose": "広い取引場と裏の相談場所を分ける。被害者を含む住民が暮らす場所。",
+            "workerIds": [
+              "NPC033",
+              "NPC048",
+              "NPC049",
+              "NPC050",
+              "NPC051",
+              "NPC084"
+            ],
+            "residentIds": [
+              "NPC048",
+              "NPC050",
+              "NPC051",
+              "NPC081",
+              "NPC084"
+            ]
+          }
+        ],
+        "flows": [
+          {
+            "id": "cargo-yard",
+            "kind": "cargo",
+            "stops": [
+              "R08",
+              "LOC_CRIME_DOCK",
+              "LOC_CRIME_WAREHOUSE"
+            ],
+            "reason": "荷揚げと保管が同じ港の実移動でつながる",
+            "window": "入港後",
+            "legs": [
+              {
+                "fromId": "crime:R08",
+                "toId": "LOC_CRIME_DOCK",
+                "points": [
+                  [
+                    49,
+                    0,
+                    0
+                  ],
+                  [
+                    47,
+                    0,
+                    -5.666666666666666
+                  ],
+                  [
+                    45,
+                    0,
+                    -11.333333333333332
+                  ],
+                  [
+                    43,
+                    0,
+                    -17
+                  ]
+                ],
+                "metres": 18.027756377319946
+              },
+              {
+                "fromId": "LOC_CRIME_DOCK",
+                "toId": "LOC_CRIME_WAREHOUSE",
+                "points": [
+                  [
+                    43,
+                    0,
+                    -17
+                  ],
+                  [
+                    45,
+                    0,
+                    -11.333333333333332
+                  ],
+                  [
+                    47,
+                    0,
+                    -5.666666666666666
+                  ],
+                  [
+                    49,
+                    0,
+                    0
+                  ],
+                  [
+                    49,
+                    0,
+                    6.5
+                  ],
+                  [
+                    49,
+                    0,
+                    13
+                  ],
+                  [
+                    43,
+                    0,
+                    15.5
+                  ],
+                  [
+                    37,
+                    0,
+                    18
+                  ],
+                  [
+                    36.5,
+                    0,
+                    22
+                  ],
+                  [
+                    36,
+                    0,
+                    26
+                  ],
+                  [
+                    36,
+                    0,
+                    32
+                  ],
+                  [
+                    36,
+                    0,
+                    38
+                  ],
+                  [
+                    43,
+                    0,
+                    38
+                  ]
+                ],
+                "metres": 71.0900141256185
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          },
+          {
+            "id": "lodger",
+            "kind": "visitor",
+            "stops": [
+              "LOC_CRIME_DOCK",
+              "LOC_CRIME_BACK_INN",
+              "LOC_CRIME_INFO_STREET"
+            ],
+            "reason": "船客が宿を取り、街中へ出る",
+            "window": "日中・夕方",
+            "legs": [
+              {
+                "fromId": "LOC_CRIME_DOCK",
+                "toId": "LOC_CRIME_BACK_INN",
+                "points": [
+                  [
+                    43,
+                    0,
+                    -17
+                  ],
+                  [
+                    45,
+                    0,
+                    -11.333333333333332
+                  ],
+                  [
+                    47,
+                    0,
+                    -5.666666666666666
+                  ],
+                  [
+                    49,
+                    0,
+                    0
+                  ],
+                  [
+                    43,
+                    0,
+                    3.25
+                  ],
+                  [
+                    37,
+                    0,
+                    6.5
+                  ],
+                  [
+                    31,
+                    0,
+                    9.75
+                  ],
+                  [
+                    25,
+                    0,
+                    13
+                  ],
+                  [
+                    19,
+                    0,
+                    16
+                  ],
+                  [
+                    13,
+                    0,
+                    19
+                  ],
+                  [
+                    7,
+                    0,
+                    22
+                  ],
+                  [
+                    0,
+                    0,
+                    24
+                  ],
+                  [
+                    0,
+                    0,
+                    30
+                  ],
+                  [
+                    4,
+                    0,
+                    36
+                  ],
+                  [
+                    8,
+                    0,
+                    42
+                  ],
+                  [
+                    14,
+                    0,
+                    42
+                  ]
+                ],
+                "metres": 99.1493712938669
+              },
+              {
+                "fromId": "LOC_CRIME_BACK_INN",
+                "toId": "LOC_CRIME_INFO_STREET",
+                "points": [
+                  [
+                    14,
+                    0,
+                    42
+                  ],
+                  [
+                    8,
+                    0,
+                    42
+                  ],
+                  [
+                    4,
+                    0,
+                    36
+                  ],
+                  [
+                    0,
+                    0,
+                    30
+                  ],
+                  [
+                    0,
+                    0,
+                    24
+                  ],
+                  [
+                    7,
+                    0,
+                    22
+                  ],
+                  [
+                    1.666666666666667,
+                    0,
+                    20.666666666666668
+                  ],
+                  [
+                    -3.666666666666666,
+                    0,
+                    19.333333333333332
+                  ],
+                  [
+                    -9,
+                    0,
+                    18
+                  ],
+                  [
+                    -11.033898305084746,
+                    0,
+                    15.35593220338983
+                  ],
+                  [
+                    -15,
+                    0,
+                    18
+                  ],
+                  [
+                    -13.75,
+                    0,
+                    24.25
+                  ],
+                  [
+                    -12.5,
+                    0,
+                    30.5
+                  ],
+                  [
+                    -11.25,
+                    0,
+                    36.75
+                  ],
+                  [
+                    -10,
+                    0,
+                    43
+                  ],
+                  [
+                    -16,
+                    0,
+                    41.75
+                  ],
+                  [
+                    -22,
+                    0,
+                    40.5
+                  ],
+                  [
+                    -28,
+                    0,
+                    39.25
+                  ],
+                  [
+                    -34,
+                    0,
+                    38
+                  ],
+                  [
+                    -33,
+                    0,
+                    31
+                  ]
+                ],
+                "metres": 115.37870647343583
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          },
+          {
+            "id": "yard-worker",
+            "kind": "commute",
+            "stops": [
+              "LOC_CRIME_WAREHOUSE",
+              "LOC_CRIME_BACK_INN",
+              "LOC_CRIME_STABLE"
+            ],
+            "reason": "荷役の帰路と食事、荷駄の管理",
+            "window": "朝夕",
+            "legs": [
+              {
+                "fromId": "LOC_CRIME_WAREHOUSE",
+                "toId": "LOC_CRIME_BACK_INN",
+                "points": [
+                  [
+                    43,
+                    0,
+                    38
+                  ],
+                  [
+                    36,
+                    0,
+                    38
+                  ],
+                  [
+                    36,
+                    0,
+                    32
+                  ],
+                  [
+                    36,
+                    0,
+                    26
+                  ],
+                  [
+                    36.5,
+                    0,
+                    22
+                  ],
+                  [
+                    37,
+                    0,
+                    18
+                  ],
+                  [
+                    31,
+                    0,
+                    15.5
+                  ],
+                  [
+                    25,
+                    0,
+                    13
+                  ],
+                  [
+                    19,
+                    0,
+                    16
+                  ],
+                  [
+                    13,
+                    0,
+                    19
+                  ],
+                  [
+                    7,
+                    0,
+                    22
+                  ],
+                  [
+                    0,
+                    0,
+                    24
+                  ],
+                  [
+                    0,
+                    0,
+                    30
+                  ],
+                  [
+                    4,
+                    0,
+                    36
+                  ],
+                  [
+                    8,
+                    0,
+                    42
+                  ],
+                  [
+                    14,
+                    0,
+                    42
+                  ]
+                ],
+                "metres": 93.88918453693314
+              },
+              {
+                "fromId": "LOC_CRIME_BACK_INN",
+                "toId": "LOC_CRIME_STABLE",
+                "points": [
+                  [
+                    14,
+                    0,
+                    42
+                  ],
+                  [
+                    8,
+                    0,
+                    42
+                  ],
+                  [
+                    4,
+                    0,
+                    36
+                  ],
+                  [
+                    0,
+                    0,
+                    30
+                  ],
+                  [
+                    0,
+                    0,
+                    24
+                  ],
+                  [
+                    7,
+                    0,
+                    22
+                  ],
+                  [
+                    1.666666666666667,
+                    0,
+                    20.666666666666668
+                  ],
+                  [
+                    -3.666666666666666,
+                    0,
+                    19.333333333333332
+                  ],
+                  [
+                    -9,
+                    0,
+                    18
+                  ],
+                  [
+                    -11.033898305084746,
+                    0,
+                    15.35593220338983
+                  ],
+                  [
+                    -15,
+                    0,
+                    18
+                  ],
+                  [
+                    -13.75,
+                    0,
+                    24.25
+                  ],
+                  [
+                    -12.5,
+                    0,
+                    30.5
+                  ],
+                  [
+                    -11.25,
+                    0,
+                    36.75
+                  ],
+                  [
+                    -10,
+                    0,
+                    43
+                  ],
+                  [
+                    -14,
+                    0,
+                    48.5
+                  ],
+                  [
+                    -18,
+                    0,
+                    54
+                  ],
+                  [
+                    -24,
+                    0,
+                    55
+                  ]
+                ],
+                "metres": 103.47657035634148
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          }
+        ],
+        "contactSites": [
+          "LOC_CRIME_BACK_INN",
+          "LOC_CRIME_DOCK",
+          "LOC_CRIME_INFO_STREET"
+        ],
+        "risks": [
+          "庭壁の折れ角は見通せないが、複数の道から抜けられる",
+          "閉鎖と見通しを区別し、路地に入っただけで犯罪を発生させない"
+        ],
+        "status": "functional-layout-foundation",
+        "simulatedResidents": 10
       }
     },
     {
@@ -25791,7 +27259,7 @@
         0,
         8
       ],
-      "identity": "岩の間の坑夫街・三つの工房枝道",
+      "identity": "居住洞・工房洞・採掘坑を結ぶ地下の坑道網",
       "obstacles": [
         {
           "id": "LOC_DWARF_GATE:left",
@@ -25986,220 +27454,528 @@
           "height": 3.8
         },
         {
-          "id": "ridge:-63:-30",
-          "x": -63,
+          "id": "LOC_DWARF_GATE:front:left",
+          "x": -1.2999999999999998,
+          "z": 53.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_GATE:front:right",
+          "x": 5.3,
+          "z": 53.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_INN:front:left",
+          "x": -29.3,
+          "z": 33.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_INN:front:right",
+          "x": -22.7,
+          "z": 33.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_FORGE:front:left",
+          "x": -32.3,
+          "z": -19.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_FORGE:front:right",
+          "x": -25.7,
+          "z": -19.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_MARKET:front:left",
+          "x": 13.7,
+          "z": 29.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_MARKET:front:right",
+          "x": 20.3,
+          "z": 29.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_MINE:front:left",
+          "x": -19.3,
+          "z": -48.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_MINE:front:right",
+          "x": -12.7,
+          "z": -48.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_ENGINEER:front:left",
+          "x": 16.7,
+          "z": -40.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_ENGINEER:front:right",
+          "x": 23.3,
+          "z": -40.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_BEAST_STABLE:front:left",
+          "x": 27.5,
+          "z": 51.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_BEAST_STABLE:front:right",
+          "x": 34.5,
+          "z": 51.5,
+          "width": 3,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_BLACKRIDGE_TUNNEL:front:left",
+          "x": 38.7,
+          "z": -19.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "LOC_DWARF_BLACKRIDGE_TUNNEL:front:right",
+          "x": 45.3,
+          "z": -19.5,
+          "width": 3.4,
+          "depth": 0.4,
+          "height": 3.8
+        },
+        {
+          "id": "dwarf:bedrock:-80:-78",
+          "x": 0,
+          "z": -76,
+          "width": 160,
+          "depth": 8,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:-70",
+          "x": -42,
+          "z": -70,
+          "width": 76,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:32:-70",
+          "x": 56,
+          "z": -70,
+          "width": 48,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:-66",
+          "x": -56,
+          "z": -56,
+          "width": 48,
+          "depth": 24,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:36:-66",
+          "x": 58,
+          "z": -64,
+          "width": 44,
+          "depth": 8,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:40:-58",
+          "x": 60,
+          "z": -58,
+          "width": 40,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:44:-54",
+          "x": 62,
+          "z": -50,
+          "width": 36,
+          "depth": 12,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:0:-50",
+          "x": 2,
+          "z": -48,
+          "width": 4,
+          "depth": 8,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:-42",
+          "x": -60,
+          "z": -42,
+          "width": 40,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:40:-42",
+          "x": 60,
+          "z": -42,
+          "width": 40,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:-38",
+          "x": -64,
+          "z": -34,
+          "width": 32,
+          "depth": 12,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:56:-38",
+          "x": 68,
           "z": -30,
           "width": 24,
-          "depth": 24,
-          "height": 23
-        },
-        {
-          "id": "ridge:64:-48",
-          "x": 64,
-          "z": -48,
-          "width": 22,
-          "depth": 22,
-          "height": 25
-        },
-        {
-          "id": "ridge:-47:54",
-          "x": -47,
-          "z": 54,
-          "width": 20,
           "depth": 20,
-          "height": 21
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "ridge:57:19",
-          "x": 57,
-          "z": 19,
-          "width": 18,
-          "depth": 18,
-          "height": 19
-        },
-        {
-          "id": "ridge:4:-72",
-          "x": 4,
-          "z": -72,
-          "width": 16,
-          "depth": 16,
-          "height": 22
-        },
-        {
-          "id": "tree:dwarf:foliage:2",
-          "x": -34,
-          "z": -58,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 5
-        },
-        {
-          "id": "tree:dwarf:foliage:3",
-          "x": 13,
-          "z": 13,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
-        },
-        {
-          "id": "tree:dwarf:foliage:4",
-          "x": 60,
-          "z": -65,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
-        },
-        {
-          "id": "tree:dwarf:foliage:5",
-          "x": -42,
-          "z": 6,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 5
-        },
-        {
-          "id": "tree:dwarf:foliage:7",
-          "x": 52,
-          "z": -1,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
-        },
-        {
-          "id": "tree:dwarf:foliage:8",
-          "x": -50,
-          "z": 70,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 5
-        },
-        {
-          "id": "tree:dwarf:foliage:10",
-          "x": 44,
-          "z": 63,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
-        },
-        {
-          "id": "tree:dwarf:foliage:12",
-          "x": -11,
-          "z": 56,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
-        },
-        {
-          "id": "tree:dwarf:foliage:14",
+          "id": "dwarf:bedrock:-80:-26",
           "x": -66,
-          "z": 49,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 5
+          "z": -12,
+          "width": 28,
+          "depth": 32,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:15",
-          "x": -19,
-          "z": -29,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:12:-26",
+          "x": 20,
+          "z": -18,
+          "width": 16,
+          "depth": 20,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:21",
-          "x": -35,
-          "z": -50,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:-16:-18",
+          "x": -14,
+          "z": -14,
+          "width": 4,
+          "depth": 12,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:24",
-          "x": -43,
-          "z": 14,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:76:-18",
+          "x": 78,
+          "z": -16,
+          "width": 4,
+          "depth": 8,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:27",
-          "x": -51,
-          "z": -71,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:-36:-6",
+          "x": -24,
+          "z": -6,
+          "width": 24,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:29",
-          "x": 43,
-          "z": 71,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 5
+          "id": "dwarf:bedrock:0:-6",
+          "x": 22,
+          "z": -6,
+          "width": 44,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:30",
-          "x": -59,
-          "z": -7,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:52:-6",
+          "x": 56,
+          "z": -6,
+          "width": 8,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:31",
-          "x": -12,
-          "z": 64,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
+          "id": "dwarf:bedrock:76:-6",
+          "x": 78,
+          "z": -6,
+          "width": 4,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:33",
-          "x": -67,
-          "z": 57,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:-40:-2",
+          "x": -30,
+          "z": 0,
+          "width": 20,
+          "depth": 8,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:34",
-          "x": -20,
-          "z": -21,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
+          "id": "dwarf:bedrock:4:-2",
+          "x": 22,
+          "z": -2,
+          "width": 36,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:36",
-          "x": 74,
-          "z": -28,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "id": "dwarf:bedrock:52:-2",
+          "x": 58,
+          "z": -2,
+          "width": 12,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:37",
-          "x": -28,
-          "z": 43,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
+          "id": "dwarf:bedrock:72:-2",
+          "x": 76,
+          "z": -2,
+          "width": 8,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:39",
+          "id": "dwarf:bedrock:8:2",
+          "x": 22,
+          "z": 2,
+          "width": 28,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:52:2",
           "x": 66,
-          "z": 36,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 3
+          "z": 2,
+          "width": 28,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         },
         {
-          "id": "tree:dwarf:foliage:40",
-          "x": -36,
-          "z": -42,
-          "width": 3.4,
-          "depth": 3.4,
-          "height": 4
+          "id": "dwarf:bedrock:-80:6",
+          "x": -64,
+          "z": 10,
+          "width": 32,
+          "depth": 12,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:48:6",
+          "x": 64,
+          "z": 6,
+          "width": 32,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:44:10",
+          "x": 62,
+          "z": 10,
+          "width": 36,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:40:14",
+          "x": 60,
+          "z": 14,
+          "width": 40,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:18",
+          "x": -60,
+          "z": 30,
+          "width": 40,
+          "depth": 28,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:32:18",
+          "x": 56,
+          "z": 24,
+          "width": 48,
+          "depth": 16,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-12:22",
+          "x": -10,
+          "z": 22,
+          "width": 4,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:44:34",
+          "x": 62,
+          "z": 48,
+          "width": 36,
+          "depth": 32,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:46",
+          "x": -54,
+          "z": 46,
+          "width": 52,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-24:46",
+          "x": -20,
+          "z": 46,
+          "width": 8,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:50",
+          "x": -46,
+          "z": 56,
+          "width": 68,
+          "depth": 16,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:66",
+          "x": -44,
+          "z": 68,
+          "width": 72,
+          "depth": 8,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:12:66",
+          "x": 46,
+          "z": 66,
+          "width": 68,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:16:70",
+          "x": 48,
+          "z": 70,
+          "width": 64,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:74",
+          "x": -42,
+          "z": 74,
+          "width": 76,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:12:74",
+          "x": 46,
+          "z": 74,
+          "width": 68,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:-80:78",
+          "x": -40,
+          "z": 78,
+          "width": 80,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
+        },
+        {
+          "id": "dwarf:bedrock:8:78",
+          "x": 44,
+          "z": 78,
+          "width": 72,
+          "depth": 4,
+          "height": 15,
+          "material": "bedrock"
         }
       ],
       "objects": [
@@ -26236,8 +28012,41 @@
               53.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_GATE:front:left",
+                  "x": -1.2999999999999998,
+                  "z": 53.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_GATE:front:right",
+                  "x": 5.3,
+                  "z": 53.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                2,
+                0,
+                55.5
+              ],
+              "inside": [
+                2,
+                0,
+                51.5
+              ]
+            }
+          },
+          "districtId": "mouth"
         },
         {
           "id": "LOC_DWARF_INN",
@@ -26272,8 +28081,51 @@
               33.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_INN:front:left",
+                  "x": -29.3,
+                  "z": 33.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_INN:front:right",
+                  "x": -22.7,
+                  "z": 33.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -26,
+                0,
+                35.5
+              ],
+              "inside": [
+                -26,
+                0,
+                31.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "鉄樽亭",
+            "position": [
+              -26,
+              3.4,
+              33.75
+            ],
+            "width": 6,
+            "height": 0.75
+          },
+          "districtId": "habitation"
         },
         {
           "id": "LOC_DWARF_FORGE",
@@ -26308,9 +28160,42 @@
               -19.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_FORGE:front:left",
+                  "x": -32.3,
+                  "z": -19.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_FORGE:front:right",
+                  "x": -25.7,
+                  "z": -19.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -29,
+                0,
+                -17.5
+              ],
+              "inside": [
+                -29,
+                0,
+                -21.5
+              ]
+            }
           },
-          "crafting": true
+          "crafting": true,
+          "districtId": "works"
         },
         {
           "id": "LOC_DWARF_MARKET",
@@ -26345,8 +28230,51 @@
               29.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "public-service",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_MARKET:front:left",
+                  "x": 13.7,
+                  "z": 29.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_MARKET:front:right",
+                  "x": 20.3,
+                  "z": 29.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                17,
+                0,
+                31.5
+              ],
+              "inside": [
+                17,
+                0,
+                27.5
+              ]
+            }
+          },
+          "signage": {
+            "text": "鉱石市場",
+            "position": [
+              17,
+              3.4,
+              29.75
+            ],
+            "width": 6,
+            "height": 0.75
+          },
+          "districtId": "habitation"
         },
         {
           "id": "LOC_DWARF_MINE",
@@ -26381,8 +28309,41 @@
               -48.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_MINE:front:left",
+                  "x": -19.3,
+                  "z": -48.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_MINE:front:right",
+                  "x": -12.7,
+                  "z": -48.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                -16,
+                0,
+                -46.5
+              ],
+              "inside": [
+                -16,
+                0,
+                -50.5
+              ]
+            }
+          },
+          "districtId": "works"
         },
         {
           "id": "LOC_DWARF_ENGINEER",
@@ -26417,9 +28378,42 @@
               -40.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_ENGINEER:front:left",
+                  "x": 16.7,
+                  "z": -40.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_ENGINEER:front:right",
+                  "x": 23.3,
+                  "z": -40.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                20,
+                0,
+                -38.5
+              ],
+              "inside": [
+                20,
+                0,
+                -42.5
+              ]
+            }
           },
-          "crafting": true
+          "crafting": true,
+          "districtId": "works"
         },
         {
           "id": "LOC_DWARF_BEAST_STABLE",
@@ -26454,11 +28448,44 @@
               51.5
             ],
             "floorY": 0,
-            "openFront": true
+            "openFront": false,
+            "threshold": {
+              "use": "loading",
+              "opening": 4,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_BEAST_STABLE:front:left",
+                  "x": 27.5,
+                  "z": 51.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_BEAST_STABLE:front:right",
+                  "x": 34.5,
+                  "z": 51.5,
+                  "width": 3,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                31,
+                0,
+                53.5
+              ],
+              "inside": [
+                31,
+                0,
+                49.5
+              ]
+            }
           },
           "skills": [
             "riding"
-          ]
+          ],
+          "districtId": "mouth"
         },
         {
           "id": "LOC_DWARF_BLACKRIDGE_TUNNEL",
@@ -26493,8 +28520,41 @@
               -19.5
             ],
             "floorY": 0,
-            "openFront": true
-          }
+            "openFront": false,
+            "threshold": {
+              "use": "institution",
+              "opening": 3.2,
+              "walls": [
+                {
+                  "id": "LOC_DWARF_BLACKRIDGE_TUNNEL:front:left",
+                  "x": 38.7,
+                  "z": -19.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                },
+                {
+                  "id": "LOC_DWARF_BLACKRIDGE_TUNNEL:front:right",
+                  "x": 45.3,
+                  "z": -19.5,
+                  "width": 3.4,
+                  "depth": 0.4,
+                  "height": 3.8
+                }
+              ],
+              "approach": [
+                42,
+                0,
+                -17.5
+              ],
+              "inside": [
+                42,
+                0,
+                -21.5
+              ]
+            }
+          },
+          "districtId": "deep"
         },
         {
           "id": "LOC_DWARF_NOTICE",
@@ -26513,7 +28573,8 @@
             "id": "LOC_DWARF_NOTICE"
           },
           "description": "採掘警告、求人、事故告知",
-          "placement": "authored-geography"
+          "placement": "authored-geography",
+          "districtId": "habitation"
         },
         {
           "id": "dwarf:trainer",
@@ -26730,6 +28791,295 @@
               [
                 0,
                 0,
+                8
+              ],
+              [
+                -15,
+                0,
+                10
+              ]
+            ],
+            "width": 4,
+            "kind": "haul-tunnel"
+          },
+          {
+            "id": "dwarf:road:6",
+            "points": [
+              [
+                -15,
+                0,
+                10
+              ],
+              [
+                -43,
+                0,
+                10
+              ]
+            ],
+            "width": 4,
+            "kind": "haul-tunnel"
+          },
+          {
+            "id": "dwarf:road:7",
+            "points": [
+              [
+                -43,
+                0,
+                10
+              ],
+              [
+                -46,
+                0,
+                -8
+              ]
+            ],
+            "width": 4,
+            "kind": "haul-tunnel"
+          },
+          {
+            "id": "dwarf:road:8",
+            "points": [
+              [
+                -46,
+                0,
+                -8
+              ],
+              [
+                -43,
+                0,
+                -35
+              ]
+            ],
+            "width": 4,
+            "kind": "haul-tunnel"
+          },
+          {
+            "id": "dwarf:road:9",
+            "points": [
+              [
+                -43,
+                0,
+                -35
+              ],
+              [
+                -23,
+                0,
+                -39
+              ]
+            ],
+            "width": 4,
+            "kind": "haul-tunnel"
+          },
+          {
+            "id": "dwarf:road:10",
+            "points": [
+              [
+                -23,
+                0,
+                -39
+              ],
+              [
+                0,
+                0,
+                -36
+              ]
+            ],
+            "width": 4,
+            "kind": "haul-tunnel"
+          },
+          {
+            "id": "dwarf:road:11",
+            "points": [
+              [
+                0,
+                0,
+                8
+              ],
+              [
+                10,
+                0,
+                9
+              ]
+            ],
+            "width": 2.4,
+            "kind": "residential-gallery"
+          },
+          {
+            "id": "dwarf:road:12",
+            "points": [
+              [
+                10,
+                0,
+                9
+              ],
+              [
+                36,
+                0,
+                10
+              ]
+            ],
+            "width": 2.4,
+            "kind": "residential-gallery"
+          },
+          {
+            "id": "dwarf:road:13",
+            "points": [
+              [
+                36,
+                0,
+                10
+              ],
+              [
+                48,
+                0,
+                -3
+              ]
+            ],
+            "width": 2.4,
+            "kind": "residential-gallery"
+          },
+          {
+            "id": "dwarf:road:14",
+            "points": [
+              [
+                48,
+                0,
+                -3
+              ],
+              [
+                48,
+                0,
+                -15
+              ]
+            ],
+            "width": 2.4,
+            "kind": "residential-gallery"
+          },
+          {
+            "id": "dwarf:road:15",
+            "points": [
+              [
+                48,
+                0,
+                -15
+              ],
+              [
+                35,
+                0,
+                -15
+              ]
+            ],
+            "width": 2.4,
+            "kind": "residential-gallery"
+          },
+          {
+            "id": "dwarf:road:16",
+            "points": [
+              [
+                35,
+                0,
+                -15
+              ],
+              [
+                35,
+                0,
+                -39
+              ]
+            ],
+            "width": 2.4,
+            "kind": "residential-gallery"
+          },
+          {
+            "id": "dwarf:road:17",
+            "points": [
+              [
+                0,
+                0,
+                -36
+              ],
+              [
+                -5,
+                0,
+                -43
+              ]
+            ],
+            "width": 2.4,
+            "kind": "deep-gallery"
+          },
+          {
+            "id": "dwarf:road:18",
+            "points": [
+              [
+                -5,
+                0,
+                -43
+              ],
+              [
+                0,
+                0,
+                -67
+              ]
+            ],
+            "width": 2.4,
+            "kind": "deep-gallery"
+          },
+          {
+            "id": "dwarf:road:19",
+            "points": [
+              [
+                0,
+                0,
+                -67
+              ],
+              [
+                26,
+                0,
+                -67
+              ]
+            ],
+            "width": 2.4,
+            "kind": "deep-gallery"
+          },
+          {
+            "id": "dwarf:road:20",
+            "points": [
+              [
+                26,
+                0,
+                -67
+              ],
+              [
+                39,
+                0,
+                -53
+              ]
+            ],
+            "width": 2.4,
+            "kind": "deep-gallery"
+          },
+          {
+            "id": "dwarf:road:21",
+            "points": [
+              [
+                39,
+                0,
+                -53
+              ],
+              [
+                35,
+                0,
+                -39
+              ]
+            ],
+            "width": 2.4,
+            "kind": "deep-gallery"
+          },
+          {
+            "id": "dwarf:road:22",
+            "points": [
+              [
+                0,
+                0,
                 72
               ],
               [
@@ -26742,7 +29092,7 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:6",
+            "id": "dwarf:road:23",
             "points": [
               [
                 -9,
@@ -26759,12 +29109,12 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:7",
+            "id": "dwarf:road:24",
             "points": [
               [
-                -7,
+                -46,
                 0,
-                -14
+                -8
               ],
               [
                 -29,
@@ -26776,12 +29126,17 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:8",
+            "id": "dwarf:road:25",
             "points": [
               [
-                -9,
+                10,
                 0,
-                43
+                9
+              ],
+              [
+                10,
+                0,
+                32
               ],
               [
                 17,
@@ -26793,12 +29148,12 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:9",
+            "id": "dwarf:road:26",
             "points": [
               [
+                -23,
                 0,
-                0,
-                -36
+                -39
               ],
               [
                 -16,
@@ -26810,7 +29165,7 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:10",
+            "id": "dwarf:road:27",
             "points": [
               [
                 35,
@@ -26827,7 +29182,7 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:11",
+            "id": "dwarf:road:28",
             "points": [
               [
                 17,
@@ -26849,17 +29204,12 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:12",
+            "id": "dwarf:road:29",
             "points": [
               [
-                35,
+                48,
                 0,
-                -39
-              ],
-              [
-                34,
-                0,
-                -16
+                -15
               ],
               [
                 42,
@@ -26871,7 +29221,7 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:13",
+            "id": "dwarf:road:30",
             "points": [
               [
                 -7,
@@ -26888,12 +29238,12 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:14",
+            "id": "dwarf:road:31",
             "points": [
               [
+                10,
                 0,
-                0,
-                8
+                9
               ],
               [
                 8,
@@ -26905,7 +29255,7 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:15",
+            "id": "dwarf:road:32",
             "points": [
               [
                 0,
@@ -26922,12 +29272,12 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:16",
+            "id": "dwarf:road:33",
             "points": [
               [
-                -16,
+                -23,
                 0,
-                -45
+                -39
               ],
               [
                 -16,
@@ -26939,12 +29289,12 @@
             "kind": "access"
           },
           {
-            "id": "dwarf:road:17",
+            "id": "dwarf:road:34",
             "points": [
               [
-                42,
+                48,
                 0,
-                -16
+                -15
               ],
               [
                 69,
@@ -26956,7 +29306,7 @@
             "kind": "exit"
           },
           {
-            "id": "dwarf:road:18",
+            "id": "dwarf:road:35",
             "points": [
               [
                 0,
@@ -26973,7 +29323,7 @@
             "kind": "exit"
           },
           {
-            "id": "dwarf:road:19",
+            "id": "dwarf:road:36",
             "points": [
               [
                 69,
@@ -26992,240 +29342,498 @@
         ],
         "water": [],
         "bridges": [],
-        "ridges": [
-          {
-            "x": -63,
-            "z": -30,
-            "radius": 12,
-            "height": 23
-          },
-          {
-            "x": 64,
-            "z": -48,
-            "radius": 11,
-            "height": 25
-          },
-          {
-            "x": -47,
-            "z": 54,
-            "radius": 10,
-            "height": 21
-          },
-          {
-            "x": 57,
-            "z": 19,
-            "radius": 9,
-            "height": 19
-          },
-          {
-            "x": 4,
-            "z": -72,
-            "radius": 8,
-            "height": 22
-          }
-        ],
+        "ridges": [],
         "plots": [],
-        "trees": [
+        "trees": [],
+        "boundaries": [
           {
-            "id": "dwarf:foliage:2",
-            "x": -34,
-            "z": -58,
-            "height": 5,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "id": "dwarf:bedrock:-80:-78",
+            "x": 0,
+            "z": -76,
+            "width": 160,
+            "depth": 8,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:3",
-            "x": 13,
-            "z": 13,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:4",
-            "x": 60,
-            "z": -65,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:5",
+            "id": "dwarf:bedrock:-80:-70",
             "x": -42,
-            "z": 6,
-            "height": 5,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "z": -70,
+            "width": 76,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:7",
-            "x": 52,
-            "z": -1,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "id": "dwarf:bedrock:32:-70",
+            "x": 56,
+            "z": -70,
+            "width": 48,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:8",
-            "x": -50,
-            "z": 70,
-            "height": 5,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "id": "dwarf:bedrock:-80:-66",
+            "x": -56,
+            "z": -56,
+            "width": 48,
+            "depth": 24,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:10",
-            "x": 44,
-            "z": 63,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "id": "dwarf:bedrock:36:-66",
+            "x": 58,
+            "z": -64,
+            "width": 44,
+            "depth": 8,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:12",
-            "x": -11,
-            "z": 56,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "id": "dwarf:bedrock:40:-58",
+            "x": 60,
+            "z": -58,
+            "width": 40,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:14",
-            "x": -66,
-            "z": 49,
-            "height": 5,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:15",
-            "x": -19,
-            "z": -29,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:21",
-            "x": -35,
+            "id": "dwarf:bedrock:44:-54",
+            "x": 62,
             "z": -50,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "width": 36,
+            "depth": 12,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:24",
-            "x": -43,
-            "z": 14,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "id": "dwarf:bedrock:0:-50",
+            "x": 2,
+            "z": -48,
+            "width": 4,
+            "depth": 8,
+            "height": 15,
+            "material": "bedrock"
           },
           {
-            "id": "dwarf:foliage:27",
-            "x": -51,
-            "z": -71,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:29",
-            "x": 43,
-            "z": 71,
-            "height": 5,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:30",
-            "x": -59,
-            "z": -7,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:31",
-            "x": -12,
-            "z": 64,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:33",
-            "x": -67,
-            "z": 57,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:34",
-            "x": -20,
-            "z": -21,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:36",
-            "x": 74,
-            "z": -28,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:37",
-            "x": -28,
-            "z": 43,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:39",
-            "x": 66,
-            "z": 36,
-            "height": 3,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
-          },
-          {
-            "id": "dwarf:foliage:40",
-            "x": -36,
+            "id": "dwarf:bedrock:-80:-42",
+            "x": -60,
             "z": -42,
-            "height": 4,
-            "asset": "town/rock-wide.glb",
-            "collisionWidth": 3.4,
-            "collisionDepth": 3.4
+            "width": 40,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:40:-42",
+            "x": 60,
+            "z": -42,
+            "width": 40,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:-38",
+            "x": -64,
+            "z": -34,
+            "width": 32,
+            "depth": 12,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:56:-38",
+            "x": 68,
+            "z": -30,
+            "width": 24,
+            "depth": 20,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:-26",
+            "x": -66,
+            "z": -12,
+            "width": 28,
+            "depth": 32,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:12:-26",
+            "x": 20,
+            "z": -18,
+            "width": 16,
+            "depth": 20,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-16:-18",
+            "x": -14,
+            "z": -14,
+            "width": 4,
+            "depth": 12,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:76:-18",
+            "x": 78,
+            "z": -16,
+            "width": 4,
+            "depth": 8,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-36:-6",
+            "x": -24,
+            "z": -6,
+            "width": 24,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:0:-6",
+            "x": 22,
+            "z": -6,
+            "width": 44,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:52:-6",
+            "x": 56,
+            "z": -6,
+            "width": 8,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:76:-6",
+            "x": 78,
+            "z": -6,
+            "width": 4,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-40:-2",
+            "x": -30,
+            "z": 0,
+            "width": 20,
+            "depth": 8,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:4:-2",
+            "x": 22,
+            "z": -2,
+            "width": 36,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:52:-2",
+            "x": 58,
+            "z": -2,
+            "width": 12,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:72:-2",
+            "x": 76,
+            "z": -2,
+            "width": 8,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:8:2",
+            "x": 22,
+            "z": 2,
+            "width": 28,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:52:2",
+            "x": 66,
+            "z": 2,
+            "width": 28,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:6",
+            "x": -64,
+            "z": 10,
+            "width": 32,
+            "depth": 12,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:48:6",
+            "x": 64,
+            "z": 6,
+            "width": 32,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:44:10",
+            "x": 62,
+            "z": 10,
+            "width": 36,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:40:14",
+            "x": 60,
+            "z": 14,
+            "width": 40,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:18",
+            "x": -60,
+            "z": 30,
+            "width": 40,
+            "depth": 28,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:32:18",
+            "x": 56,
+            "z": 24,
+            "width": 48,
+            "depth": 16,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-12:22",
+            "x": -10,
+            "z": 22,
+            "width": 4,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:44:34",
+            "x": 62,
+            "z": 48,
+            "width": 36,
+            "depth": 32,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:46",
+            "x": -54,
+            "z": 46,
+            "width": 52,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-24:46",
+            "x": -20,
+            "z": 46,
+            "width": 8,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:50",
+            "x": -46,
+            "z": 56,
+            "width": 68,
+            "depth": 16,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:66",
+            "x": -44,
+            "z": 68,
+            "width": 72,
+            "depth": 8,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:12:66",
+            "x": 46,
+            "z": 66,
+            "width": 68,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:16:70",
+            "x": 48,
+            "z": 70,
+            "width": 64,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:74",
+            "x": -42,
+            "z": 74,
+            "width": 76,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:12:74",
+            "x": 46,
+            "z": 74,
+            "width": 68,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:-80:78",
+            "x": -40,
+            "z": 78,
+            "width": 80,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
+          },
+          {
+            "id": "dwarf:bedrock:8:78",
+            "x": 44,
+            "z": 78,
+            "width": 72,
+            "depth": 4,
+            "height": 15,
+            "material": "bedrock"
           }
         ],
-        "boundaries": []
+        "enclosure": {
+          "kind": "cavern",
+          "ceilingY": 15,
+          "chambers": [
+            {
+              "id": "chamber:LOC_DWARF_GATE",
+              "x": 2,
+              "z": 49,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_INN",
+              "x": -26,
+              "z": 29,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_FORGE",
+              "x": -29,
+              "z": -24,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_MARKET",
+              "x": 17,
+              "z": 25,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_MINE",
+              "x": -16,
+              "z": -53,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_ENGINEER",
+              "x": 20,
+              "z": -45,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_BEAST_STABLE",
+              "x": 31,
+              "z": 47,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_BLACKRIDGE_TUNNEL",
+              "x": 42,
+              "z": -24,
+              "width": 20,
+              "depth": 23
+            },
+            {
+              "id": "chamber:LOC_DWARF_NOTICE",
+              "x": 0,
+              "z": -20,
+              "width": 15,
+              "depth": 19
+            },
+            {
+              "id": "chamber:dwarf:trainer",
+              "x": 8,
+              "z": 17,
+              "width": 15,
+              "depth": 19
+            },
+            {
+              "id": "chamber:dwarf:board",
+              "x": -7,
+              "z": 8,
+              "width": 15,
+              "depth": 19
+            },
+            {
+              "id": "chamber:evidence:deep-mine",
+              "x": -16,
+              "z": -35,
+              "width": 15,
+              "depth": 19
+            }
+          ],
+          "rockBodies": 44
+        }
       },
       "residences": [
         {
@@ -27293,9 +29901,740 @@
         }
       ],
       "spatial": {
-        "geometryRevision": "graybox-streets-v2",
-        "stage": "legacy-blockout",
+        "geometryRevision": "enclosed-cavern-v1",
+        "stage": "street-cluster",
         "arrivalPolicy": "reciprocal-route-mouth"
+      },
+      "settlement": {
+        "role": "地下の居住洞・工房洞・採掘坑。洞窟そのものが主空間で、黒嶺への坑道もその枝の一つ。",
+        "districts": [
+          {
+            "id": "mouth",
+            "name": "洞窟口・荷駄",
+            "sites": [
+              "LOC_DWARF_GATE",
+              "LOC_DWARF_BEAST_STABLE"
+            ],
+            "purpose": "地上の隊商と坑内搬送を接続する入口。",
+            "workerIds": [
+              "NPC038",
+              "NPC088"
+            ],
+            "residentIds": [
+              "NPC088"
+            ]
+          },
+          {
+            "id": "habitation",
+            "name": "居住・交換洞",
+            "sites": [
+              "LOC_DWARF_INN",
+              "LOC_DWARF_MARKET",
+              "LOC_DWARF_NOTICE"
+            ],
+            "purpose": "坑夫が食事、休息、物資交換を行う空洞。",
+            "workerIds": [
+              "NPC085",
+              "NPC087"
+            ],
+            "residentIds": [
+              "NPC036",
+              "NPC038",
+              "NPC085",
+              "NPC086",
+              "NPC087"
+            ]
+          },
+          {
+            "id": "works",
+            "name": "工房・採掘洞",
+            "sites": [
+              "LOC_DWARF_FORGE",
+              "LOC_DWARF_MINE",
+              "LOC_DWARF_ENGINEER"
+            ],
+            "purpose": "鉱石搬送の太い坑道と職人の細い連絡坑を分ける。",
+            "workerIds": [
+              "NPC035",
+              "NPC036",
+              "NPC037",
+              "NPC086",
+              "NPC089"
+            ],
+            "residentIds": [
+              "NPC035",
+              "NPC037",
+              "NPC089"
+            ]
+          },
+          {
+            "id": "deep",
+            "name": "黒嶺連絡坑",
+            "sites": [
+              "LOC_DWARF_BLACKRIDGE_TUNNEL"
+            ],
+            "purpose": "採掘域から分かれる地下の越境路。",
+            "workerIds": [],
+            "residentIds": []
+          }
+        ],
+        "flows": [
+          {
+            "id": "ore",
+            "kind": "cargo",
+            "stops": [
+              "LOC_DWARF_MINE",
+              "LOC_DWARF_FORGE",
+              "LOC_DWARF_MARKET",
+              "LOC_DWARF_BEAST_STABLE"
+            ],
+            "reason": "採掘・加工・交換・地上への積替え",
+            "window": "作業時間",
+            "legs": [
+              {
+                "fromId": "LOC_DWARF_MINE",
+                "toId": "LOC_DWARF_FORGE",
+                "points": [
+                  [
+                    -16,
+                    0,
+                    -45
+                  ],
+                  [
+                    -19.5,
+                    0,
+                    -42
+                  ],
+                  [
+                    -23,
+                    0,
+                    -39
+                  ],
+                  [
+                    -29.666666666666668,
+                    0,
+                    -37.666666666666664
+                  ],
+                  [
+                    -36.333333333333336,
+                    0,
+                    -36.333333333333336
+                  ],
+                  [
+                    -43,
+                    0,
+                    -35
+                  ],
+                  [
+                    -43.75,
+                    0,
+                    -28.25
+                  ],
+                  [
+                    -44.5,
+                    0,
+                    -21.5
+                  ],
+                  [
+                    -45.25,
+                    0,
+                    -14.75
+                  ],
+                  [
+                    -46,
+                    0,
+                    -8
+                  ],
+                  [
+                    -40.333333333333336,
+                    0,
+                    -10.666666666666666
+                  ],
+                  [
+                    -34.66666666666667,
+                    0,
+                    -13.333333333333332
+                  ],
+                  [
+                    -29,
+                    0,
+                    -16
+                  ]
+                ],
+                "metres": 75.57007215413222
+              },
+              {
+                "fromId": "LOC_DWARF_FORGE",
+                "toId": "LOC_DWARF_MARKET",
+                "points": [
+                  [
+                    -29,
+                    0,
+                    -16
+                  ],
+                  [
+                    -34.66666666666667,
+                    0,
+                    -13.333333333333332
+                  ],
+                  [
+                    -40.333333333333336,
+                    0,
+                    -10.666666666666666
+                  ],
+                  [
+                    -46,
+                    0,
+                    -8
+                  ],
+                  [
+                    -45,
+                    0,
+                    -2
+                  ],
+                  [
+                    -44,
+                    0,
+                    4
+                  ],
+                  [
+                    -43,
+                    0,
+                    10
+                  ],
+                  [
+                    -36,
+                    0,
+                    10
+                  ],
+                  [
+                    -29,
+                    0,
+                    10
+                  ],
+                  [
+                    -22,
+                    0,
+                    10
+                  ],
+                  [
+                    -15,
+                    0,
+                    10
+                  ],
+                  [
+                    -7.5,
+                    0,
+                    9
+                  ],
+                  [
+                    0,
+                    0,
+                    8
+                  ],
+                  [
+                    5,
+                    0,
+                    8.5
+                  ],
+                  [
+                    10,
+                    0,
+                    9
+                  ],
+                  [
+                    10,
+                    0,
+                    16.666666666666664
+                  ],
+                  [
+                    10,
+                    0,
+                    24.333333333333332
+                  ],
+                  [
+                    10,
+                    0,
+                    32
+                  ],
+                  [
+                    17,
+                    0,
+                    33
+                  ]
+                ],
+                "metres": 120.29027120235853
+              },
+              {
+                "fromId": "LOC_DWARF_MARKET",
+                "toId": "LOC_DWARF_BEAST_STABLE",
+                "points": [
+                  [
+                    17,
+                    0,
+                    33
+                  ],
+                  [
+                    19.333333333333332,
+                    0,
+                    40
+                  ],
+                  [
+                    21.666666666666664,
+                    0,
+                    47
+                  ],
+                  [
+                    24,
+                    0,
+                    54
+                  ],
+                  [
+                    31,
+                    0,
+                    55
+                  ]
+                ],
+                "metres": 29.20701143304413
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          },
+          {
+            "id": "miner",
+            "kind": "commute",
+            "stops": [
+              "LOC_DWARF_INN",
+              "LOC_DWARF_MINE",
+              "LOC_DWARF_MARKET"
+            ],
+            "reason": "居住洞から現場へ通い、食事と補給へ戻る",
+            "window": "朝夕",
+            "legs": [
+              {
+                "fromId": "LOC_DWARF_INN",
+                "toId": "LOC_DWARF_MINE",
+                "points": [
+                  [
+                    -26,
+                    0,
+                    37
+                  ],
+                  [
+                    -20.333333333333332,
+                    0,
+                    39
+                  ],
+                  [
+                    -14.666666666666666,
+                    0,
+                    41
+                  ],
+                  [
+                    -9,
+                    0,
+                    43
+                  ],
+                  [
+                    -7.2,
+                    0,
+                    36
+                  ],
+                  [
+                    -5.4,
+                    0,
+                    29
+                  ],
+                  [
+                    -3.6000000000000005,
+                    0,
+                    22
+                  ],
+                  [
+                    -1.7999999999999998,
+                    0,
+                    15
+                  ],
+                  [
+                    0,
+                    0,
+                    8
+                  ],
+                  [
+                    -2.333333333333333,
+                    0,
+                    0.666666666666667
+                  ],
+                  [
+                    -4.666666666666666,
+                    0,
+                    -6.666666666666666
+                  ],
+                  [
+                    -7,
+                    0,
+                    -14
+                  ],
+                  [
+                    -4.666666666666667,
+                    0,
+                    -21.333333333333332
+                  ],
+                  [
+                    -2.333333333333334,
+                    0,
+                    -28.666666666666664
+                  ],
+                  [
+                    0,
+                    0,
+                    -36
+                  ],
+                  [
+                    -7.666666666666668,
+                    0,
+                    -37
+                  ],
+                  [
+                    -15.333333333333334,
+                    0,
+                    -38
+                  ],
+                  [
+                    -23,
+                    0,
+                    -39
+                  ],
+                  [
+                    -19.5,
+                    0,
+                    -42
+                  ],
+                  [
+                    -16,
+                    0,
+                    -45
+                  ]
+                ],
+                "metres": 132.7543353657453
+              },
+              {
+                "fromId": "LOC_DWARF_MINE",
+                "toId": "LOC_DWARF_MARKET",
+                "points": [
+                  [
+                    -16,
+                    0,
+                    -45
+                  ],
+                  [
+                    -19.5,
+                    0,
+                    -42
+                  ],
+                  [
+                    -23,
+                    0,
+                    -39
+                  ],
+                  [
+                    -15.333333333333334,
+                    0,
+                    -38
+                  ],
+                  [
+                    -7.666666666666668,
+                    0,
+                    -37
+                  ],
+                  [
+                    0,
+                    0,
+                    -36
+                  ],
+                  [
+                    -2.333333333333334,
+                    0,
+                    -28.666666666666664
+                  ],
+                  [
+                    -4.666666666666667,
+                    0,
+                    -21.333333333333332
+                  ],
+                  [
+                    -7,
+                    0,
+                    -14
+                  ],
+                  [
+                    -4.666666666666666,
+                    0,
+                    -6.666666666666666
+                  ],
+                  [
+                    -2.333333333333333,
+                    0,
+                    0.666666666666667
+                  ],
+                  [
+                    0,
+                    0,
+                    8
+                  ],
+                  [
+                    5,
+                    0,
+                    8.5
+                  ],
+                  [
+                    10,
+                    0,
+                    9
+                  ],
+                  [
+                    10,
+                    0,
+                    16.666666666666664
+                  ],
+                  [
+                    10,
+                    0,
+                    24.333333333333332
+                  ],
+                  [
+                    10,
+                    0,
+                    32
+                  ],
+                  [
+                    17,
+                    0,
+                    33
+                  ]
+                ],
+                "metres": 118.70890042222644
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          },
+          {
+            "id": "underground-traveler",
+            "kind": "visitor",
+            "stops": [
+              "LOC_DWARF_GATE",
+              "LOC_DWARF_INN",
+              "LOC_DWARF_BLACKRIDGE_TUNNEL",
+              "R05"
+            ],
+            "reason": "入口から休息を経て地下連絡坑へ向かう",
+            "window": "出発前",
+            "legs": [
+              {
+                "fromId": "LOC_DWARF_GATE",
+                "toId": "LOC_DWARF_INN",
+                "points": [
+                  [
+                    2,
+                    0,
+                    57
+                  ],
+                  [
+                    -4.5,
+                    0,
+                    57.5
+                  ],
+                  [
+                    -6.75,
+                    0,
+                    50.25
+                  ],
+                  [
+                    -9,
+                    0,
+                    43
+                  ],
+                  [
+                    -14.666666666666666,
+                    0,
+                    41
+                  ],
+                  [
+                    -20.333333333333332,
+                    0,
+                    39
+                  ],
+                  [
+                    -26,
+                    0,
+                    37
+                  ]
+                ],
+                "metres": 39.729185233211574
+              },
+              {
+                "fromId": "LOC_DWARF_INN",
+                "toId": "LOC_DWARF_BLACKRIDGE_TUNNEL",
+                "points": [
+                  [
+                    -26,
+                    0,
+                    37
+                  ],
+                  [
+                    -20.333333333333332,
+                    0,
+                    39
+                  ],
+                  [
+                    -14.666666666666666,
+                    0,
+                    41
+                  ],
+                  [
+                    -9,
+                    0,
+                    43
+                  ],
+                  [
+                    -7.2,
+                    0,
+                    36
+                  ],
+                  [
+                    -5.4,
+                    0,
+                    29
+                  ],
+                  [
+                    -3.6000000000000005,
+                    0,
+                    22
+                  ],
+                  [
+                    -1.7999999999999998,
+                    0,
+                    15
+                  ],
+                  [
+                    0,
+                    0,
+                    8
+                  ],
+                  [
+                    5,
+                    0,
+                    8.5
+                  ],
+                  [
+                    10,
+                    0,
+                    9
+                  ],
+                  [
+                    16.5,
+                    0,
+                    9.25
+                  ],
+                  [
+                    23,
+                    0,
+                    9.5
+                  ],
+                  [
+                    29.5,
+                    0,
+                    9.75
+                  ],
+                  [
+                    36,
+                    0,
+                    10
+                  ],
+                  [
+                    40,
+                    0,
+                    5.666666666666667
+                  ],
+                  [
+                    44,
+                    0,
+                    1.333333333333334
+                  ],
+                  [
+                    48,
+                    0,
+                    -3
+                  ],
+                  [
+                    48,
+                    0,
+                    -9
+                  ],
+                  [
+                    48,
+                    0,
+                    -15
+                  ],
+                  [
+                    42,
+                    0,
+                    -16
+                  ]
+                ],
+                "metres": 126.0100462033939
+              },
+              {
+                "fromId": "LOC_DWARF_BLACKRIDGE_TUNNEL",
+                "toId": "dwarf:R05",
+                "points": [
+                  [
+                    42,
+                    0,
+                    -16
+                  ],
+                  [
+                    48,
+                    0,
+                    -15
+                  ],
+                  [
+                    55,
+                    0,
+                    -14.333333333333334
+                  ],
+                  [
+                    62,
+                    0,
+                    -13.666666666666666
+                  ],
+                  [
+                    69,
+                    0,
+                    -13
+                  ],
+                  [
+                    69,
+                    0,
+                    -10
+                  ]
+                ],
+                "metres": 30.177785640027206
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          }
+        ],
+        "contactSites": [
+          "LOC_DWARF_INN",
+          "LOC_DWARF_MARKET"
+        ],
+        "risks": [
+          "岩盤で遮蔽された曲がり角",
+          "採掘輸送と居住者の移動が交わる地点"
+        ],
+        "status": "functional-layout-foundation",
+        "simulatedResidents": 9
       }
     },
     {
@@ -31313,11 +34652,11 @@
         "id": "NPC033"
       },
       "home": [
-        12.2,
+        0.20000000000000018,
         0,
-        35.8
+        -4.2
       ],
-      "homeFacilityId": "LOC_CRIME_BACK_INN",
+      "homeFacilityId": "crime:quay-tenement",
       "residenceId": "island-tenants",
       "roomId": "island-tenants:NPC033",
       "residenceMode": "rented-room",
@@ -32032,11 +35371,11 @@
         "id": "NPC049"
       },
       "home": [
-        13.4,
+        1.4,
         0,
-        35.8
+        -4.2
       ],
-      "homeFacilityId": "LOC_CRIME_BACK_INN",
+      "homeFacilityId": "crime:quay-tenement",
       "residenceId": "island-tenants",
       "roomId": "island-tenants:NPC049",
       "residenceMode": "rented-room",
@@ -32120,13 +35459,13 @@
         "id": "NPC051"
       },
       "home": [
-        14.6,
+        -32.8,
         0,
-        35.8
+        -0.19999999999999996
       ],
-      "homeFacilityId": "LOC_CRIME_BACK_INN",
-      "residenceId": "island-tenants",
-      "roomId": "island-tenants:NPC051",
+      "homeFacilityId": "crime:scribes-tenement",
+      "residenceId": "island-information-tenants",
+      "roomId": "island-information-tenants:NPC051",
       "residenceMode": "rented-room",
       "placement": "source-workplace-authored-household"
     },
@@ -33422,7 +36761,7 @@
       "home": [
         12.2,
         0,
-        34.599999999999994
+        35.8
       ],
       "homeFacilityId": "LOC_CRIME_BACK_INN",
       "residenceId": "island-innkeeper",
@@ -33464,13 +36803,13 @@
         "id": "NPC081"
       },
       "home": [
-        15.8,
+        -31.6,
         0,
-        35.8
+        -0.19999999999999996
       ],
-      "homeFacilityId": "LOC_CRIME_BACK_INN",
-      "residenceId": "island-tenants",
-      "roomId": "island-tenants:NPC081",
+      "homeFacilityId": "crime:scribes-tenement",
+      "residenceId": "island-information-tenants",
+      "roomId": "island-information-tenants:NPC081",
       "residenceMode": "rented-room",
       "placement": "source-workplace-authored-household"
     },

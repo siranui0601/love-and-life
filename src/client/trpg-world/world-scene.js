@@ -42,9 +42,10 @@ export class WorldScene {
  async loadRegion(region){
   if(this.region?.id===region.id)return;
   this.loading=true;this.region=region;this.scene.fogColor=C(region.color).scale(.7).add(new Color3(.2,.2,.2));
+  this.sun.intensity=region.terrain?.enclosure?0:1.5;this.ambient.intensity=region.terrain?.enclosure?.kind==='cavern'?.8:.75;
   this.actors.forEach(a=>a.dispose());this.actors.clear();this.decor.forEach(a=>a.dispose());this.decor=[];this.regionRoot?.dispose();this.regionRoot=new TransformNode(`region:${region.id}`,this.scene);
   this.signMaterials?.forEach(m=>m.dispose(false,true));this.signMaterials=[];
-  this.ground('terrain',region.size+50,region.size+50,[0,-.04,0],region.color,this.regionRoot);
+  this.ground('terrain',region.size+50,region.size+50,[0,-.04,0],region.terrain?.enclosure?'#74675a':region.color,this.regionRoot);
   for(const p of region.terrain?.plots||[])this.ground('field',p.width,p.depth,[p.x,.015,p.z],p.color,this.regionRoot);
   for(const path of region.terrain?.paths||[])for(let i=1;i<path.points.length;i++){
    const a=v(path.points[i-1]),b=v(path.points[i]),d=Vector3.Distance(a,b);const road=this.ground('road',path.width,d,[(a.x+b.x)/2,.025,(a.z+b.z)/2],['city','ruins'].includes(region.biome)?'#b6b3a2':'#b3a181',this.regionRoot);road.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
@@ -55,7 +56,12 @@ export class WorldScene {
   for(const wall of region.terrain?.boundaries||[]){
    const mesh=MeshBuilder.CreateBox(wall.id,{width:wall.width,height:wall.height,depth:wall.depth},this.scene);
    mesh.position=new Vector3(wall.x,wall.height/2,wall.z);mesh.parent=this.regionRoot;
-   mesh.material=this.material(wall.id,'#8d897c');mesh.metadata={cameraBlock:true};mesh.receiveShadows=true;this.shadows.addShadowCaster(mesh);
+   mesh.material=this.material(wall.id,wall.material==='bedrock'?'#57504b':'#8d897c');mesh.metadata={cameraBlock:true};mesh.receiveShadows=true;this.shadows.addShadowCaster(mesh);
+  }
+  if(region.terrain?.enclosure){
+   const roof=MeshBuilder.CreateBox('cavern-ceiling',{width:region.size,height:1,depth:region.size},this.scene);
+   roof.position=new Vector3(0,region.terrain.enclosure.ceilingY+.5,0);roof.parent=this.regionRoot;
+   roof.material=this.material('bedrock-ceiling','#49413b');roof.metadata={cameraBlock:true};
   }
   for(const bridge of region.terrain?.bridges||[])tasks.push(this.prop('town/planks.glb',{position:[bridge.x,.02,bridge.z],size:[bridge.width,.15,bridge.depth],name:bridge.id||'bridge'}));
   for(const r of region.terrain?.ridges||[])tasks.push(this.prop('town/rock-large.glb',{position:[r.x,0,r.z],size:[r.radius*2,r.height,r.radius*2],name:'ridge',cameraBlock:true}));
@@ -76,7 +82,7 @@ export class WorldScene {
      const material=this.material(`${o.id}:sign`,'#ffffff');material.diffuseTexture=texture;material.emissiveColor=new Color3(.2,.2,.2);sign.material=material;sign.isPickable=false;this.signMaterials.push(material);
     }
     for(const wall of [{p:[x-w/2,0,z],s:[.35,h,d]},{p:[x+w/2,0,z],s:[.35,h,d]},{p:[x,0,z-d/2],s:[w,h,.35]}])tasks.push(this.prop('town/wall-window-stone.glb',{position:wall.p,size:wall.s,name:o.id,cameraBlock:true}));
-    tasks.push(this.prop('town/roof-gable.glb',{position:[x,h,z],size:[w+1,2.1,d+1],name:`${o.id}:roof`,cameraBlock:true}));
+    if(!region.terrain?.enclosure)tasks.push(this.prop('town/roof-gable.glb',{position:[x,h,z],size:[w+1,2.1,d+1],name:`${o.id}:roof`,cameraBlock:true}));
     tasks.push(this.prop(o.kind==='shop'?'town/stall-red.glb':'town/stall-bench.glb',{position:o.kind==='residence'?[x+w/2-1.3,0,z-d/2+1.4]:[x,0,z-1],height:o.kind==='shop'?2.2:.8,name:'interior'}));
     tasks.push(this.prop('town/lantern.glb',{position:[x-3,2,z+d/2],height:.7,name:'lantern'}));
    }else{
@@ -135,9 +141,10 @@ export class WorldScene {
   const hit=this.scene.pickWithRay(new Ray(this.camera.target,direction,radius),m=>!!m.metadata?.cameraBlock);
   this.camera.radius=hit?.hit?Math.max(2.5,hit.distance-.6):radius;this.lastCameraRadius=this.camera.radius;
   if(this.view.weather?.type==='storm'||this.view.weather?.type==='rain'){this.scene.fogDensity=.012;this.sun.intensity*=.5;}else this.scene.fogDensity=.004;
+  if(this.region.terrain?.enclosure){this.sun.intensity=0;this.ambient.intensity=.65;this.scene.clearColor=new Color4(.12,.10,.09,1);this.scene.fogColor=new Color3(.16,.14,.12);this.scene.fogDensity=.009;}
   this.weatherFx(dt);
  }
- weatherFx(dt){const wet=['storm','rain','snow'].includes(this.view.weather?.type);if(this.precipitation)this.precipitation.setEnabled(wet);if(!wet)return;
+ weatherFx(dt){const wet=!this.region?.terrain?.enclosure&&['storm','rain','snow'].includes(this.view.weather?.type);if(this.precipitation)this.precipitation.setEnabled(wet);if(!wet)return;
   this.rainTime=(this.rainTime||0)+dt;const snow=this.view.weather.type==='snow';
   const lines=Array.from({length:140},(_,i)=>{const x=this.position[0]+((i*17)%37)-18,z=this.position[2]+((i*23)%39)-19,y=12-((i*.79+this.rainTime*(snow?1.7:12))%12);return[new Vector3(x,y,z),new Vector3(x+(snow?.05:.12),y-(snow?.08:1),z)];});
   this.precipitation=MeshBuilder.CreateLineSystem('precipitation',{lines,updatable:true,instance:this.precipitation},this.scene);this.precipitation.color=new Color3(.78,.85,.9);this.precipitation.alpha=.38;this.precipitation.isPickable=false;

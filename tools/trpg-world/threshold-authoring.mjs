@@ -1,7 +1,7 @@
 // Street → threshold → room. These dimensions describe accessible grayboxes,
 // not legal ownership or an automatically granted right to enter a home.
 export function authorThresholds(region){
- if(!['farm','capital','trade'].includes(region.id))return;
+ if(!['farm','capital','trade','crime','dwarf'].includes(region.id))return;
  for(const site of region.objects.filter(o=>o.buildingPosition)){
   const [x,,z]=site.buildingPosition,front=z+site.depth/2;
   const use=site.kind==='residence'?'domestic':['shop','inn'].includes(site.kind)?'public-service':['stable','job'].includes(site.kind)?'loading':'institution';

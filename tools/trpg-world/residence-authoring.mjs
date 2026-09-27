@@ -5,6 +5,8 @@ import {canOccupy,findPath} from '../../src/shared/trpg-world/navigation.js';
 const npc=id=>`NPC${String(id).padStart(3,'0')}`;
 const home=(id,region,site,mode,people,reason)=>({id,region,siteId:site,mode,residentIds:people.map(npc),reason});
 export const dwellings=[
+ ['crime:quay-tenement','crime','港裏の借家',2,-6,'lodging'],
+ ['crime:scribes-tenement','crime','情報街の長屋',-31,-2,'exchange'],
  ['farm:mira-house','farm','北畑の家',-18,-58,'commons'],
  ['farm:eda-house','farm','畑沿いの農家',-65,10,'production'],
  ['farm:granary-house','farm','穀倉番の家',-57,-38,'production'],
@@ -62,7 +64,8 @@ export const residences=[
  home('port-herbalist','trade','LOC_TRADE_APOTHECARY','shop-house',[77],'薬草商の住居区'),
  home('carter-household','trade','trade:stable-house','household',[78],'荷馬車組合の居住区'),
  home('shipwright-tenancy','trade','trade:shipwright-house','rented-room',[79],'船大工へ通う長屋'),
- home('island-tenants','crime','LOC_CRIME_BACK_INN','rented-room',[33,49,51,81],'裏港での継続的な部屋借り'),
+ home('island-tenants','crime','crime:quay-tenement','rented-room',[33,49],'裏港での継続的な部屋借り'),
+ home('island-information-tenants','crime','crime:scribes-tenement','rented-room',[51,81],'情報街で働く人々の長期借室。宿泊客とは別の生活拠点'),
  home('island-arms-house','crime','LOC_CRIME_WEAPON_MARKET','shop-house',[48],'市場の住居区'),
  home('island-scribe-house','crime','LOC_CRIME_FORGER','shop-house',[50],'職住一体'),
  home('island-innkeeper','crime','LOC_CRIME_BACK_INN','staff-quarters',[80],'店主の住居区'),

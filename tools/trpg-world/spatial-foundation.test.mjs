@@ -10,6 +10,37 @@ import {performAt} from './validation/action-domain.mjs';
 import {createRegion} from './region-layout.mjs';
 const content=JSON.parse(fs.readFileSync(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url)));
 
+test('cavern rock is authoritative, inhabited chambers connect to the Blackridge passage, and flight cannot escape the ceiling',()=>{
+ const r=content.regions.find(r=>r.id==='dwarf'),rocks=r.terrain.boundaries.filter(o=>o.material==='bedrock');
+ assert(rocks.length>0);assert(r.terrain.enclosure);assert(!canOccupy(r,[...r.spawn.slice(0,1),15,r.spawn[2]]));
+ for(const rock of rocks){
+  assert(!canOccupy(r,[rock.x,0,rock.z]));
+  assert(!hasLineOfSight(r,[rock.x-rock.width/2-1,0,rock.z],[rock.x+rock.width/2+1,0,rock.z]));
+  assert.deepEqual(r.obstacles.find(o=>o.id===rock.id),rock);
+ }
+ const entrance=r.objects.find(o=>o.id==='LOC_DWARF_GATE'),deep=r.objects.find(o=>o.id==='LOC_DWARF_BLACKRIDGE_TUNNEL'),exit=r.portals.find(p=>p.routeId==='R05');
+ const actor={id:'traveler',position:[...entrance.position]};
+ for(const goal of [deep.position,exit.position]){
+  const path=findStreetPath(r,actor.position,goal);assert(path.length);assert(pathIsTraversable(r,actor.position,path));
+  for(let i=0;i<1000&&distance(actor.position,goal)>.2;i++){
+   const before=[...actor.position];followPath(r,actor,goal,1);assert(distance(before,actor.position)<=1.001);assert(canOccupy(r,actor.position));
+  }
+  assert(distance(actor.position,goal)<.2,'actor must physically traverse the passage');
+ }
+});
+
+test('urban yard boundaries create blind corners without sealing public circulation',()=>{
+ for(const id of ['capital','crime']){
+  const r=content.regions.find(r=>r.id===id);
+  for(const wall of r.terrain.boundaries){
+   const axis=wall.width<wall.depth?'x':'z',a=[wall.x,0,wall.z],b=[...a],i=axis==='x'?0:2,extent=(axis==='x'?wall.width:wall.depth)/2+1;
+   a[i]-=extent;b[i]+=extent;
+   assert(!hasLineOfSight(r,a,b),wall.id);
+  }
+  for(const f of r.settlement.flows)for(const leg of f.legs)assert(pathIsTraversable(r,leg.points[0],leg.points.slice(1)),f.id);
+ }
+});
+
 test('reordering source facility rows cannot move semantic places or silently substitute a new site',()=>{
  const source=JSON.parse(fs.readFileSync(new URL('./sources/world.json',import.meta.url)));
  for(const r of content.regions){

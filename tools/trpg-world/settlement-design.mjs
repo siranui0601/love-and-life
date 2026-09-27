@@ -4,6 +4,34 @@ import {findStreetPath,pathIsTraversable,distance} from '../../src/shared/trpg-w
 const district=(id,name,sites,purpose)=>({id,name,sites,purpose});
 const flow=(id,kind,stops,reason,window)=>({id,kind,stops,reason,window});
 export const settlementDesigns={
+ crime:{
+  role:'岩島の港湾市街。荷役・宿泊・取引の表通りから、作業庭と生活路地が枝分かれする。住民の出自を犯罪性に結び付けない。',
+  districts:[
+   district('quays','荷揚げ・保管',['LOC_CRIME_DOCK','LOC_CRIME_WAREHOUSE'],'岸壁から荷受け庭へ運ぶ。倉庫裏は宿への通りと壁で分ける。'),
+   district('lodging','宿・交通',['LOC_CRIME_BACK_INN','LOC_CRIME_STABLE','LOC_CRIME_GAMBLING'],'御者と船客の食事・滞在。帰路には通り抜けと生活路地を選べる。'),
+   district('exchange','取引・情報街',['LOC_CRIME_WEAPON_MARKET','LOC_CRIME_INFO_STREET','LOC_CRIME_SLAVE_MARKET','LOC_CRIME_FORGER'],'広い取引場と裏の相談場所を分ける。被害者を含む住民が暮らす場所。'),
+  ],
+  flows:[
+   flow('cargo-yard','cargo',['R08','LOC_CRIME_DOCK','LOC_CRIME_WAREHOUSE'],'荷揚げと保管が同じ港の実移動でつながる','入港後'),
+   flow('lodger','visitor',['LOC_CRIME_DOCK','LOC_CRIME_BACK_INN','LOC_CRIME_INFO_STREET'],'船客が宿を取り、街中へ出る','日中・夕方'),
+   flow('yard-worker','commute',['LOC_CRIME_WAREHOUSE','LOC_CRIME_BACK_INN','LOC_CRIME_STABLE'],'荷役の帰路と食事、荷駄の管理','朝夕'),
+  ],contactSites:['LOC_CRIME_BACK_INN','LOC_CRIME_DOCK','LOC_CRIME_INFO_STREET'],
+  risks:['庭壁の折れ角は見通せないが、複数の道から抜けられる','閉鎖と見通しを区別し、路地に入っただけで犯罪を発生させない'],
+ },
+ dwarf:{
+  role:'地下の居住洞・工房洞・採掘坑。洞窟そのものが主空間で、黒嶺への坑道もその枝の一つ。',
+  districts:[
+   district('mouth','洞窟口・荷駄',['LOC_DWARF_GATE','LOC_DWARF_BEAST_STABLE'],'地上の隊商と坑内搬送を接続する入口。'),
+   district('habitation','居住・交換洞',['LOC_DWARF_INN','LOC_DWARF_MARKET','LOC_DWARF_NOTICE'],'坑夫が食事、休息、物資交換を行う空洞。'),
+   district('works','工房・採掘洞',['LOC_DWARF_FORGE','LOC_DWARF_MINE','LOC_DWARF_ENGINEER'],'鉱石搬送の太い坑道と職人の細い連絡坑を分ける。'),
+   district('deep','黒嶺連絡坑',['LOC_DWARF_BLACKRIDGE_TUNNEL'],'採掘域から分かれる地下の越境路。'),
+  ],
+  flows:[
+   flow('ore','cargo',['LOC_DWARF_MINE','LOC_DWARF_FORGE','LOC_DWARF_MARKET','LOC_DWARF_BEAST_STABLE'],'採掘・加工・交換・地上への積替え','作業時間'),
+   flow('miner','commute',['LOC_DWARF_INN','LOC_DWARF_MINE','LOC_DWARF_MARKET'],'居住洞から現場へ通い、食事と補給へ戻る','朝夕'),
+   flow('underground-traveler','visitor',['LOC_DWARF_GATE','LOC_DWARF_INN','LOC_DWARF_BLACKRIDGE_TUNNEL','R05'],'入口から休息を経て地下連絡坑へ向かう','出発前'),
+  ],contactSites:['LOC_DWARF_INN','LOC_DWARF_MARKET'],risks:['岩盤で遮蔽された曲がり角','採掘輸送と居住者の移動が交わる地点'],
+ },
  farm:{
   role:'王都へ穀物を供給する農村。畑・集荷・生活の動線を井戸と広場で接続する。',
   population:{planningRange:[180,320],status:'scale-target-only'},
@@ -67,8 +95,19 @@ export const settlementDesigns={
 // Back walls of working yards, not decorative screens or sealed fake houses.
 // They leave two passages around a loading court and hide the market on entry.
 export const spatialBoundaries={
+ crime:[
+  {id:'warehouse-loading-return',x:32,z:28,width:1,depth:18,height:4,purpose:'倉庫の荷受け庭と黒灯亭への路地を分ける'},
+  {id:'inn-service-yard',x:9,z:26,width:13,depth:1,height:3.5,purpose:'宿の搬入庭を折れ曲がって回る'},
+  {id:'market-court-return',x:-17,z:-19,width:1,depth:18,height:4,purpose:'市場の裏口と生活路地の死角'},
+  {id:'western-court',x:-43,z:22,width:1,depth:20,height:4,purpose:'情報街の中庭を囲む境界'},
+  {id:'north-yard-return',x:-34,z:10,width:16,depth:1,height:3.5,purpose:'通りから私的な作業庭を隠す'},
+ ],
  capital:[{id:'market-loading-wall',x:0,z:25,width:17,depth:1,height:5,purpose:'市場の荷捌き庭と駅馬車から来る歩行者を分ける背壁'},
-          {id:'workshop-yard-wall',x:25,z:13,width:1,depth:18,height:4,purpose:'工房・薬屋側の作業庭を居住街への通りから分ける壁'}],
+          {id:'workshop-yard-wall',x:25,z:13,width:1,depth:18,height:4,purpose:'工房・薬屋側の作業庭を居住街への通りから分ける壁'},
+          {id:'lower-court-west',x:-49,z:26,width:1,depth:14,height:4,purpose:'安宿の共同庭と西の路地を分ける'},
+          {id:'lower-court-return',x:-43,z:17,width:13,depth:1,height:4,purpose:'安宿の生活路地を曲げる庭壁'},
+          {id:'tenement-yard-east',x:-19,z:13,width:1,depth:16,height:4,purpose:'長屋の共同庭を市場の通過交通から隔てる'},
+          {id:'lower-garden-wall',x:-30,z:40,width:10,depth:1,height:3.5,purpose:'孤児院へ続く庭の境界'}],
 };
 
 export function bindSettlementDesign(region){
