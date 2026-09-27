@@ -34,6 +34,8 @@ const clone = value => structuredClone(value);
 const finite = (v, fallback=0) => Number.isFinite(Number(v)) ? Number(v) : fallback;
 const clamp = (v,min,max) => Math.max(min,Math.min(max,v));
 const values = orderedValues;
+const workplaceClosed=(state,target)=>target.closed||!!(target.workplaceId&&state.facilities?.[target.workplaceId]?.closed);
+const jobAt=(target,job)=>(job.facilityId?job.facilityId===(target.workplaceId||target.id):['job','npc','board'].includes(target.kind))&&(!target.jobIds||target.jobIds.includes(job.id));
 function fail(code,message,status=400) { const error = new Error(message); error.code = code; error.status = status; throw error; }
 function index(content) {
   if (!indexes.has(content)) {
@@ -720,8 +722,8 @@ export function applyCommand(state,content,command) {
   }
   if(command.type==='work') {
     const target=targetAt(state,content,command.targetId),job=idx.jobs.get(command.jobId);
-    if(target.closed)fail('WORKPLACE_CLOSED','仕事場は閉鎖されている。',409);
-    if(!job||(job.facilityId?target.id!==job.facilityId:!['job','npc','board'].includes(target.kind)))fail('JOB_MISSING','実際の仕事場に近づいてください。',409);
+    if(workplaceClosed(state,target))fail('WORKPLACE_CLOSED','仕事場は閉鎖されている。',409);
+    if(!job||!jobAt(target,job))fail('JOB_MISSING','実際の仕事場に近づいてください。',409);
     if(job.region&&job.region!==p.region)fail('JOB_REGION','その仕事は別の地域です。',409);
     const missing=requirementsMissing(state,content,job.requirements || {});if(missing.length)fail('JOB_REQUIREMENTS',`必要：${missing.join('、')}`,409);
     const duration=clamp(finite(job.minutes,120),15,240);if(!advanceMacro(state,content,'working',duration*60,{targetId:target.id}))return {message:'仕事を中断した。'};
@@ -785,7 +787,7 @@ function actionsFor(state,content,target) {
     const missing=requirementsMissing(state,content,{...(recipe.requirements || {}),items:Object.fromEntries(Object.entries(recipe.requirements?.items || recipe.requirements?.inventory || {}).map(([id,amount])=>[id,finite(amount)]))});
     actions.push({id:`craft:${recipe.id}`,type:'craft',recipeId:recipe.id,label:`製作：${recipe.name} · ${finite(recipe.minutes,30)}分`,available:missing.length===0,missing});
   }
-  for(const job of content.jobs || []) if(!target.closed&&(job.facilityId?job.facilityId===target.id:['job','board','npc'].includes(target.kind))&&(!job.region||job.region===p.region)&&(!target.jobId||target.jobId===job.id))
+  for(const job of content.jobs || []) if(!workplaceClosed(state,target)&&jobAt(target,job)&&(!job.region||job.region===p.region)&&(!target.jobId||target.jobId===job.id))
     {const requirements=job.requirements||{},missing=requirementsMissing(state,content,requirements);actions.push({id:`work:${job.id}`,type:'work',jobId:job.id,label:`${job.name} · ${finite(job.pay??job.reward??job.wage,30)}G`,requirements,available:missing.length===0,missing});}
   if(['board','npc'].includes(target.kind)) for(const known of state.knowledge.filter(k=>k.kind==='event'&&k.region===p.region)) {
     const event=idx.events.get(known.eventId);if(event&&!state.quests.some(q=>q.eventId===event.id)&&['active','critical','latent'].includes(state.events[event.id].status))

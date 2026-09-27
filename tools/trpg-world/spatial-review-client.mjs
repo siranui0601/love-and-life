@@ -12,7 +12,7 @@ world.camera.upperRadiusLimit=240; // Authoring overview only; leave the player 
 let selected,flow,points=[],cursor=0,lines=[];
 function option(select,value,label){const o=document.createElement('option');o.value=value;o.textContent=label;select.append(o);}
 function camera(p,radius=70){world.camera.target=new Vector3(p[0],1.4,p[2]);world.camera.radius=radius;world.camera.beta=.75;world.camera.alpha=Math.PI/2;}
-function showPoint(){const p=points[cursor];if(!p)return;camera(p,18);world.camera.beta=1.22;el('point').textContent=`地点 ${cursor+1} / ${points.length}`;}
+function showPoint(){const p=points[cursor];if(!p)return;camera(p,18);world.camera.beta=1.22;world.constrainCamera();el('point').textContent=`地点 ${cursor+1} / ${points.length}`;}
 function selectFlow(){
  lines.forEach(l=>l.dispose());lines=[];flow=selected.settlement?.flows.find(f=>f.id===el('flow').value);
  points=flow?flow.legs.flatMap((leg,i)=>i?leg.points.slice(1):leg.points):[];cursor=0;
@@ -21,7 +21,7 @@ function selectFlow(){
  el('point').textContent='俯瞰：線の交差点と施設の入口を確認';camera(selected.spawn,110);
 }
 async function selectRegion(){selected=content.regions.find(r=>r.id===el('region').value);await world.loadRegion(selected);el('purpose').textContent=selected.settlement?.role||selected.identity;el('flow').replaceChildren();for(const f of selected.settlement?.flows||[])option(el('flow'),f.id,`${f.kind} / ${f.id}`);siteSelect.replaceChildren();for(const o of selected.objects.filter(o=>o.interior?.threshold))option(siteSelect,o.id,o.name);selectFlow();}
-siteSelect.onchange=()=>{const o=selected.objects.find(o=>o.id===siteSelect.value);if(o){camera(o.interior.entrance,10);world.camera.beta=1.42;el('point').textContent=`${o.name}：正面の入口と室内の見通し`;}};
+siteSelect.onchange=()=>{const o=selected.objects.find(o=>o.id===siteSelect.value);if(o){camera(o.interior.entrance,10);world.camera.beta=1.42;world.constrainCamera();el('point').textContent=`${o.name}：正面の入口と室内の見通し`;}};
 for(const r of content.regions)option(el('region'),r.id,r.name);
 el('region').onchange=selectRegion;el('flow').onchange=selectFlow;
 el('previous').onclick=()=>{cursor=Math.max(0,cursor-1);showPoint();};el('next').onclick=()=>{cursor=Math.min(points.length-1,cursor+1);showPoint();};

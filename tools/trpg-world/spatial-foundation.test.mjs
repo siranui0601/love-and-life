@@ -6,9 +6,35 @@ import {arrivalPosition,journeyLocation} from '../../src/shared/trpg-world/trave
 import {createWorld,advanceWorld,projectWorld} from '../../src/shared/trpg-world/simulation.js';
 import {reconcileGeometry} from '../../src/server/trpg/world/geometry-migration.js';
 import {WorldReplay,replay,digest} from './validation/replay.mjs';
-import {performAt} from './validation/action-domain.mjs';
+import {performAt,secureArea} from './validation/action-domain.mjs';
 import {createRegion} from './region-layout.mjs';
 const content=JSON.parse(fs.readFileSync(new URL('../../src/server/trpg/world/content/world-content.json',import.meta.url)));
+
+test('land-use parcels bind existing livelihoods, have usable ground, and leave inhabitants and facilities accessible',()=>{
+ const ids=new Set();
+ for(const region of content.regions){
+  assert(region.terrain.parcels.length>=3,region.id);
+  for(const parcel of region.terrain.parcels){
+   assert(!ids.has(parcel.id));ids.add(parcel.id);assert(region.objects.some(o=>o.id===parcel.site));assert(parcel.tiles.length,parcel.id);
+   assert.equal(parcel.economicStatus,parcel.worksiteId?'existing-job-at-physical-worksite':'not-an-inventory-source');
+   if(parcel.worksiteId){const worksite=region.objects.find(o=>o.id===parcel.worksiteId);assert.equal(worksite.workplaceId,parcel.site);assert(worksite.jobIds.every(id=>content.jobs.some(j=>j.id===id&&j.facilityId===parcel.site)));}
+   for(const tile of parcel.tiles){assert(Math.abs(tile.x)+tile.width/2<=region.size/2);assert(Math.abs(tile.z)+tile.depth/2<=region.size/2);}
+  }
+  for(const prop of region.terrain.landUseProps){
+   assert(region.terrain.parcels.some(p=>p.id===prop.parcelId));const body=region.obstacles.find(o=>o.id===prop.id);assert(body);assert(!canOccupy(region,prop.position));
+  }
+  for(const actor of content.npcs.filter(n=>n.region===region.id))assert(pathIsTraversable(region,actor.home,findStreetPath(region,actor.home,actor.work)),actor.id);
+ }
+});
+
+test('outdoor work is reached on foot, uses ordinary work commands, and resumes identically after save',()=>{
+ const run=new WorldReplay(content,{seed:4}),region=content.regions.find(r=>r.id==='farm'),yard=region.objects.find(o=>o.id==='worksite:parcel:farm:grain-yard');
+ assert(yard);assert(run.command({type:'work',targetId:yard.id,jobId:yard.jobIds[0]}).error,'cannot work at a distant yard');
+ assert(!performAt(run,yard).error);const secured=secureArea(run);assert(!secured.error,JSON.stringify(secured));assert(!performAt(run,yard).error);
+ const saved=run.fork(),before=run.state.player.gold,start=run.state.time,job=content.jobs.find(j=>j.id===yard.jobIds[0]);
+ for(const r of [run,saved]){const result=r.command({type:'work',targetId:yard.id,jobId:job.id});assert(!result.error,JSON.stringify(result));assert.equal(r.state.player.gold,before+job.pay);assert(r.state.time>start);}
+ assert.equal(digest(run.state),digest(saved.state));assert.equal(digest(replay(content,run.export()).state),digest(run.state));
+});
 
 test('cavern rock is authoritative, inhabited chambers connect to the Blackridge passage, and flight cannot escape the ceiling',()=>{
  const r=content.regions.find(r=>r.id==='dwarf'),rocks=r.terrain.boundaries.filter(o=>o.material==='bedrock');

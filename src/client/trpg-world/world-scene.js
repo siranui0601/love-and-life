@@ -7,6 +7,8 @@ import {HemisphericLight} from '@babylonjs/core/Lights/hemisphericLight.js';
 import {DirectionalLight} from '@babylonjs/core/Lights/directionalLight.js';
 import {ShadowGenerator} from '@babylonjs/core/Lights/Shadows/shadowGenerator.js';
 import {MeshBuilder} from '@babylonjs/core/Meshes/meshBuilder.js';
+import {Mesh} from '@babylonjs/core/Meshes/mesh.js';
+import {VertexData} from '@babylonjs/core/Meshes/mesh.vertexData.js';
 import {StandardMaterial} from '@babylonjs/core/Materials/standardMaterial.js';
 import {DynamicTexture} from '@babylonjs/core/Materials/Textures/dynamicTexture.js';
 import {TransformNode} from '@babylonjs/core/Meshes/transformNode.js';
@@ -28,7 +30,7 @@ export class WorldScene {
   this.canvas=canvas;this.engine=new Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,adaptToDeviceRatio:false});
   this.engine.setHardwareScalingLevel(Math.max(1,window.devicePixelRatio/1.5));
   this.scene=new Scene(this.engine);this.scene.clearColor=new Color4(.63,.74,.79,1);this.scene.fogMode=Scene.FOGMODE_EXP2;this.scene.fogDensity=.005;
-  this.camera=new ArcRotateCamera('camera',Math.PI/2+.3,1.16,25,new Vector3(0,1.4,8),this.scene);this.camera.fov=.95;this.camera.lowerBetaLimit=.3;this.camera.upperBetaLimit=1.45;this.camera.lowerRadiusLimit=5;this.camera.upperRadiusLimit=32;this.camera.wheelPrecision=15;this.camera.minZ=.15;this.camera.attachControl(canvas,true);this.camera.inputs.attached.pointers.buttons=[2];this.camera.keysUp=[];this.camera.keysDown=[];this.camera.keysLeft=[];this.camera.keysRight=[];
+  this.camera=new ArcRotateCamera('camera',Math.PI/2+.3,1.16,25,new Vector3(0,1.4,8),this.scene);this.camera.fov=.95;this.camera.lowerBetaLimit=.3;this.camera.upperBetaLimit=1.45;this.camera.lowerRadiusLimit=.3;this.camera.upperRadiusLimit=32;this.camera.wheelPrecision=15;this.camera.minZ=.15;this.camera.attachControl(canvas,true);this.camera.inputs.attached.pointers.buttons=[2];this.camera.keysUp=[];this.camera.keysDown=[];this.camera.keysLeft=[];this.camera.keysRight=[];
   this.ambient=new HemisphericLight('sky',new Vector3(0,1,0),this.scene);this.ambient.intensity=.75;this.ambient.groundColor=C('#333e2d');
   this.sun=new DirectionalLight('sun',new Vector3(-.5,-1,.6),this.scene);this.sun.position=new Vector3(30,55,-20);this.sun.intensity=1.5;
   this.shadows=new ShadowGenerator(1024,this.sun);this.shadows.usePercentageCloserFiltering=true;this.shadows.filteringQuality=ShadowGenerator.QUALITY_LOW;this.shadows.bias=.002;
@@ -38,6 +40,12 @@ export class WorldScene {
  }
  material(name,hex){const m=new StandardMaterial(name,this.scene);m.diffuseColor=C(hex);m.specularColor=Color3.Black();return m;}
  ground(name,width,depth,pos,color,parent){const m=MeshBuilder.CreateGround(name,{width,height:depth},this.scene);m.position=v(pos);m.material=this.material(name,color);m.receiveShadows=true;m.parent=parent;return m;}
+ tiledGround(name,tiles,color,y){
+  const data=new VertexData(),positions=[],normals=[],indices=[],uvs=[];
+  for(const {x,z,width,depth} of tiles){const i=positions.length/3;positions.push(x-width/2,y,z-depth/2,x-width/2,y,z+depth/2,x+width/2,y,z+depth/2,x+width/2,y,z-depth/2);normals.push(0,1,0,0,1,0,0,1,0,0,1,0);uvs.push(0,0,0,1,1,1,1,0);indices.push(i,i+2,i+1,i,i+3,i+2);}
+  if(!positions.length)return;
+  Object.assign(data,{positions,normals,indices,uvs});const mesh=new Mesh(name,this.scene);data.applyToMesh(mesh);mesh.material=this.material(name,color);mesh.parent=this.regionRoot;mesh.receiveShadows=true;mesh.isPickable=false;
+ }
  async prop(path,opt){const a=await this.assets.spawn(path,{...opt,parent:this.regionRoot});this.decor.push(a);for(const m of a.meshes){if((opt.height||opt.size?.[1]||5)<12)this.shadows.addShadowCaster(m);m.metadata.cameraBlock=!!opt.cameraBlock;}return a;}
  async loadRegion(region){
   if(this.region?.id===region.id)return;
@@ -47,11 +55,16 @@ export class WorldScene {
   this.signMaterials?.forEach(m=>m.dispose(false,true));this.signMaterials=[];
   this.ground('terrain',region.size+50,region.size+50,[0,-.04,0],region.terrain?.enclosure?'#74675a':region.color,this.regionRoot);
   for(const p of region.terrain?.plots||[])this.ground('field',p.width,p.depth,[p.x,.015,p.z],p.color,this.regionRoot);
+  for(const parcel of region.terrain?.parcels||[]){
+   this.tiledGround(parcel.id,parcel.tiles,parcel.color,.016);
+   if(['cropland','garden'].includes(parcel.use))this.tiledGround(`${parcel.id}:bed`,parcel.tiles.flatMap(t=>[-1,0,1].map(dx=>({x:t.x+dx,z:t.z,width:.45,depth:t.depth-.3}))),parcel.use==='garden'?'#426443':'#af9959',.019);
+  }
   for(const path of region.terrain?.paths||[])for(let i=1;i<path.points.length;i++){
    const a=v(path.points[i-1]),b=v(path.points[i]),d=Vector3.Distance(a,b);const road=this.ground('road',path.width,d,[(a.x+b.x)/2,.025,(a.z+b.z)/2],['city','ruins'].includes(region.biome)?'#b6b3a2':'#b3a181',this.regionRoot);road.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
   }
   for(const water of region.terrain?.water||[]){const mesh=this.ground('water',water.width,water.depth,[water.x,.04,water.z],'#4b8798',this.regionRoot);mesh.material.alpha=.88;mesh.material.specularColor=new Color3(.6,.6,.6);}
   const tasks=[];
+  for(const p of region.terrain?.landUseProps||[])tasks.push(this.prop(p.asset,{position:p.position,size:p.size,name:p.id,cameraBlock:true}));
   // Functional courtyard boundaries share exact dimensions with collision/LOS.
   for(const wall of region.terrain?.boundaries||[]){
    const mesh=MeshBuilder.CreateBox(wall.id,{width:wall.width,height:wall.height,depth:wall.depth},this.scene);
@@ -135,14 +148,17 @@ export class WorldScene {
   const h=(this.view.time%86400)/3600,night=h<5.5||h>=20;this.scene.clearColor=night?new Color4(.045,.065,.12,1):h<8?new Color4(.70,.73,.66,1):new Color4(.60,.73,.79,1);
   // Sweep the camera arm against actual imported building meshes, leaving the
   // player's preferred zoom intact when a wall temporarily pushes the camera in.
+  this.constrainCamera();
+  if(this.view.weather?.type==='storm'||this.view.weather?.type==='rain'){this.scene.fogDensity=.012;this.sun.intensity*=.5;}else this.scene.fogDensity=.004;
+  if(this.region.terrain?.enclosure){this.sun.intensity=0;this.ambient.intensity=.65;this.scene.clearColor=new Color4(.12,.10,.09,1);this.scene.fogColor=new Color3(.16,.14,.12);this.scene.fogDensity=.009;}
+  this.weatherFx(dt);
+ }
+ constrainCamera(){
   if(this.camera.radius!==this.lastCameraRadius)this.desiredCameraRadius=this.camera.radius;
   const radius=this.desiredCameraRadius||25,alpha=this.camera.alpha,beta=this.camera.beta;
   const direction=new Vector3(Math.cos(alpha)*Math.sin(beta),Math.cos(beta),Math.sin(alpha)*Math.sin(beta));
   const hit=this.scene.pickWithRay(new Ray(this.camera.target,direction,radius),m=>!!m.metadata?.cameraBlock);
-  this.camera.radius=hit?.hit?Math.max(2.5,hit.distance-.6):radius;this.lastCameraRadius=this.camera.radius;
-  if(this.view.weather?.type==='storm'||this.view.weather?.type==='rain'){this.scene.fogDensity=.012;this.sun.intensity*=.5;}else this.scene.fogDensity=.004;
-  if(this.region.terrain?.enclosure){this.sun.intensity=0;this.ambient.intensity=.65;this.scene.clearColor=new Color4(.12,.10,.09,1);this.scene.fogColor=new Color3(.16,.14,.12);this.scene.fogDensity=.009;}
-  this.weatherFx(dt);
+  this.camera.radius=hit?.hit?Math.max(.3,hit.distance-.35):radius;this.lastCameraRadius=this.camera.radius;
  }
  weatherFx(dt){const wet=!this.region?.terrain?.enclosure&&['storm','rain','snow'].includes(this.view.weather?.type);if(this.precipitation)this.precipitation.setEnabled(wet);if(!wet)return;
   this.rainTime=(this.rainTime||0)+dt;const snow=this.view.weather.type==='snow';

@@ -4,6 +4,7 @@ import {addDwellings} from './residence-authoring.mjs';
 import {authorThresholds} from './threshold-authoring.mjs';
 import {facilitySites} from './facility-sites.mjs';
 import {encloseCavern} from './enclosed-space.mjs';
+import {furnishLandUse} from './land-use-authoring.mjs';
 import {canOccupy,findPath,distance} from '../../src/shared/trpg-world/navigation.js';
 
 // Coordinates are authored staging, not coordinates claimed by the source sheet.
@@ -106,6 +107,7 @@ export function finalizeRegions(regions,npcs,events){
    const id=`${region.id}:foliage:${i}`,height=rock?3+(i%3):6+(i%4)*1.3,asset=rock?'town/rock-wide.glb':i%3?'town/tree.glb':'town/tree-high.glb',collisionWidth=rock?3.4:1.1,collisionDepth=collisionWidth;
    region.terrain.trees.push({id,x,z,height,asset,collisionWidth,collisionDepth});region.obstacles.push({id:`tree:${id}`,x,z,width:collisionWidth,depth:collisionDepth,height:rock?height:Math.min(height,4.2)});
   }
+  furnishLandUse(region,npcs,events);
   for(const target of targets)if(!canOccupy(region,target.position)||!findPath(region,region.spawn,target.position).length)throw new Error(`${region.id}/${target.id}: unreachable after scenery placement`);
  }
 }

@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto';
 // Explicitly observed historical content versions, never a wildcard compatibility rule.
 const versions=new Map([
+ ["world-10d-638eb7f05795","6f2faa8112b6bc5555745132c538d28288b811e116e087c8063d329b1937abbb"],
  ['world-10d-0d38993b18b0','e2443c2f1f566b7ca4dc7521aa93bad8c571141571e286c52c45828998fb7f4c'],
  ['world-10d-534227bca032','a73cccf47d60022752eaeb7731bd4c93a9cfcdd3de6c98c1681368ef9b110344'],
  ['world-10d-4ea0666e0b73','2c12532e069fae3a6f509fd63aea29ba72c44d91ec8abed3277f6b0f04112684'],
@@ -23,6 +24,7 @@ const versions=new Map([
  ['world-10d-ec2c41296f3c','095e3f7e79de4ae8d7e86d0bbd405afa0203dfbd70ded2bb78db867697cca388'],
 ]);
 const reviewedTargets=new Map([
+ ["world-10d-a281a29f49f4","ab3e9fe62065c77b3831e0b8aaa2484f5d064387c66440920282c7d86d9e590e"],
  ["world-10d-638eb7f05795","6f2faa8112b6bc5555745132c538d28288b811e116e087c8063d329b1937abbb"],
  ['world-10d-0d38993b18b0','e2443c2f1f566b7ca4dc7521aa93bad8c571141571e286c52c45828998fb7f4c'],
  ['world-10d-534227bca032','a73cccf47d60022752eaeb7731bd4c93a9cfcdd3de6c98c1681368ef9b110344'],

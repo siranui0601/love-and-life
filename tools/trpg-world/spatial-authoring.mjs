@@ -30,6 +30,11 @@ export const streetPlans = {
  crime:[['dock-street',3,[[49,0],[49,13],[37,18],[25,13]]],['warehouse-alley',1.7,[[25,13],[7,22],[-9,18],[-19,5],[-48,3],[-52,21],[-46,40],[-34,38],[-10,43]]]],
 };
 
+// Small circuits connect courtyards to more than one street. These are public
+// walking connections, not secret-route flags or a shortcut through a house.
+streetPlans.capital.push(['court-lane',1.8,[[-57,17],[-55,8],[-47,8],[-46,13],[-16,17],[0,8]]]);
+streetPlans.crime.push(['back-market-lane',1.8,[[-48,3],[-48,-17],[-44,-39],[-21,-39],[-17,-6],[0,8]]]);
+
 export function authorCorridors(routes){
  for(const route of routes){const plan=corridors[route.id];if(!plan)throw new Error(`Missing corridor ${route.id}`);
   route.spatial={id:`corridor:${route.id}`, ...plan, baseline:{mode:plan.water?'ship':'foot',weather:'clear',minutes:route.sourceMinutes},

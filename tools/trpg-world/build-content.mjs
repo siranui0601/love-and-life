@@ -1,5 +1,6 @@
 import {authorCorridors,authorHabitats} from './spatial-authoring.mjs';
 import {compileSettlementTraffic} from './settlement-design.mjs';
+import {bindOutdoorWorksites} from './land-use-authoring.mjs';
 import {assignResidences} from './residence-authoring.mjs';
 import fs from 'node:fs/promises';
 import {createHash} from 'node:crypto';
@@ -80,6 +81,7 @@ const events=eventSpecs.map((s,i)=>{
 });
 finalizeRegions(regions,npcs,events);
 authorHabitats(regions);
+bindOutdoorWorksites(regions,jobs);
 compileSettlementTraffic(regions,npcs);
 const publicSiteDescriptions={
  LOC_FARM_GRANARY:'穀物袋が積まれ、奥へ続く作業用の通路がある。',
