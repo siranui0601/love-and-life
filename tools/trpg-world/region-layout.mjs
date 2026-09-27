@@ -1,3 +1,4 @@
+import {authorUrbanFrontage} from './urban-frontage.mjs';
 import {streetPlans} from './spatial-authoring.mjs';
 import {bindSettlementDesign,spatialBoundaries} from './settlement-design.mjs';
 import {addDwellings} from './residence-authoring.mjs';
@@ -58,6 +59,7 @@ export function createRegion(spec,sheet,sourceUrl){
  region.objects.push({id:`${id}:trainer`,name:id==='farm'?'旅支度の稽古場':'地域の師匠',kind:'trainer',position:[8,0,17],asset:'stall',skills:['combat','investigation','riding','magic','broom','negotiation','crafting','tracking','stealth','survival'],description:'学んだ技能は、旅の手段と事件への関わり方を変える。',placement:'authored-service'});
  region.objects.push({id:`${id}:board`,name:'旅人の掲示板',kind:'board',position:[-7,0,8],asset:'sign',description:'この土地に届いた知らせと、地元の仕事が掲示されている。',placement:'authored-service'});
  addDwellings(region);
+ authorUrbanFrontage(region);
  authorThresholds(region);
  region.terrain.water=region.terrain.water.map(w=>w.kind==='sea'?{...w,depth:region.size,width:region.size/2-52,x:Math.sign(w.x)*(52+(region.size/2-52)/2)}:{...w,depth:region.size});
  addWaterObstacles(region);

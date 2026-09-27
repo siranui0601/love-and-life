@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-a281a29f49f4",
+  "revision": "world-10d-d4a26adbbcf1",
   "time": {
     "days": 10,
     "scale": 60,
@@ -7966,7 +7966,7 @@
         },
         {
           "id": "LOC_CAP_LOWER_INN:left",
-          "x": -44.5,
+          "x": -47,
           "z": 28,
           "width": 0.4,
           "depth": 9,
@@ -7974,7 +7974,7 @@
         },
         {
           "id": "LOC_CAP_LOWER_INN:right",
-          "x": -33.5,
+          "x": -31,
           "z": 28,
           "width": 0.4,
           "depth": 9,
@@ -7984,13 +7984,13 @@
           "id": "LOC_CAP_LOWER_INN:back",
           "x": -39,
           "z": 23.5,
-          "width": 11,
+          "width": 16,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_MARKET:left",
-          "x": -5.5,
+          "x": -9,
           "z": -20,
           "width": 0.4,
           "depth": 9,
@@ -7998,7 +7998,7 @@
         },
         {
           "id": "LOC_CAP_MARKET:right",
-          "x": 5.5,
+          "x": 9,
           "z": -20,
           "width": 0.4,
           "depth": 9,
@@ -8008,13 +8008,13 @@
           "id": "LOC_CAP_MARKET:back",
           "x": 0,
           "z": -24.5,
-          "width": 11,
+          "width": 18,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_WEAPON_SHOP:left",
-          "x": -29.5,
+          "x": -33,
           "z": -28,
           "width": 0.4,
           "depth": 9,
@@ -8022,7 +8022,7 @@
         },
         {
           "id": "LOC_CAP_WEAPON_SHOP:right",
-          "x": -18.5,
+          "x": -15,
           "z": -28,
           "width": 0.4,
           "depth": 9,
@@ -8032,13 +8032,13 @@
           "id": "LOC_CAP_WEAPON_SHOP:back",
           "x": -24,
           "z": -32.5,
-          "width": 11,
+          "width": 18,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_APOTHECARY:left",
-          "x": 23.5,
+          "x": 20,
           "z": -22,
           "width": 0.4,
           "depth": 9,
@@ -8046,7 +8046,7 @@
         },
         {
           "id": "LOC_CAP_APOTHECARY:right",
-          "x": 34.5,
+          "x": 38,
           "z": -22,
           "width": 0.4,
           "depth": 9,
@@ -8056,13 +8056,13 @@
           "id": "LOC_CAP_APOTHECARY:back",
           "x": 29,
           "z": -26.5,
-          "width": 11,
+          "width": 18,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_ORPHANAGE:left",
-          "x": -46.5,
+          "x": -49,
           "z": 51,
           "width": 0.4,
           "depth": 9,
@@ -8070,7 +8070,7 @@
         },
         {
           "id": "LOC_CAP_ORPHANAGE:right",
-          "x": -35.5,
+          "x": -33,
           "z": 51,
           "width": 0.4,
           "depth": 9,
@@ -8080,7 +8080,7 @@
           "id": "LOC_CAP_ORPHANAGE:back",
           "x": -41,
           "z": 46.5,
-          "width": 11,
+          "width": 16,
           "depth": 0.4,
           "height": 5
         },
@@ -8158,7 +8158,7 @@
         },
         {
           "id": "LOC_CAP_AJIN_QUARTER:left",
-          "x": 31.5,
+          "x": 28,
           "z": 29,
           "width": 0.4,
           "depth": 9,
@@ -8166,7 +8166,7 @@
         },
         {
           "id": "LOC_CAP_AJIN_QUARTER:right",
-          "x": 42.5,
+          "x": 46,
           "z": 29,
           "width": 0.4,
           "depth": 9,
@@ -8176,13 +8176,13 @@
           "id": "LOC_CAP_AJIN_QUARTER:back",
           "x": 37,
           "z": 24.5,
-          "width": 11,
+          "width": 18,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "capital:noble-house:left",
-          "x": 31,
+          "x": 28,
           "z": -65,
           "width": 0.4,
           "depth": 7,
@@ -8190,7 +8190,7 @@
         },
         {
           "id": "capital:noble-house:right",
-          "x": 39,
+          "x": 42,
           "z": -65,
           "width": 0.4,
           "depth": 7,
@@ -8200,13 +8200,13 @@
           "id": "capital:noble-house:back",
           "x": 35,
           "z": -68.5,
-          "width": 8,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:guard-quarters:left",
-          "x": -1,
+          "x": -5,
           "z": -76,
           "width": 0.4,
           "depth": 7,
@@ -8214,7 +8214,7 @@
         },
         {
           "id": "capital:guard-quarters:right",
-          "x": 7,
+          "x": 11,
           "z": -76,
           "width": 0.4,
           "depth": 7,
@@ -8224,13 +8224,13 @@
           "id": "capital:guard-quarters:back",
           "x": 3,
           "z": -79.5,
-          "width": 8,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:clerk-house:left",
-          "x": -66,
+          "x": -69,
           "z": -54,
           "width": 0.4,
           "depth": 7,
@@ -8238,7 +8238,7 @@
         },
         {
           "id": "capital:clerk-house:right",
-          "x": -58,
+          "x": -55,
           "z": -54,
           "width": 0.4,
           "depth": 7,
@@ -8248,13 +8248,13 @@
           "id": "capital:clerk-house:back",
           "x": -62,
           "z": -57.5,
-          "width": 8,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:news-house:left",
-          "x": 26,
+          "x": 23,
           "z": 67,
           "width": 0.4,
           "depth": 7,
@@ -8262,7 +8262,7 @@
         },
         {
           "id": "capital:news-house:right",
-          "x": 34,
+          "x": 37,
           "z": 67,
           "width": 0.4,
           "depth": 7,
@@ -8272,13 +8272,13 @@
           "id": "capital:news-house:back",
           "x": 30,
           "z": 63.5,
-          "width": 8,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:stable-house:left",
-          "x": 16,
+          "x": 14,
           "z": 84,
           "width": 0.4,
           "depth": 7,
@@ -8286,7 +8286,7 @@
         },
         {
           "id": "capital:stable-house:right",
-          "x": 24,
+          "x": 26,
           "z": 84,
           "width": 0.4,
           "depth": 7,
@@ -8296,13 +8296,13 @@
           "id": "capital:stable-house:back",
           "x": 20,
           "z": 80.5,
-          "width": 8,
+          "width": 12,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:market-house:left",
-          "x": -35,
+          "x": -39,
           "z": 9,
           "width": 0.4,
           "depth": 7,
@@ -8310,7 +8310,7 @@
         },
         {
           "id": "capital:market-house:right",
-          "x": -27,
+          "x": -23,
           "z": 9,
           "width": 0.4,
           "depth": 7,
@@ -8320,7 +8320,7 @@
           "id": "capital:market-house:back",
           "x": -31,
           "z": 5.5,
-          "width": 8,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
@@ -8358,81 +8358,81 @@
         },
         {
           "id": "LOC_CAP_LOWER_INN:front:left",
-          "x": -42.55,
+          "x": -43.8,
           "z": 32.5,
-          "width": 3.9,
+          "width": 6.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_LOWER_INN:front:right",
-          "x": -35.45,
+          "x": -34.2,
           "z": 32.5,
-          "width": 3.9,
+          "width": 6.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_MARKET:front:left",
-          "x": -3.55,
+          "x": -5.300000000000001,
           "z": -15.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_MARKET:front:right",
-          "x": 3.55,
+          "x": 5.300000000000001,
           "z": -15.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_WEAPON_SHOP:front:left",
-          "x": -27.55,
+          "x": -29.3,
           "z": -23.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_WEAPON_SHOP:front:right",
-          "x": -20.45,
+          "x": -18.7,
           "z": -23.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_APOTHECARY:front:left",
-          "x": 25.45,
+          "x": 23.7,
           "z": -17.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_APOTHECARY:front:right",
-          "x": 32.55,
+          "x": 34.3,
           "z": -17.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_ORPHANAGE:front:left",
-          "x": -44.55,
+          "x": -45.8,
           "z": 55.5,
-          "width": 3.9,
+          "width": 6.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_ORPHANAGE:front:right",
-          "x": -37.45,
+          "x": -36.2,
           "z": 55.5,
-          "width": 3.9,
+          "width": 6.4,
           "depth": 0.4,
           "height": 5
         },
@@ -8486,113 +8486,113 @@
         },
         {
           "id": "LOC_CAP_AJIN_QUARTER:front:left",
-          "x": 33.45,
+          "x": 31.7,
           "z": 33.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "LOC_CAP_AJIN_QUARTER:front:right",
-          "x": 40.55,
+          "x": 42.3,
           "z": 33.5,
-          "width": 3.9,
+          "width": 7.4,
           "depth": 0.4,
           "height": 5
         },
         {
           "id": "capital:noble-house:front:left",
-          "x": 32.55,
+          "x": 31.05,
           "z": -61.5,
-          "width": 3.1,
+          "width": 6.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:noble-house:front:right",
-          "x": 37.45,
+          "x": 38.95,
           "z": -61.5,
-          "width": 3.1,
+          "width": 6.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:guard-quarters:front:left",
-          "x": 0.5499999999999998,
+          "x": -1.4500000000000002,
           "z": -72.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:guard-quarters:front:right",
-          "x": 5.45,
+          "x": 7.45,
           "z": -72.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:clerk-house:front:left",
-          "x": -64.45,
+          "x": -65.95,
           "z": -50.5,
-          "width": 3.1,
+          "width": 6.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:clerk-house:front:right",
-          "x": -59.55,
+          "x": -58.05,
           "z": -50.5,
-          "width": 3.1,
+          "width": 6.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:news-house:front:left",
-          "x": 27.55,
+          "x": 26.05,
           "z": 70.5,
-          "width": 3.1,
+          "width": 6.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:news-house:front:right",
-          "x": 32.45,
+          "x": 33.95,
           "z": 70.5,
-          "width": 3.1,
+          "width": 6.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:stable-house:front:left",
-          "x": 17.55,
+          "x": 16.55,
           "z": 87.5,
-          "width": 3.1,
+          "width": 5.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:stable-house:front:right",
-          "x": 22.45,
+          "x": 23.45,
           "z": 87.5,
-          "width": 3.1,
+          "width": 5.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:market-house:front:left",
-          "x": -33.45,
+          "x": -35.45,
           "z": 12.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "capital:market-house:front:right",
-          "x": -28.55,
+          "x": -26.55,
           "z": 12.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
@@ -8709,22 +8709,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:capital:foliage:22",
-          "x": 50,
-          "z": 21,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:capital:foliage:23",
-          "x": -52,
-          "z": -57,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:capital:foliage:26",
           "x": -60,
           "z": 7,
@@ -8741,49 +8725,9 @@
           "height": 4.2
         },
         {
-          "id": "tree:capital:foliage:29",
-          "x": -68,
-          "z": 71,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:capital:foliage:33",
-          "x": -29,
-          "z": 57,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:capital:foliage:36",
-          "x": -37,
-          "z": -28,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:capital:foliage:37",
           "x": 10,
           "z": 43,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:capital:foliage:41",
-          "x": 49,
-          "z": 29,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:capital:foliage:42",
-          "x": -53,
-          "z": -49,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -8821,6 +8765,62 @@
           "height": 4.2
         },
         {
+          "id": "tree:capital:foliage:59",
+          "x": 1,
+          "z": -34,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:63",
+          "x": 40,
+          "z": -48,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:64",
+          "x": -62,
+          "z": 23,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:65",
+          "x": -15,
+          "z": -55,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:66",
+          "x": 32,
+          "z": 16,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:67",
+          "x": -70,
+          "z": -62,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:71",
+          "x": -31,
+          "z": 73,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
           "id": "parcel:capital:gate-pasture:prop:0",
           "x": -25,
           "z": 96,
@@ -8846,14 +8846,6 @@
         },
         {
           "id": "parcel:capital:lower-common:prop:3",
-          "x": -64.5,
-          "z": 24.5,
-          "width": 2,
-          "depth": 2,
-          "height": 1.1
-        },
-        {
-          "id": "parcel:capital:lower-common:prop:4",
           "x": -68.5,
           "z": 40.5,
           "width": 2,
@@ -8861,7 +8853,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:lower-common:prop:5",
+          "id": "parcel:capital:lower-common:prop:4",
           "x": -60.5,
           "z": 12.5,
           "width": 2,
@@ -8869,9 +8861,17 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:lower-common:prop:6",
+          "id": "parcel:capital:lower-common:prop:5",
           "x": -64.5,
-          "z": 32.5,
+          "z": 28.5,
+          "width": 2,
+          "depth": 2,
+          "height": 1.1
+        },
+        {
+          "id": "parcel:capital:lower-common:prop:6",
+          "x": -72.5,
+          "z": 8.5,
           "width": 2,
           "depth": 2,
           "height": 1.1
@@ -9094,14 +9094,6 @@
         },
         {
           "id": "parcel:capital:west-orchard:prop:34",
-          "x": -82.5,
-          "z": -63,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4
-        },
-        {
-          "id": "parcel:capital:west-orchard:prop:35",
           "x": -86.5,
           "z": -47,
           "width": 1.1,
@@ -9109,7 +9101,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:36",
+          "id": "parcel:capital:west-orchard:prop:35",
           "x": -94.5,
           "z": -11,
           "width": 1.1,
@@ -9117,7 +9109,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:37",
+          "id": "parcel:capital:west-orchard:prop:36",
           "x": -102.5,
           "z": 21,
           "width": 1.1,
@@ -9125,7 +9117,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:38",
+          "id": "parcel:capital:west-orchard:prop:37",
           "x": -86.5,
           "z": -39,
           "width": 1.1,
@@ -9133,9 +9125,17 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:39",
+          "id": "parcel:capital:west-orchard:prop:38",
           "x": -94.5,
           "z": -3,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4
+        },
+        {
+          "id": "parcel:capital:west-orchard:prop:39",
+          "x": -86.5,
+          "z": -31,
           "width": 1.1,
           "depth": 1.1,
           "height": 4
@@ -9303,7 +9303,7 @@
             0,
             28
           ],
-          "width": 11,
+          "width": 16,
           "depth": 9,
           "height": 5,
           "interior": {
@@ -9320,17 +9320,17 @@
               "walls": [
                 {
                   "id": "LOC_CAP_LOWER_INN:front:left",
-                  "x": -42.55,
+                  "x": -43.8,
                   "z": 32.5,
-                  "width": 3.9,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 5
                 },
                 {
                   "id": "LOC_CAP_LOWER_INN:front:right",
-                  "x": -35.45,
+                  "x": -34.2,
                   "z": 32.5,
-                  "width": 3.9,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 5
                 }
@@ -9346,6 +9346,10 @@
                 30.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "食堂と長期借室を持つ宿の間口",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "下層の安宿",
@@ -9382,7 +9386,7 @@
             0,
             -20
           ],
-          "width": 11,
+          "width": 18,
           "depth": 9,
           "height": 5,
           "interior": {
@@ -9399,17 +9403,17 @@
               "walls": [
                 {
                   "id": "LOC_CAP_MARKET:front:left",
-                  "x": -3.55,
+                  "x": -5.300000000000001,
                   "z": -15.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 },
                 {
                   "id": "LOC_CAP_MARKET:front:right",
-                  "x": 3.55,
+                  "x": 5.300000000000001,
                   "z": -15.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 }
@@ -9425,6 +9429,10 @@
                 -17.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "屋根のある市場の売場と荷の整理面",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "中央市場",
@@ -9461,7 +9469,7 @@
             0,
             -28
           ],
-          "width": 11,
+          "width": 18,
           "depth": 9,
           "height": 5,
           "interior": {
@@ -9478,17 +9486,17 @@
               "walls": [
                 {
                   "id": "LOC_CAP_WEAPON_SHOP:front:left",
-                  "x": -27.55,
+                  "x": -29.3,
                   "z": -23.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 },
                 {
                   "id": "LOC_CAP_WEAPON_SHOP:front:right",
-                  "x": -20.45,
+                  "x": -18.7,
                   "z": -23.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 }
@@ -9504,6 +9512,10 @@
                 -25.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "武具の陳列と補修の作業面",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "王都武器屋",
@@ -9540,7 +9552,7 @@
             0,
             -22
           ],
-          "width": 11,
+          "width": 18,
           "depth": 9,
           "height": 5,
           "interior": {
@@ -9557,17 +9569,17 @@
               "walls": [
                 {
                   "id": "LOC_CAP_APOTHECARY:front:left",
-                  "x": 25.45,
+                  "x": 23.7,
                   "z": -17.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 },
                 {
                   "id": "LOC_CAP_APOTHECARY:front:right",
-                  "x": 32.55,
+                  "x": 34.3,
                   "z": -17.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 }
@@ -9583,6 +9595,10 @@
                 -19.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "薬の販売と調合の作業面",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "王都薬屋",
@@ -9620,7 +9636,7 @@
             0,
             51
           ],
-          "width": 11,
+          "width": 16,
           "depth": 9,
           "height": 5,
           "interior": {
@@ -9637,17 +9653,17 @@
               "walls": [
                 {
                   "id": "LOC_CAP_ORPHANAGE:front:left",
-                  "x": -44.55,
+                  "x": -45.8,
                   "z": 55.5,
-                  "width": 3.9,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 5
                 },
                 {
                   "id": "LOC_CAP_ORPHANAGE:front:right",
-                  "x": -37.45,
+                  "x": -36.2,
                   "z": 55.5,
-                  "width": 3.9,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 5
                 }
@@ -9663,6 +9679,10 @@
                 53.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "共同生活の居室と食事の場所",
+            "stage": "occupied-site-graybox"
           },
           "districtId": "lower",
           "sourceDesignNotes": "子ども、T10相談、裏路地情報"
@@ -9920,7 +9940,7 @@
             0,
             29
           ],
-          "width": 11,
+          "width": 18,
           "depth": 9,
           "height": 5,
           "interior": {
@@ -9937,17 +9957,17 @@
               "walls": [
                 {
                   "id": "LOC_CAP_AJIN_QUARTER:front:left",
-                  "x": 33.45,
+                  "x": 31.7,
                   "z": 33.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 },
                 {
                   "id": "LOC_CAP_AJIN_QUARTER:front:right",
-                  "x": 40.55,
+                  "x": 42.3,
                   "z": 33.5,
-                  "width": 3.9,
+                  "width": 7.4,
                   "depth": 0.4,
                   "height": 5
                 }
@@ -9963,6 +9983,10 @@
                 31.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "河岸住居の共同生活面",
+            "stage": "occupied-site-graybox"
           },
           "districtId": "river-homes"
         },
@@ -10019,7 +10043,7 @@
             0,
             -65
           ],
-          "width": 8,
+          "width": 14,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -10036,17 +10060,17 @@
               "walls": [
                 {
                   "id": "capital:noble-house:front:left",
-                  "x": 32.55,
+                  "x": 31.05,
                   "z": -61.5,
-                  "width": 3.1,
+                  "width": 6.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "capital:noble-house:front:right",
-                  "x": 37.45,
+                  "x": 38.95,
                   "z": -61.5,
-                  "width": 3.1,
+                  "width": 6.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -10065,7 +10089,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "civic",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "行政街の屋敷",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "capital:guard-quarters",
@@ -10082,7 +10110,7 @@
             0,
             -76
           ],
-          "width": 8,
+          "width": 16,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -10099,17 +10127,17 @@
               "walls": [
                 {
                   "id": "capital:guard-quarters:front:left",
-                  "x": 0.5499999999999998,
+                  "x": -1.4500000000000002,
                   "z": -72.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "capital:guard-quarters:front:right",
-                  "x": 5.45,
+                  "x": 7.45,
                   "z": -72.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -10128,7 +10156,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "civic",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "城番が共同生活する宿舎",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "capital:clerk-house",
@@ -10145,7 +10177,7 @@
             0,
             -54
           ],
-          "width": 8,
+          "width": 14,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -10162,17 +10194,17 @@
               "walls": [
                 {
                   "id": "capital:clerk-house:front:left",
-                  "x": -64.45,
+                  "x": -65.95,
                   "z": -50.5,
-                  "width": 3.1,
+                  "width": 6.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "capital:clerk-house:front:right",
-                  "x": -59.55,
+                  "x": -58.05,
                   "z": -50.5,
-                  "width": 3.1,
+                  "width": 6.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -10191,7 +10223,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "civic",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "行政街の路地に面した長屋",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "capital:news-house",
@@ -10208,7 +10244,7 @@
             0,
             67
           ],
-          "width": 8,
+          "width": 14,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -10225,17 +10261,17 @@
               "walls": [
                 {
                   "id": "capital:news-house:front:left",
-                  "x": 27.55,
+                  "x": 26.05,
                   "z": 70.5,
-                  "width": 3.1,
+                  "width": 6.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "capital:news-house:front:right",
-                  "x": 32.45,
+                  "x": 33.95,
                   "z": 70.5,
-                  "width": 3.1,
+                  "width": 6.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -10254,7 +10290,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "arrival",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "瓦版通りの住居",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "capital:stable-house",
@@ -10271,7 +10311,7 @@
             0,
             84
           ],
-          "width": 8,
+          "width": 12,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -10288,17 +10328,17 @@
               "walls": [
                 {
                   "id": "capital:stable-house:front:left",
-                  "x": 17.55,
+                  "x": 16.55,
                   "z": 87.5,
-                  "width": 3.1,
+                  "width": 5.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "capital:stable-house:front:right",
-                  "x": 22.45,
+                  "x": 23.45,
                   "z": 87.5,
-                  "width": 3.1,
+                  "width": 5.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -10317,7 +10357,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "arrival",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "駅馬車場に通う世帯の住居",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "capital:market-house",
@@ -10334,7 +10378,7 @@
             0,
             9
           ],
-          "width": 8,
+          "width": 16,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -10351,17 +10395,17 @@
               "walls": [
                 {
                   "id": "capital:market-house:front:left",
-                  "x": -33.45,
+                  "x": -35.45,
                   "z": 12.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "capital:market-house:front:right",
-                  "x": -28.55,
+                  "x": -26.55,
                   "z": 12.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -10380,7 +10424,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "market",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "別々の借家人が住む長屋",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "evidence:crown",
@@ -10441,14 +10489,14 @@
           "to": "temple",
           "routeId": "R11",
           "position": [
-            -88,
+            -71,
             0,
-            59
+            79
           ],
           "approach": [
-            -50,
+            -37,
             0,
-            49
+            60
           ],
           "radius": 3,
           "bearing": [
@@ -10819,12 +10867,12 @@
               [
                 28,
                 0,
-                24
+                2
               ],
               [
                 22,
                 0,
-                24
+                2
               ],
               [
                 16,
@@ -11180,7 +11228,12 @@
                 42
               ],
               [
-                -50,
+                -52,
+                0,
+                46
+              ],
+              [
+                -52,
                 0,
                 58
               ],
@@ -11265,14 +11318,9 @@
             "id": "capital:road:40",
             "points": [
               [
-                28,
+                20,
                 0,
-                24
-              ],
-              [
-                30,
-                0,
-                36
+                43
               ],
               [
                 37,
@@ -11377,6 +11425,11 @@
                 66
               ],
               [
+                26,
+                0,
+                74
+              ],
+              [
                 30,
                 0,
                 74
@@ -11389,12 +11442,17 @@
             "id": "capital:road:47",
             "points": [
               [
-                30,
+                26,
                 0,
                 74
               ],
               [
-                26,
+                28,
+                0,
+                80
+              ],
+              [
+                28,
                 0,
                 90
               ],
@@ -11428,9 +11486,9 @@
             "id": "capital:road:49",
             "points": [
               [
-                38,
+                28,
                 0,
-                13
+                2
               ],
               [
                 32,
@@ -11462,14 +11520,14 @@
             "id": "capital:road:51",
             "points": [
               [
-                -48,
+                -41,
                 0,
-                42
+                59
               ],
               [
-                -50,
+                -37,
                 0,
-                49
+                60
               ]
             ],
             "width": 4,
@@ -11479,9 +11537,9 @@
             "id": "capital:road:52",
             "points": [
               [
-                -41,
+                -37,
                 0,
-                59
+                60
               ],
               [
                 -33,
@@ -11523,9 +11581,9 @@
             "id": "capital:road:54",
             "points": [
               [
-                29,
+                28,
                 0,
-                -14
+                2
               ],
               [
                 32,
@@ -11545,9 +11603,9 @@
                 -36
               ],
               [
-                -74,
+                -72,
                 0,
-                -56
+                -48
               ],
               [
                 -80,
@@ -11562,14 +11620,14 @@
             "id": "capital:road:56",
             "points": [
               [
-                -50,
+                -37,
                 0,
-                49
+                60
               ],
               [
-                -88,
+                -71,
                 0,
-                59
+                79
               ]
             ],
             "width": 4,
@@ -11687,24 +11745,6 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "capital:foliage:22",
-            "x": 50,
-            "z": 21,
-            "height": 8.6,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "capital:foliage:23",
-            "x": -52,
-            "z": -57,
-            "height": 9.9,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "capital:foliage:26",
             "x": -60,
             "z": 7,
@@ -11723,56 +11763,11 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "capital:foliage:29",
-            "x": -68,
-            "z": 71,
-            "height": 7.3,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "capital:foliage:33",
-            "x": -29,
-            "z": 57,
-            "height": 7.3,
-            "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "capital:foliage:36",
-            "x": -37,
-            "z": -28,
-            "height": 6,
-            "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "capital:foliage:37",
             "x": 10,
             "z": 43,
             "height": 7.3,
             "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "capital:foliage:41",
-            "x": 49,
-            "z": 29,
-            "height": 7.3,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "capital:foliage:42",
-            "x": -53,
-            "z": -49,
-            "height": 8.6,
-            "asset": "town/tree-high.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
           },
@@ -11807,6 +11802,69 @@
             "id": "capital:foliage:55",
             "x": -38,
             "z": -20,
+            "height": 9.9,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:59",
+            "x": 1,
+            "z": -34,
+            "height": 9.9,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:63",
+            "x": 40,
+            "z": -48,
+            "height": 9.9,
+            "asset": "town/tree-high.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:64",
+            "x": -62,
+            "z": 23,
+            "height": 6,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:65",
+            "x": -15,
+            "z": -55,
+            "height": 7.3,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:66",
+            "x": 32,
+            "z": 16,
+            "height": 8.6,
+            "asset": "town/tree-high.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:67",
+            "x": -70,
+            "z": -62,
+            "height": 9.9,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:71",
+            "x": -31,
+            "z": 73,
             "height": 9.9,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
@@ -11999,18 +12057,6 @@
               },
               {
                 "x": -33,
-                "z": 72,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -33,
-                "z": 76,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -33,
                 "z": 80,
                 "width": 4,
                 "depth": 4
@@ -12042,18 +12088,6 @@
               {
                 "x": -29,
                 "z": 68,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -29,
-                "z": 72,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -29,
-                "z": 76,
                 "width": 4,
                 "depth": 4
               },
@@ -12989,18 +13023,6 @@
               },
               {
                 "x": -64.5,
-                "z": 20.5,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -64.5,
-                "z": 24.5,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -64.5,
                 "z": 28.5,
                 "width": 4,
                 "depth": 4
@@ -13097,12 +13119,6 @@
                 "z": 5,
                 "width": 4,
                 "depth": 4
-              },
-              {
-                "x": 14,
-                "z": 9,
-                "width": 4,
-                "depth": 4
               }
             ],
             "worksiteId": "worksite:parcel:capital:market-receiving"
@@ -13157,18 +13173,6 @@
                 "depth": 4
               },
               {
-                "x": -7,
-                "z": -80,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -7,
-                "z": -76,
-                "width": 4,
-                "depth": 4
-              },
-              {
                 "x": -3,
                 "z": -88,
                 "width": 4,
@@ -13225,18 +13229,6 @@
               {
                 "x": 13,
                 "z": -84,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 13,
-                "z": -80,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 13,
-                "z": -76,
                 "width": 4,
                 "depth": 4
               }
@@ -14007,12 +13999,6 @@
               },
               {
                 "x": -82.5,
-                "z": -63,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -82.5,
                 "z": -59,
                 "width": 4,
                 "depth": 4
@@ -14197,21 +14183,6 @@
             "parcelId": "parcel:capital:lower-common",
             "asset": "town/stall-bench.glb",
             "position": [
-              -64.5,
-              0,
-              24.5
-            ],
-            "size": [
-              2,
-              1.1,
-              2
-            ]
-          },
-          {
-            "id": "parcel:capital:lower-common:prop:4",
-            "parcelId": "parcel:capital:lower-common",
-            "asset": "town/stall-bench.glb",
-            "position": [
               -68.5,
               0,
               40.5
@@ -14223,7 +14194,7 @@
             ]
           },
           {
-            "id": "parcel:capital:lower-common:prop:5",
+            "id": "parcel:capital:lower-common:prop:4",
             "parcelId": "parcel:capital:lower-common",
             "asset": "town/stall-bench.glb",
             "position": [
@@ -14238,13 +14209,28 @@
             ]
           },
           {
-            "id": "parcel:capital:lower-common:prop:6",
+            "id": "parcel:capital:lower-common:prop:5",
             "parcelId": "parcel:capital:lower-common",
             "asset": "town/stall-bench.glb",
             "position": [
               -64.5,
               0,
-              32.5
+              28.5
+            ],
+            "size": [
+              2,
+              1.1,
+              2
+            ]
+          },
+          {
+            "id": "parcel:capital:lower-common:prop:6",
+            "parcelId": "parcel:capital:lower-common",
+            "asset": "town/stall-bench.glb",
+            "position": [
+              -72.5,
+              0,
+              8.5
             ],
             "size": [
               2,
@@ -14662,21 +14648,6 @@
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
-              -82.5,
-              0,
-              -63
-            ],
-            "size": [
-              3.5,
-              6,
-              3.5
-            ]
-          },
-          {
-            "id": "parcel:capital:west-orchard:prop:35",
-            "parcelId": "parcel:capital:west-orchard",
-            "asset": "town/tree.glb",
-            "position": [
               -86.5,
               0,
               -47
@@ -14688,7 +14659,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:36",
+            "id": "parcel:capital:west-orchard:prop:35",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14703,7 +14674,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:37",
+            "id": "parcel:capital:west-orchard:prop:36",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14718,7 +14689,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:38",
+            "id": "parcel:capital:west-orchard:prop:37",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14733,13 +14704,28 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:39",
+            "id": "parcel:capital:west-orchard:prop:38",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
               -94.5,
               0,
               -3
+            ],
+            "size": [
+              3.5,
+              6,
+              3.5
+            ]
+          },
+          {
+            "id": "parcel:capital:west-orchard:prop:39",
+            "parcelId": "parcel:capital:west-orchard",
+            "asset": "town/tree.glb",
+            "position": [
+              -86.5,
+              0,
+              -31
             ],
             "size": [
               3.5,
@@ -15093,7 +15079,7 @@
                   [
                     -37,
                     0,
-                    60.5
+                    60
                   ],
                   [
                     -41,
@@ -15101,24 +15087,24 @@
                     59
                   ],
                   [
-                    -45.5,
+                    -46.5,
                     0,
                     58.5
                   ],
                   [
-                    -50,
+                    -52,
                     0,
                     58
                   ],
                   [
-                    -49.333333333333336,
+                    -52,
                     0,
-                    52.666666666666664
+                    52
                   ],
                   [
-                    -48.666666666666664,
+                    -52,
                     0,
-                    47.333333333333336
+                    46
                   ],
                   [
                     -48,
@@ -15191,7 +15177,7 @@
                     66
                   ]
                 ],
-                "metres": 162.29861955282365
+                "metres": 165.8721720200685
               },
               {
                 "fromId": "LOC_CAP_STABLE",
@@ -15304,29 +15290,29 @@
                     -70
                   ],
                   [
-                    -77,
+                    -77.33333333333333,
                     0,
-                    -63
+                    -62.666666666666664
                   ],
                   [
-                    -74,
+                    -74.66666666666667,
                     0,
-                    -56
+                    -55.333333333333336
                   ],
                   [
-                    -70.5,
+                    -72,
                     0,
-                    -51
+                    -48
                   ],
                   [
-                    -67,
+                    -68,
                     0,
-                    -46
+                    -44
                   ],
                   [
-                    -63.5,
+                    -64,
                     0,
-                    -41
+                    -40
                   ],
                   [
                     -60,
@@ -15429,7 +15415,7 @@
                     -12
                   ]
                 ],
-                "metres": 158.224881675486
+                "metres": 158.96018680220718
               },
               {
                 "fromId": "LOC_CAP_MARKET",
@@ -15592,14 +15578,9 @@
                     -8
                   ],
                   [
-                    31,
-                    0,
-                    -8
-                  ],
-                  [
                     30.5,
                     0,
-                    -9.5
+                    -8
                   ],
                   [
                     29,
@@ -15607,7 +15588,7 @@
                     -14
                   ]
                 ],
-                "metres": 110.51076471856358
+                "metres": 110.87086783665332
               },
               {
                 "fromId": "LOC_CAP_APOTHECARY",
@@ -15698,7 +15679,7 @@
                   [
                     -37,
                     0,
-                    60.5
+                    60
                   ],
                   [
                     -41,
@@ -15706,24 +15687,24 @@
                     59
                   ],
                   [
-                    -45.5,
+                    -46.5,
                     0,
                     58.5
                   ],
                   [
-                    -50,
+                    -52,
                     0,
                     58
                   ],
                   [
-                    -49.333333333333336,
+                    -52,
                     0,
-                    52.666666666666664
+                    52
                   ],
                   [
-                    -48.666666666666664,
+                    -52,
                     0,
-                    47.333333333333336
+                    46
                   ],
                   [
                     -48,
@@ -15796,7 +15777,7 @@
                     66
                   ]
                 ],
-                "metres": 162.29861955282365
+                "metres": 165.8721720200685
               },
               {
                 "fromId": "LOC_CAP_STABLE",
@@ -15991,84 +15972,79 @@
                     37
                   ],
                   [
-                    30,
+                    31.333333333333332,
                     0,
-                    36
+                    39
                   ],
                   [
-                    29,
+                    25.666666666666664,
+                    0,
+                    41
+                  ],
+                  [
+                    20,
+                    0,
+                    43
+                  ],
+                  [
+                    16.666666666666664,
+                    0,
+                    38.666666666666664
+                  ],
+                  [
+                    13.333333333333332,
+                    0,
+                    34.333333333333336
+                  ],
+                  [
+                    10,
                     0,
                     30
                   ],
                   [
-                    28,
+                    5,
                     0,
-                    24
+                    32.5
                   ],
                   [
-                    33,
                     0,
-                    18.5
+                    0,
+                    35
                   ],
                   [
-                    38,
+                    -6,
                     0,
-                    13
+                    31.5
                   ],
                   [
-                    43,
+                    -12,
                     0,
-                    10.5
+                    28
                   ],
                   [
-                    48,
+                    -12,
+                    0,
+                    22
+                  ],
+                  [
+                    -8,
+                    0,
+                    17.333333333333336
+                  ],
+                  [
+                    -4,
+                    0,
+                    12.666666666666668
+                  ],
+                  [
+                    0,
                     0,
                     8
                   ],
                   [
-                    47,
                     0,
-                    2.666666666666666
-                  ],
-                  [
-                    46,
                     0,
-                    -2.666666666666667
-                  ],
-                  [
-                    45,
-                    0,
-                    -8
-                  ],
-                  [
-                    37.75,
-                    0,
-                    -8
-                  ],
-                  [
-                    31,
-                    0,
-                    -8
-                  ],
-                  [
-                    30.5,
-                    0,
-                    -8
-                  ],
-                  [
-                    23.25,
-                    0,
-                    -8
-                  ],
-                  [
-                    16,
-                    0,
-                    -8
-                  ],
-                  [
-                    8,
-                    0,
-                    -8
+                    0
                   ],
                   [
                     0,
@@ -16081,7 +16057,7 @@
                     -12
                   ]
                 ],
-                "metres": 110.56182210337907
+                "metres": 103.94084863571119
               },
               {
                 "fromId": "LOC_CAP_MARKET",
@@ -16284,22 +16260,22 @@
                     42
                   ],
                   [
-                    -48.666666666666664,
+                    -52,
                     0,
-                    47.333333333333336
+                    46
                   ],
                   [
-                    -49.333333333333336,
+                    -52,
                     0,
-                    52.666666666666664
+                    52
                   ],
                   [
-                    -50,
+                    -52,
                     0,
                     58
                   ],
                   [
-                    -45.5,
+                    -46.5,
                     0,
                     58.5
                   ],
@@ -16309,7 +16285,7 @@
                     59
                   ]
                 ],
-                "metres": 141.8290663073146
+                "metres": 145.35138093925974
               },
               {
                 "fromId": "LOC_CAP_ORPHANAGE",
@@ -16321,24 +16297,24 @@
                     59
                   ],
                   [
-                    -45.5,
+                    -46.5,
                     0,
                     58.5
                   ],
                   [
-                    -50,
+                    -52,
                     0,
                     58
                   ],
                   [
-                    -49.333333333333336,
+                    -52,
                     0,
-                    52.666666666666664
+                    52
                   ],
                   [
-                    -48.666666666666664,
+                    -52,
                     0,
-                    47.333333333333336
+                    46
                   ],
                   [
                     -48,
@@ -16391,39 +16367,29 @@
                     30
                   ],
                   [
-                    13,
+                    13.333333333333332,
                     0,
-                    23.5
+                    34.333333333333336
                   ],
                   [
-                    16,
+                    16.666666666666664,
                     0,
-                    17
+                    38.666666666666664
                   ],
                   [
-                    19,
+                    20,
                     0,
-                    20.5
+                    43
                   ],
                   [
-                    22,
+                    25.666666666666664,
                     0,
-                    24
+                    41
                   ],
                   [
-                    28,
+                    31.333333333333332,
                     0,
-                    24
-                  ],
-                  [
-                    29,
-                    0,
-                    30
-                  ],
-                  [
-                    30,
-                    0,
-                    36
+                    39
                   ],
                   [
                     37,
@@ -16431,7 +16397,7 @@
                     37
                   ]
                 ],
-                "metres": 134.06373557067863
+                "metres": 123.24106765376926
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -22581,7 +22547,7 @@
       "obstacles": [
         {
           "id": "LOC_CRIME_BACK_INN:left",
-          "x": 9,
+          "x": 7,
           "z": 34,
           "width": 0.4,
           "depth": 9,
@@ -22589,7 +22555,7 @@
         },
         {
           "id": "LOC_CRIME_BACK_INN:right",
-          "x": 19,
+          "x": 21,
           "z": 34,
           "width": 0.4,
           "depth": 9,
@@ -22599,13 +22565,13 @@
           "id": "LOC_CRIME_BACK_INN:back",
           "x": 14,
           "z": 29.5,
-          "width": 10,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_WEAPON_MARKET:left",
-          "x": -12,
+          "x": -14,
           "z": -23,
           "width": 0.4,
           "depth": 9,
@@ -22613,7 +22579,7 @@
         },
         {
           "id": "LOC_CRIME_WEAPON_MARKET:right",
-          "x": -2,
+          "x": 0,
           "z": -23,
           "width": 0.4,
           "depth": 9,
@@ -22623,13 +22589,13 @@
           "id": "LOC_CRIME_WEAPON_MARKET:back",
           "x": -7,
           "z": -27.5,
-          "width": 10,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_INFO_STREET:left",
-          "x": -38,
+          "x": -41,
           "z": 23,
           "width": 0.4,
           "depth": 9,
@@ -22637,7 +22603,7 @@
         },
         {
           "id": "LOC_CRIME_INFO_STREET:right",
-          "x": -28,
+          "x": -25,
           "z": 23,
           "width": 0.4,
           "depth": 9,
@@ -22647,13 +22613,13 @@
           "id": "LOC_CRIME_INFO_STREET:back",
           "x": -33,
           "z": 18.5,
-          "width": 10,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_SLAVE_MARKET:left",
-          "x": -39,
+          "x": -42,
           "z": -27,
           "width": 0.4,
           "depth": 9,
@@ -22661,7 +22627,7 @@
         },
         {
           "id": "LOC_CRIME_SLAVE_MARKET:right",
-          "x": -29,
+          "x": -26,
           "z": -27,
           "width": 0.4,
           "depth": 9,
@@ -22671,13 +22637,13 @@
           "id": "LOC_CRIME_SLAVE_MARKET:back",
           "x": -34,
           "z": -31.5,
-          "width": 10,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_FORGER:left",
-          "x": 17,
+          "x": 14,
           "z": -41,
           "width": 0.4,
           "depth": 9,
@@ -22685,7 +22651,7 @@
         },
         {
           "id": "LOC_CRIME_FORGER:right",
-          "x": 27,
+          "x": 30,
           "z": -41,
           "width": 0.4,
           "depth": 9,
@@ -22695,13 +22661,13 @@
           "id": "LOC_CRIME_FORGER:back",
           "x": 22,
           "z": -45.5,
-          "width": 10,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_WAREHOUSE:left",
-          "x": 38,
+          "x": 36,
           "z": 30,
           "width": 0.4,
           "depth": 9,
@@ -22709,7 +22675,7 @@
         },
         {
           "id": "LOC_CRIME_WAREHOUSE:right",
-          "x": 48,
+          "x": 50,
           "z": 30,
           "width": 0.4,
           "depth": 9,
@@ -22719,13 +22685,13 @@
           "id": "LOC_CRIME_WAREHOUSE:back",
           "x": 43,
           "z": 25.5,
-          "width": 10,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_STABLE:left",
-          "x": -29,
+          "x": -32,
           "z": 47,
           "width": 0.4,
           "depth": 9,
@@ -22733,7 +22699,7 @@
         },
         {
           "id": "LOC_CRIME_STABLE:right",
-          "x": -19,
+          "x": -16,
           "z": 47,
           "width": 0.4,
           "depth": 9,
@@ -22743,13 +22709,13 @@
           "id": "LOC_CRIME_STABLE:back",
           "x": -24,
           "z": 42.5,
-          "width": 10,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_GAMBLING:left",
-          "x": -4,
+          "x": -6,
           "z": 54,
           "width": 0.4,
           "depth": 9,
@@ -22757,7 +22723,7 @@
         },
         {
           "id": "LOC_CRIME_GAMBLING:right",
-          "x": 6,
+          "x": 8,
           "z": 54,
           "width": 0.4,
           "depth": 9,
@@ -22767,13 +22733,13 @@
           "id": "LOC_CRIME_GAMBLING:back",
           "x": 1,
           "z": 49.5,
-          "width": 10,
+          "width": 14,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "crime:quay-tenement:left",
-          "x": -2,
+          "x": -6,
           "z": -6,
           "width": 0.4,
           "depth": 7,
@@ -22781,7 +22747,7 @@
         },
         {
           "id": "crime:quay-tenement:right",
-          "x": 6,
+          "x": 10,
           "z": -6,
           "width": 0.4,
           "depth": 7,
@@ -22791,13 +22757,13 @@
           "id": "crime:quay-tenement:back",
           "x": 2,
           "z": -9.5,
-          "width": 8,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "crime:scribes-tenement:left",
-          "x": -35,
+          "x": -39,
           "z": -2,
           "width": 0.4,
           "depth": 7,
@@ -22805,7 +22771,7 @@
         },
         {
           "id": "crime:scribes-tenement:right",
-          "x": -27,
+          "x": -23,
           "z": -2,
           "width": 0.4,
           "depth": 7,
@@ -22815,167 +22781,167 @@
           "id": "crime:scribes-tenement:back",
           "x": -31,
           "z": -5.5,
-          "width": 8,
+          "width": 16,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_BACK_INN:front:left",
-          "x": 10.7,
+          "x": 9.7,
           "z": 38.5,
-          "width": 3.4,
+          "width": 5.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_BACK_INN:front:right",
-          "x": 17.3,
+          "x": 18.3,
           "z": 38.5,
-          "width": 3.4,
+          "width": 5.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_WEAPON_MARKET:front:left",
-          "x": -10.3,
+          "x": -11.3,
           "z": -18.5,
-          "width": 3.4,
+          "width": 5.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_WEAPON_MARKET:front:right",
-          "x": -3.7,
+          "x": -2.6999999999999993,
           "z": -18.5,
-          "width": 3.4,
+          "width": 5.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_INFO_STREET:front:left",
-          "x": -36.3,
+          "x": -37.8,
           "z": 27.5,
-          "width": 3.4,
+          "width": 6.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_INFO_STREET:front:right",
-          "x": -29.7,
+          "x": -28.2,
           "z": 27.5,
-          "width": 3.4,
+          "width": 6.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_SLAVE_MARKET:front:left",
-          "x": -37.3,
+          "x": -38.8,
           "z": -22.5,
-          "width": 3.4,
+          "width": 6.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_SLAVE_MARKET:front:right",
-          "x": -30.7,
+          "x": -29.2,
           "z": -22.5,
-          "width": 3.4,
+          "width": 6.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_FORGER:front:left",
-          "x": 18.7,
+          "x": 17.2,
           "z": -36.5,
-          "width": 3.4,
+          "width": 6.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_FORGER:front:right",
-          "x": 25.3,
+          "x": 26.8,
           "z": -36.5,
-          "width": 3.4,
+          "width": 6.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_WAREHOUSE:front:left",
-          "x": 39.5,
+          "x": 38.5,
           "z": 34.5,
-          "width": 3,
+          "width": 5,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_WAREHOUSE:front:right",
-          "x": 46.5,
+          "x": 47.5,
           "z": 34.5,
-          "width": 3,
+          "width": 5,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_STABLE:front:left",
-          "x": -27.5,
+          "x": -29,
           "z": 51.5,
-          "width": 3,
+          "width": 6,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_STABLE:front:right",
-          "x": -20.5,
+          "x": -19,
           "z": 51.5,
-          "width": 3,
+          "width": 6,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_GAMBLING:front:left",
-          "x": -2.3,
+          "x": -3.3000000000000007,
           "z": 58.5,
-          "width": 3.4,
+          "width": 5.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "LOC_CRIME_GAMBLING:front:right",
-          "x": 4.3,
+          "x": 5.300000000000001,
           "z": 58.5,
-          "width": 3.4,
+          "width": 5.4,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "crime:quay-tenement:front:left",
-          "x": -0.4500000000000002,
+          "x": -2.45,
           "z": -2.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "crime:quay-tenement:front:right",
-          "x": 4.45,
+          "x": 6.45,
           "z": -2.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "crime:scribes-tenement:front:left",
-          "x": -33.45,
+          "x": -35.45,
           "z": 1.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
         {
           "id": "crime:scribes-tenement:front:right",
-          "x": -28.55,
+          "x": -26.55,
           "z": 1.5,
-          "width": 3.1,
+          "width": 7.1,
           "depth": 0.4,
           "height": 3.8
         },
@@ -23095,14 +23061,6 @@
           "id": "tree:crime:foliage:11",
           "x": -58,
           "z": -15,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:crime:foliage:16",
-          "x": 28,
-          "z": 42,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -23420,6 +23378,14 @@
           "height": 4.2
         },
         {
+          "id": "tree:crime:foliage:113",
+          "x": -32,
+          "z": -74,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
           "id": "parcel:crime:dock-loading:prop:0",
           "x": 29.5,
           "z": -6,
@@ -23462,7 +23428,7 @@
         {
           "id": "parcel:crime:warehouse-court:prop:5",
           "x": 33,
-          "z": 44,
+          "z": 48,
           "width": 2,
           "depth": 2,
           "height": 1.1
@@ -23544,7 +23510,7 @@
             0,
             34
           ],
-          "width": 10,
+          "width": 14,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -23561,17 +23527,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_BACK_INN:front:left",
-                  "x": 10.7,
+                  "x": 9.7,
                   "z": 38.5,
-                  "width": 3.4,
+                  "width": 5.4,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_BACK_INN:front:right",
-                  "x": 17.3,
+                  "x": 18.3,
                   "z": 38.5,
-                  "width": 3.4,
+                  "width": 5.4,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -23587,6 +23553,10 @@
                 36.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "港の船客と店主が使う宿",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "黒灯亭",
@@ -23623,7 +23593,7 @@
             0,
             -23
           ],
-          "width": 10,
+          "width": 14,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -23640,17 +23610,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_WEAPON_MARKET:front:left",
-                  "x": -10.3,
+                  "x": -11.3,
                   "z": -18.5,
-                  "width": 3.4,
+                  "width": 5.4,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_WEAPON_MARKET:front:right",
-                  "x": -3.7,
+                  "x": -2.6999999999999993,
                   "z": -18.5,
-                  "width": 3.4,
+                  "width": 5.4,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -23666,6 +23636,10 @@
                 -20.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "売場と職住一体の武具商",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "武器密売市場",
@@ -23702,7 +23676,7 @@
             0,
             23
           ],
-          "width": 10,
+          "width": 16,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -23719,17 +23693,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_INFO_STREET:front:left",
-                  "x": -36.3,
+                  "x": -37.8,
                   "z": 27.5,
-                  "width": 3.4,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_INFO_STREET:front:right",
-                  "x": -29.7,
+                  "x": -28.2,
                   "z": 27.5,
-                  "width": 3.4,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -23745,6 +23719,10 @@
                 25.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "通りから奥まった相談と取引の場所",
+            "stage": "occupied-site-graybox"
           },
           "districtId": "exchange"
         },
@@ -23771,7 +23749,7 @@
             0,
             -27
           ],
-          "width": 10,
+          "width": 16,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -23788,17 +23766,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_SLAVE_MARKET:front:left",
-                  "x": -37.3,
+                  "x": -38.8,
                   "z": -22.5,
-                  "width": 3.4,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_SLAVE_MARKET:front:right",
-                  "x": -30.7,
+                  "x": -29.2,
                   "z": -22.5,
-                  "width": 3.4,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -23814,6 +23792,10 @@
                 -24.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "取引場と常駐者の管理区画",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "人買い市場",
@@ -23850,7 +23832,7 @@
             0,
             -41
           ],
-          "width": 10,
+          "width": 16,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -23867,17 +23849,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_FORGER:front:left",
-                  "x": 18.7,
+                  "x": 17.2,
                   "z": -36.5,
-                  "width": 3.4,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_FORGER:front:right",
-                  "x": 25.3,
+                  "x": 26.8,
                   "z": -36.5,
-                  "width": 3.4,
+                  "width": 6.4,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -23893,6 +23875,10 @@
                 -38.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "書類仕事の工房と住居",
+            "stage": "occupied-site-graybox"
           },
           "districtId": "exchange"
         },
@@ -23919,7 +23905,7 @@
             0,
             30
           ],
-          "width": 10,
+          "width": 14,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -23936,17 +23922,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_WAREHOUSE:front:left",
-                  "x": 39.5,
+                  "x": 38.5,
                   "z": 34.5,
-                  "width": 3,
+                  "width": 5,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_WAREHOUSE:front:right",
-                  "x": 46.5,
+                  "x": 47.5,
                   "z": 34.5,
-                  "width": 3,
+                  "width": 5,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -23962,6 +23948,10 @@
                 32.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "荷を保管する倉庫と当番の住居",
+            "stage": "occupied-site-graybox"
           },
           "districtId": "quays"
         },
@@ -23988,7 +23978,7 @@
             0,
             47
           ],
-          "width": 10,
+          "width": 16,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -24005,17 +23995,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_STABLE:front:left",
-                  "x": -27.5,
+                  "x": -29,
                   "z": 51.5,
-                  "width": 3,
+                  "width": 6,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_STABLE:front:right",
-                  "x": -20.5,
+                  "x": -19,
                   "z": 51.5,
-                  "width": 3,
+                  "width": 6,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -24035,6 +24025,10 @@
           "skills": [
             "riding"
           ],
+          "frontage": {
+            "purpose": "荷駄と飼養者の生活区画",
+            "stage": "occupied-site-graybox"
+          },
           "districtId": "lodging"
         },
         {
@@ -24060,7 +24054,7 @@
             0,
             54
           ],
-          "width": 10,
+          "width": 14,
           "depth": 9,
           "height": 3.8,
           "interior": {
@@ -24077,17 +24071,17 @@
               "walls": [
                 {
                   "id": "LOC_CRIME_GAMBLING:front:left",
-                  "x": -2.3,
+                  "x": -3.3000000000000007,
                   "z": 58.5,
-                  "width": 3.4,
+                  "width": 5.4,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "LOC_CRIME_GAMBLING:front:right",
-                  "x": 4.3,
+                  "x": 5.300000000000001,
                   "z": 58.5,
-                  "width": 3.4,
+                  "width": 5.4,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -24103,6 +24097,10 @@
                 56.5
               ]
             }
+          },
+          "frontage": {
+            "purpose": "宿泊街の遊興施設",
+            "stage": "occupied-site-graybox"
           },
           "signage": {
             "text": "賭場",
@@ -24169,7 +24167,7 @@
             0,
             -6
           ],
-          "width": 8,
+          "width": 16,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -24186,17 +24184,17 @@
               "walls": [
                 {
                   "id": "crime:quay-tenement:front:left",
-                  "x": -0.4500000000000002,
+                  "x": -2.45,
                   "z": -2.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "crime:quay-tenement:front:right",
-                  "x": 4.45,
+                  "x": 6.45,
                   "z": -2.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -24215,7 +24213,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "lodging",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "港で暮らす借家人の長屋",
+            "stage": "occupied-site-graybox"
+          }
         },
         {
           "id": "crime:scribes-tenement",
@@ -24232,7 +24234,7 @@
             0,
             -2
           ],
-          "width": 8,
+          "width": 16,
           "depth": 7,
           "height": 3.8,
           "interior": {
@@ -24249,17 +24251,17 @@
               "walls": [
                 {
                   "id": "crime:scribes-tenement:front:left",
-                  "x": -33.45,
+                  "x": -35.45,
                   "z": 1.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 },
                 {
                   "id": "crime:scribes-tenement:front:right",
-                  "x": -28.55,
+                  "x": -26.55,
                   "z": 1.5,
-                  "width": 3.1,
+                  "width": 7.1,
                   "depth": 0.4,
                   "height": 3.8
                 }
@@ -24278,7 +24280,11 @@
           },
           "description": "住民の生活に使われている家。通りに入口がある。",
           "districtId": "exchange",
-          "placement": "authored-household"
+          "placement": "authored-household",
+          "frontage": {
+            "purpose": "情報街へ通勤する借家人の長屋",
+            "stage": "occupied-site-graybox"
+          }
         }
       ],
       "portals": [
@@ -24557,6 +24563,11 @@
                 38
               ],
               [
+                -14,
+                0,
+                40
+              ],
+              [
                 -10,
                 0,
                 43
@@ -24691,7 +24702,7 @@
                 30
               ],
               [
-                8,
+                6,
                 0,
                 42
               ],
@@ -24781,14 +24792,14 @@
                 18
               ],
               [
-                36,
+                28,
                 0,
-                26
+                16
               ],
               [
-                36,
+                30,
                 0,
-                38
+                40
               ],
               [
                 43,
@@ -24803,12 +24814,12 @@
             "id": "crime:road:27",
             "points": [
               [
-                -10,
+                -14,
                 0,
-                43
+                40
               ],
               [
-                -18,
+                -14,
                 0,
                 54
               ],
@@ -24825,12 +24836,12 @@
             "id": "crime:road:28",
             "points": [
               [
-                -18,
+                -14,
                 0,
                 54
               ],
               [
-                -2,
+                -6,
                 0,
                 62
               ],
@@ -24995,15 +25006,6 @@
             "x": -58,
             "z": -15,
             "height": 9.9,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "crime:foliage:16",
-            "x": 28,
-            "z": 42,
-            "height": 6,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
@@ -25358,6 +25360,15 @@
             "asset": "town/tree-high.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:113",
+            "x": -32,
+            "z": -74,
+            "height": 7.3,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
           }
         ],
         "boundaries": [
@@ -25467,12 +25478,6 @@
             "implementation": "outdoor-graybox",
             "economicStatus": "not-an-inventory-source",
             "tiles": [
-              {
-                "x": 33,
-                "z": 44,
-                "width": 4,
-                "depth": 4
-              },
               {
                 "x": 33,
                 "z": 48,
@@ -26192,7 +26197,7 @@
             "position": [
               33,
               0,
-              44
+              48
             ],
             "size": [
               2,
@@ -26503,24 +26508,39 @@
                     18
                   ],
                   [
-                    36.5,
+                    32.5,
+                    0,
+                    17
+                  ],
+                  [
+                    28,
+                    0,
+                    16
+                  ],
+                  [
+                    28.5,
                     0,
                     22
                   ],
                   [
-                    36,
+                    29,
                     0,
-                    26
+                    28
                   ],
                   [
-                    36,
+                    29.5,
                     0,
-                    32
+                    34
                   ],
                   [
-                    36,
+                    30,
                     0,
-                    38
+                    40
+                  ],
+                  [
+                    36.5,
+                    0,
+                    39
                   ],
                   [
                     43,
@@ -26528,7 +26548,7 @@
                     38
                   ]
                 ],
-                "metres": 71.0900141256185
+                "metres": 90.48343643016332
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -26614,12 +26634,12 @@
                     30
                   ],
                   [
-                    4,
+                    3,
                     0,
                     36
                   ],
                   [
-                    8,
+                    6,
                     0,
                     42
                   ],
@@ -26629,7 +26649,7 @@
                     42
                   ]
                 ],
-                "metres": 99.1493712938669
+                "metres": 100.1435740570097
               },
               {
                 "fromId": "LOC_CRIME_BACK_INN",
@@ -26641,220 +26661,12 @@
                     42
                   ],
                   [
-                    8,
+                    6,
                     0,
                     42
                   ],
                   [
-                    4,
-                    0,
-                    36
-                  ],
-                  [
-                    0,
-                    0,
-                    30
-                  ],
-                  [
-                    0,
-                    0,
-                    24
-                  ],
-                  [
-                    7,
-                    0,
-                    22
-                  ],
-                  [
-                    1.666666666666667,
-                    0,
-                    20.666666666666668
-                  ],
-                  [
-                    -3.666666666666666,
-                    0,
-                    19.333333333333332
-                  ],
-                  [
-                    -9,
-                    0,
-                    18
-                  ],
-                  [
-                    -11.033898305084746,
-                    0,
-                    15.35593220338983
-                  ],
-                  [
-                    -15,
-                    0,
-                    18
-                  ],
-                  [
-                    -13.75,
-                    0,
-                    24.25
-                  ],
-                  [
-                    -12.5,
-                    0,
-                    30.5
-                  ],
-                  [
-                    -11.25,
-                    0,
-                    36.75
-                  ],
-                  [
-                    -10,
-                    0,
-                    43
-                  ],
-                  [
-                    -16,
-                    0,
-                    41.75
-                  ],
-                  [
-                    -22,
-                    0,
-                    40.5
-                  ],
-                  [
-                    -28,
-                    0,
-                    39.25
-                  ],
-                  [
-                    -34,
-                    0,
-                    38
-                  ],
-                  [
-                    -33,
-                    0,
-                    31
-                  ]
-                ],
-                "metres": 115.37870647343583
-              }
-            ],
-            "execution": "traversable-layout-not-an-automatic-shipment"
-          },
-          {
-            "id": "yard-worker",
-            "kind": "commute",
-            "stops": [
-              "LOC_CRIME_WAREHOUSE",
-              "LOC_CRIME_BACK_INN",
-              "LOC_CRIME_STABLE"
-            ],
-            "reason": "荷役の帰路と食事、荷駄の管理",
-            "window": "朝夕",
-            "legs": [
-              {
-                "fromId": "LOC_CRIME_WAREHOUSE",
-                "toId": "LOC_CRIME_BACK_INN",
-                "points": [
-                  [
-                    43,
-                    0,
-                    38
-                  ],
-                  [
-                    36,
-                    0,
-                    38
-                  ],
-                  [
-                    36,
-                    0,
-                    32
-                  ],
-                  [
-                    36,
-                    0,
-                    26
-                  ],
-                  [
-                    36.5,
-                    0,
-                    22
-                  ],
-                  [
-                    37,
-                    0,
-                    18
-                  ],
-                  [
-                    31,
-                    0,
-                    15.5
-                  ],
-                  [
-                    25,
-                    0,
-                    13
-                  ],
-                  [
-                    19,
-                    0,
-                    16
-                  ],
-                  [
-                    13,
-                    0,
-                    19
-                  ],
-                  [
-                    7,
-                    0,
-                    22
-                  ],
-                  [
-                    0,
-                    0,
-                    24
-                  ],
-                  [
-                    0,
-                    0,
-                    30
-                  ],
-                  [
-                    4,
-                    0,
-                    36
-                  ],
-                  [
-                    8,
-                    0,
-                    42
-                  ],
-                  [
-                    14,
-                    0,
-                    42
-                  ]
-                ],
-                "metres": 93.88918453693314
-              },
-              {
-                "fromId": "LOC_CRIME_BACK_INN",
-                "toId": "LOC_CRIME_STABLE",
-                "points": [
-                  [
-                    14,
-                    0,
-                    42
-                  ],
-                  [
-                    8,
-                    0,
-                    42
-                  ],
-                  [
-                    4,
+                    3,
                     0,
                     36
                   ],
@@ -26921,12 +26733,245 @@
                   [
                     -14,
                     0,
-                    48.5
+                    40
                   ],
                   [
-                    -18,
+                    -20.666666666666668,
+                    0,
+                    39.333333333333336
+                  ],
+                  [
+                    -27.333333333333336,
+                    0,
+                    38.666666666666664
+                  ],
+                  [
+                    -34,
+                    0,
+                    38
+                  ],
+                  [
+                    -33,
+                    0,
+                    31
+                  ]
+                ],
+                "metres": 116.95735913455785
+              }
+            ],
+            "execution": "traversable-layout-not-an-automatic-shipment"
+          },
+          {
+            "id": "yard-worker",
+            "kind": "commute",
+            "stops": [
+              "LOC_CRIME_WAREHOUSE",
+              "LOC_CRIME_BACK_INN",
+              "LOC_CRIME_STABLE"
+            ],
+            "reason": "荷役の帰路と食事、荷駄の管理",
+            "window": "朝夕",
+            "legs": [
+              {
+                "fromId": "LOC_CRIME_WAREHOUSE",
+                "toId": "LOC_CRIME_BACK_INN",
+                "points": [
+                  [
+                    43,
+                    0,
+                    38
+                  ],
+                  [
+                    36.5,
+                    0,
+                    39
+                  ],
+                  [
+                    30,
+                    0,
+                    40
+                  ],
+                  [
+                    29.5,
+                    0,
+                    34
+                  ],
+                  [
+                    29,
+                    0,
+                    28
+                  ],
+                  [
+                    28.5,
+                    0,
+                    22
+                  ],
+                  [
+                    28,
+                    0,
+                    16
+                  ],
+                  [
+                    32.5,
+                    0,
+                    17
+                  ],
+                  [
+                    37,
+                    0,
+                    18
+                  ],
+                  [
+                    31,
+                    0,
+                    15.5
+                  ],
+                  [
+                    25,
+                    0,
+                    13
+                  ],
+                  [
+                    19,
+                    0,
+                    16
+                  ],
+                  [
+                    13,
+                    0,
+                    19
+                  ],
+                  [
+                    7,
+                    0,
+                    22
+                  ],
+                  [
+                    0,
+                    0,
+                    24
+                  ],
+                  [
+                    0,
+                    0,
+                    30
+                  ],
+                  [
+                    3,
+                    0,
+                    36
+                  ],
+                  [
+                    6,
+                    0,
+                    42
+                  ],
+                  [
+                    14,
+                    0,
+                    42
+                  ]
+                ],
+                "metres": 114.27680960462077
+              },
+              {
+                "fromId": "LOC_CRIME_BACK_INN",
+                "toId": "LOC_CRIME_STABLE",
+                "points": [
+                  [
+                    14,
+                    0,
+                    42
+                  ],
+                  [
+                    6,
+                    0,
+                    42
+                  ],
+                  [
+                    3,
+                    0,
+                    36
+                  ],
+                  [
+                    0,
+                    0,
+                    30
+                  ],
+                  [
+                    0,
+                    0,
+                    24
+                  ],
+                  [
+                    7,
+                    0,
+                    22
+                  ],
+                  [
+                    1.666666666666667,
+                    0,
+                    20.666666666666668
+                  ],
+                  [
+                    -3.666666666666666,
+                    0,
+                    19.333333333333332
+                  ],
+                  [
+                    -9,
+                    0,
+                    18
+                  ],
+                  [
+                    -11.033898305084746,
+                    0,
+                    15.35593220338983
+                  ],
+                  [
+                    -15,
+                    0,
+                    18
+                  ],
+                  [
+                    -13.75,
+                    0,
+                    24.25
+                  ],
+                  [
+                    -12.5,
+                    0,
+                    30.5
+                  ],
+                  [
+                    -11.25,
+                    0,
+                    36.75
+                  ],
+                  [
+                    -10,
+                    0,
+                    43
+                  ],
+                  [
+                    -14,
+                    0,
+                    40
+                  ],
+                  [
+                    -14,
+                    0,
+                    47
+                  ],
+                  [
+                    -14,
                     0,
                     54
+                  ],
+                  [
+                    -19,
+                    0,
+                    54.5
                   ],
                   [
                     -24,
@@ -26934,7 +26979,7 @@
                     55
                   ]
                 ],
-                "metres": 103.47657035634148
+                "metres": 113.8364157015715
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
