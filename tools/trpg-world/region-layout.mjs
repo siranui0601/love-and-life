@@ -1,3 +1,4 @@
+import {orientBuildings} from './building-orientation.mjs';
 import {authorCourtyards} from './courtyard-authoring.mjs';
 import {authorUrbanFrontage} from './urban-frontage.mjs';
 import {streetPlans} from './spatial-authoring.mjs';
@@ -62,6 +63,7 @@ export function createRegion(spec,sheet,sourceUrl){
  addDwellings(region);
  authorUrbanFrontage(region);
  authorThresholds(region);
+ orientBuildings(region);
  region.terrain.water=region.terrain.water.map(w=>w.kind==='sea'?{...w,depth:region.size,width:region.size/2-52,x:Math.sign(w.x)*(52+(region.size/2-52)/2)}:{...w,depth:region.size});
  addWaterObstacles(region);
  region.terrain.boundaries=(spatialBoundaries[id]||[]).map(({purpose,...body})=>({...body,id:`${id}:${body.id}`}));

@@ -21,7 +21,7 @@ function selectFlow(){
  el('point').textContent='俯瞰：線の交差点と施設の入口を確認';camera(selected.spawn,110);
 }
 async function selectRegion(){selected=content.regions.find(r=>r.id===el('region').value);await world.loadRegion(selected);el('purpose').textContent=selected.settlement?.role||selected.identity;el('flow').replaceChildren();for(const f of selected.settlement?.flows||[])option(el('flow'),f.id,`${f.kind} / ${f.id}`);siteSelect.replaceChildren();for(const o of selected.objects.filter(o=>o.interior?.threshold))option(siteSelect,o.id,o.name);selectFlow();}
-siteSelect.onchange=()=>{const o=selected.objects.find(o=>o.id===siteSelect.value);if(o){camera(o.interior.entrance,10);world.camera.beta=1.42;world.constrainCamera();el('point').textContent=`${o.name}：正面の入口と室内の見通し`;}};
+siteSelect.onchange=()=>{const o=selected.objects.find(o=>o.id===siteSelect.value);if(o){camera(o.interior.entrance,10);world.camera.alpha=Math.atan2(o.interior.entrance[2]-o.buildingPosition[2],o.interior.entrance[0]-o.buildingPosition[0]);world.camera.beta=1.42;world.constrainCamera();el('point').textContent=`${o.name}：正面の入口と室内の見通し`;}};
 for(const r of content.regions)option(el('region'),r.id,r.name);
 el('region').onchange=selectRegion;el('flow').onchange=selectFlow;
 el('previous').onclick=()=>{cursor=Math.max(0,cursor-1);showPoint();};el('next').onclick=()=>{cursor=Math.min(points.length-1,cursor+1);showPoint();};

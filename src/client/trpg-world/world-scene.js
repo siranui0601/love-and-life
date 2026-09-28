@@ -90,15 +90,15 @@ export class WorldScene {
     }
     if(o.signage){
      const s=o.signage,sign=MeshBuilder.CreatePlane(`${o.id}:sign`,{width:s.width,height:s.height,sideOrientation:2},this.scene);
-     sign.position=v(s.position);sign.parent=this.regionRoot;sign.rotation.y=Math.PI;
+     sign.position=v(s.position);sign.parent=this.regionRoot;sign.rotation.y=s.rotation??Math.PI;
      const texture=new DynamicTexture(`${o.id}:sign-text`,{width:1024,height:128},this.scene,false);
      texture.drawText(s.text,null,84,'bold 60px "Yu Gothic", "Meiryo", sans-serif','#eee4ca','#39362d',true);
      const material=this.material(`${o.id}:sign`,'#ffffff');material.diffuseTexture=texture;material.emissiveColor=new Color3(.2,.2,.2);sign.material=material;sign.isPickable=false;this.signMaterials.push(material);
     }
-    for(const wall of [{p:[x-w/2,0,z],s:[.35,h,d]},{p:[x+w/2,0,z],s:[.35,h,d]},{p:[x,0,z-d/2],s:[w,h,.35]}])tasks.push(this.prop('town/wall-window-stone.glb',{position:wall.p,size:wall.s,name:o.id,cameraBlock:true}));
-    if(!region.terrain?.enclosure)tasks.push(this.prop('town/roof-gable.glb',{position:[x,h,z],size:[w+1,2.1,d+1],name:`${o.id}:roof`,cameraBlock:true}));
-    tasks.push(this.prop(o.kind==='shop'?'town/stall-red.glb':'town/stall-bench.glb',{position:o.kind==='residence'?[x+w/2-1.3,0,z-d/2+1.4]:[x,0,z-1],height:o.kind==='shop'?2.2:.8,name:'interior'}));
-    tasks.push(this.prop('town/lantern.glb',{position:[x-3,2,z+d/2],height:.7,name:'lantern'}));
+    for(const wall of (o.interior?.shellWalls?.map(b=>({p:[b.x,0,b.z],s:[b.width,b.height,b.depth]}))||[{p:[x-w/2,0,z],s:[.35,h,d]},{p:[x+w/2,0,z],s:[.35,h,d]},{p:[x,0,z-d/2],s:[w,h,.35]}]))tasks.push(this.prop('town/wall-window-stone.glb',{position:wall.p,size:wall.s,name:o.id,cameraBlock:true}));
+    if(!region.terrain?.enclosure)tasks.push(this.prop('town/roof-gable.glb',{position:[x,h,z],size:o.interior?.roofSize||[w+1,2.1,d+1],rotation:o.interior?.assetRotation||0,name:`${o.id}:roof`,cameraBlock:true}));
+    tasks.push(this.prop(o.kind==='shop'?'town/stall-red.glb':'town/stall-bench.glb',{position:o.interior?.furnishingPosition||(o.kind==='residence'?[x+w/2-1.3,0,z-d/2+1.4]:[x,0,z-1]),rotation:o.interior?.assetRotation||0,height:o.kind==='shop'?2.2:.8,name:'interior'}));
+    tasks.push(this.prop('town/lantern.glb',{position:o.interior?.lanternPosition||[x-3,2,z+d/2],height:.7,name:'lantern'}));
    }else{
     const path=o.asset==='world-tree'?'town/tree-high.glb':o.asset==='crate'?'town/cart-high.glb':o.kind==='board'?'town/banner-green.glb':o.kind==='trainer'?'town/stall-green.glb':o.kind==='stable'||o.asset==='field'?'town/cart.glb':o.asset==='well'?'town/fountain-round.glb':'town/rock-small.glb';
     tasks.push(this.prop(path,{position:o.position,height:o.asset==='world-tree'?12:o.kind==='board'?2.4:o.asset==='well'?.5:1.4,name:o.id}));

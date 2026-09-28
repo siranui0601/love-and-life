@@ -15,6 +15,7 @@ export function authorCourtyards(region){
  region.terrain.courts=[];
  for(const plan of courtyardPlans){
   const site=region.objects.find(o=>o.id===plan.siteId);if(!site)continue;
+  if(site.interior.facing!=='south')throw new Error(`Court needs an authored cardinal layout: ${site.id}`);
   const [x,,z]=site.buildingPosition,back=z+site.depth/2,front=back+plan.depth;
   const left=x-plan.width/2,right=x+plan.width/2,sideZ=back+plan.depth*.55,sideOpening=5.2;
   const id=`court:${site.id}`,walls=[];

@@ -141,7 +141,7 @@ test('functional thresholds have usable two-way doors without exposing a whole r
  for(const region of content.regions)for(const o of region.objects.filter(o=>o.interior?.threshold)){
   const t=o.interior.threshold;
   for(const [a,b] of [[o.position,t.inside],[t.inside,o.position]]){const path=findPath(region,a,b);assert(path.length,o.id);assert(pathIsTraversable(region,a,path),o.id);}
-  const wall=t.walls[0],outside=[wall.x,0,wall.z+2],inside=[wall.x,0,wall.z-2];
+  const wall=t.walls[0],outside=[wall.x,0,wall.z],inside=[wall.x,0,wall.z],axis=wall.width<wall.depth?0:2;outside[axis]+=2;inside[axis]-=2;
   assert(!hasLineOfSight(region,outside,inside),`${o.id}: solid frontage must screen its interior`);
   assert(hasLineOfSight(region,t.approach,t.inside),`${o.id}: an open door remains visible`);
  }
@@ -234,5 +234,20 @@ test('occupied courts preserve two physical exits and a blocked street mouth lea
   const out=[court.service[0]+(court.side==='west'?-2:2),0,court.service[2]],path=findPath(closed,inside,out);
   assert(path.length,court.id);assert(pathIsTraversable(closed,inside,path),court.id);
   for(const wall of court.walls)assert(!canOccupy(region,[wall.x,0,wall.z]),wall.id);
+ }
+});
+
+
+test('cardinal doors face their street with matching render bodies and reachable service targets',()=>{
+ const expected={LOC_CAP_APOTHECARY:'west',LOC_CAP_AJIN_QUARTER:'north',LOC_CRIME_INFO_STREET:'east',LOC_TRADE_INN:'north'};
+ for(const [id,facing] of Object.entries(expected)){
+  const region=content.regions.find(r=>r.objects.some(o=>o.id===id)),site=region.objects.find(o=>o.id===id),[x,,z]=site.buildingPosition;
+  assert.equal(site.interior.facing,facing);
+  if(facing==='west')assert(site.position[0]<x-site.width/2);
+  if(facing==='east')assert(site.position[0]>x+site.width/2);
+  if(facing==='north')assert(site.position[2]<z-site.depth/2);
+  for(const body of [...site.interior.shellWalls,...site.interior.threshold.walls])assert.deepEqual(body,region.obstacles.find(o=>o.id===body.id));
+  const path=findStreetPath(region,region.spawn,site.position);assert(path.length,id);assert(pathIsTraversable(region,region.spawn,path),id);
+  assert(hasLineOfSight(region,site.interior.threshold.approach,site.interior.threshold.inside),id);
  }
 });
