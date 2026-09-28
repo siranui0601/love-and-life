@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "revision": "world-10d-d4a26adbbcf1",
+  "revision": "world-10d-ac201b31d4b2",
   "time": {
     "days": 10,
     "scale": 60,
@@ -778,6 +778,14 @@
           "height": 4.2
         },
         {
+          "id": "tree:farm:foliage:75",
+          "x": -49,
+          "z": 59,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
           "id": "tree:farm:foliage:77",
           "x": 45,
           "z": 52,
@@ -858,17 +866,9 @@
           "height": 4.2
         },
         {
-          "id": "tree:farm:foliage:96",
-          "x": 44,
-          "z": 60,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
-          "id": "tree:farm:foliage:97",
-          "x": -58,
-          "z": -18,
+          "id": "tree:farm:foliage:94",
+          "x": -50,
+          "z": 67,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -2558,7 +2558,7 @@
               [
                 -24,
                 0,
-                -46
+                -44
               ],
               [
                 -18,
@@ -2566,7 +2566,7 @@
                 -51
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -2583,7 +2583,7 @@
                 17
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -2595,9 +2595,9 @@
                 -17
               ],
               [
-                -44,
+                -46,
                 0,
-                -18
+                -20
               ],
               [
                 -57,
@@ -2605,7 +2605,7 @@
                 -31
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -2622,7 +2622,7 @@
                 -15
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -2639,7 +2639,7 @@
                 12
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -2651,9 +2651,14 @@
                 33
               ],
               [
-                -46,
+                -44,
                 0,
-                64
+                54
+              ],
+              [
+                -44,
+                0,
+                62
               ],
               [
                 -39,
@@ -2661,7 +2666,7 @@
                 64
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -3118,6 +3123,15 @@
             "collisionDepth": 1.1
           },
           {
+            "id": "farm:foliage:75",
+            "x": -49,
+            "z": 59,
+            "height": 9.9,
+            "asset": "town/tree-high.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
             "id": "farm:foliage:77",
             "x": 45,
             "z": 52,
@@ -3208,25 +3222,17 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "farm:foliage:96",
-            "x": 44,
-            "z": 60,
-            "height": 6,
-            "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
-            "id": "farm:foliage:97",
-            "x": -58,
-            "z": -18,
-            "height": 7.3,
+            "id": "farm:foliage:94",
+            "x": -50,
+            "z": 67,
+            "height": 8.6,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:farm:north-crops",
@@ -8638,9 +8644,9 @@
         },
         {
           "id": "capital:lower-court-return",
-          "x": -43,
+          "x": -47,
           "z": 17,
-          "width": 13,
+          "width": 5,
           "depth": 1,
           "height": 4
         },
@@ -8659,6 +8665,286 @@
           "width": 10,
           "depth": 1,
           "height": 3.5
+        },
+        {
+          "id": "court:capital:market-house:mouth-left",
+          "x": -36.4,
+          "z": 20.5,
+          "width": 7.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:market-house:mouth-right",
+          "x": -25.6,
+          "z": 20.5,
+          "width": 7.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:market-house:west-rear",
+          "x": -40,
+          "z": 13.399999999999999,
+          "width": 0.4,
+          "depth": 1.799999999999999,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:market-house:west-front",
+          "x": -40,
+          "z": 20,
+          "width": 0.4,
+          "depth": 1,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:market-house:east",
+          "x": -22,
+          "z": 16.5,
+          "width": 0.4,
+          "depth": 8,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:market-house:rear-left",
+          "x": -39.5,
+          "z": 12.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:market-house:rear-right",
+          "x": -22.5,
+          "z": 12.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:mouth-left",
+          "x": -66.9,
+          "z": -40.5,
+          "width": 6.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:mouth-right",
+          "x": -57.1,
+          "z": -40.5,
+          "width": 6.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:west",
+          "x": -70,
+          "z": -45.5,
+          "width": 0.4,
+          "depth": 10,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:east-rear",
+          "x": -54,
+          "z": -49.05,
+          "width": 0.4,
+          "depth": 2.8999999999999986,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:east-front",
+          "x": -54,
+          "z": -41.45,
+          "width": 0.4,
+          "depth": 1.8999999999999986,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:rear-left",
+          "x": -69.5,
+          "z": -50.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:clerk-house:rear-right",
+          "x": -54.5,
+          "z": -50.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:mouth-left",
+          "x": -2.4,
+          "z": -63.5,
+          "width": 7.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:mouth-right",
+          "x": 8.4,
+          "z": -63.5,
+          "width": 7.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:west-rear",
+          "x": -6,
+          "z": -71.32499999999999,
+          "width": 0.4,
+          "depth": 2.3500000000000085,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:west-front",
+          "x": -6,
+          "z": -64.225,
+          "width": 0.4,
+          "depth": 1.4500000000000028,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:east",
+          "x": 12,
+          "z": -68,
+          "width": 0.4,
+          "depth": 9,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:rear-left",
+          "x": -5.5,
+          "z": -72.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:capital:guard-quarters:rear-right",
+          "x": 11.5,
+          "z": -72.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:mouth-left",
+          "x": -6.6,
+          "z": -3.5,
+          "width": 6.8,
+          "depth": 0.4,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:mouth-right",
+          "x": 6.6,
+          "z": -3.5,
+          "width": 6.8,
+          "depth": 0.4,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:west",
+          "x": -10,
+          "z": -9.5,
+          "width": 0.4,
+          "depth": 12,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:east-rear",
+          "x": 10,
+          "z": -13.5,
+          "width": 0.4,
+          "depth": 4.000000000000002,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:east-front",
+          "x": 10,
+          "z": -4.8999999999999995,
+          "width": 0.4,
+          "depth": 2.799999999999999,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:rear-left",
+          "x": -9.5,
+          "z": -15.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_MARKET:rear-right",
+          "x": 9.5,
+          "z": -15.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.2
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:mouth-left",
+          "x": -29.9,
+          "z": -11.5,
+          "width": 8.2,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:mouth-right",
+          "x": -18.1,
+          "z": -11.5,
+          "width": 8.2,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:west-rear",
+          "x": -34,
+          "z": -21.5,
+          "width": 0.4,
+          "depth": 4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:west-front",
+          "x": -34,
+          "z": -12.899999999999999,
+          "width": 0.4,
+          "depth": 2.799999999999999,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:east",
+          "x": -14,
+          "z": -17.5,
+          "width": 0.4,
+          "depth": 12,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:rear-left",
+          "x": -33.5,
+          "z": -23.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CAP_WEAPON_SHOP:rear-right",
+          "x": -14.5,
+          "z": -23.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 2.3
         },
         {
           "id": "tree:capital:foliage:4",
@@ -8757,14 +9043,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:capital:foliage:55",
-          "x": -38,
-          "z": -20,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:capital:foliage:59",
           "x": 1,
           "z": -34,
@@ -8816,6 +9094,14 @@
           "id": "tree:capital:foliage:71",
           "x": -31,
           "z": 73,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
+          "id": "tree:capital:foliage:74",
+          "x": -39,
+          "z": -12,
           "width": 1.1,
           "depth": 1.1,
           "height": 4.2
@@ -8878,14 +9164,6 @@
         },
         {
           "id": "parcel:capital:market-receiving:prop:7",
-          "x": 6,
-          "z": 1,
-          "width": 2,
-          "depth": 2,
-          "height": 1.1
-        },
-        {
-          "id": "parcel:capital:market-receiving:prop:8",
           "x": 2,
           "z": 17,
           "width": 2,
@@ -8893,7 +9171,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:market-receiving:prop:9",
+          "id": "parcel:capital:market-receiving:prop:8",
           "x": 6,
           "z": 9,
           "width": 2,
@@ -8901,15 +9179,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:market-receiving:prop:10",
-          "x": 14,
-          "z": 1,
-          "width": 2,
-          "depth": 2,
-          "height": 1.1
-        },
-        {
-          "id": "parcel:capital:castle-court:prop:11",
+          "id": "parcel:capital:castle-court:prop:9",
           "x": -11,
           "z": -88,
           "width": 2,
@@ -8917,7 +9187,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:castle-court:prop:12",
+          "id": "parcel:capital:castle-court:prop:10",
           "x": -11,
           "z": -80,
           "width": 2,
@@ -8925,7 +9195,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:castle-court:prop:13",
+          "id": "parcel:capital:castle-court:prop:11",
           "x": -3,
           "z": -88,
           "width": 2,
@@ -8933,7 +9203,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:castle-court:prop:14",
+          "id": "parcel:capital:castle-court:prop:12",
           "x": 5,
           "z": -88,
           "width": 2,
@@ -8941,7 +9211,7 @@
           "height": 1.1
         },
         {
-          "id": "parcel:capital:west-orchard:prop:15",
+          "id": "parcel:capital:west-orchard:prop:13",
           "x": -98.5,
           "z": -67,
           "width": 1.1,
@@ -8949,7 +9219,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:16",
+          "id": "parcel:capital:west-orchard:prop:14",
           "x": -102.5,
           "z": -51,
           "width": 1.1,
@@ -8957,7 +9227,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:17",
+          "id": "parcel:capital:west-orchard:prop:15",
           "x": -98.5,
           "z": -59,
           "width": 1.1,
@@ -8965,7 +9235,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:18",
+          "id": "parcel:capital:west-orchard:prop:16",
           "x": -102.5,
           "z": -43,
           "width": 1.1,
@@ -8973,7 +9243,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:19",
+          "id": "parcel:capital:west-orchard:prop:17",
           "x": -102.5,
           "z": -35,
           "width": 1.1,
@@ -8981,7 +9251,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:20",
+          "id": "parcel:capital:west-orchard:prop:18",
           "x": -102.5,
           "z": -27,
           "width": 1.1,
@@ -8989,7 +9259,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:21",
+          "id": "parcel:capital:west-orchard:prop:19",
           "x": -90.5,
           "z": -71,
           "width": 1.1,
@@ -8997,7 +9267,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:22",
+          "id": "parcel:capital:west-orchard:prop:20",
           "x": -94.5,
           "z": -51,
           "width": 1.1,
@@ -9005,7 +9275,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:23",
+          "id": "parcel:capital:west-orchard:prop:21",
           "x": -102.5,
           "z": -19,
           "width": 1.1,
@@ -9013,7 +9283,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:24",
+          "id": "parcel:capital:west-orchard:prop:22",
           "x": -90.5,
           "z": -63,
           "width": 1.1,
@@ -9021,7 +9291,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:25",
+          "id": "parcel:capital:west-orchard:prop:23",
           "x": -94.5,
           "z": -43,
           "width": 1.1,
@@ -9029,7 +9299,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:26",
+          "id": "parcel:capital:west-orchard:prop:24",
           "x": -102.5,
           "z": -11,
           "width": 1.1,
@@ -9037,7 +9307,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:27",
+          "id": "parcel:capital:west-orchard:prop:25",
           "x": -94.5,
           "z": -35,
           "width": 1.1,
@@ -9045,7 +9315,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:28",
+          "id": "parcel:capital:west-orchard:prop:26",
           "x": -102.5,
           "z": -3,
           "width": 1.1,
@@ -9053,7 +9323,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:29",
+          "id": "parcel:capital:west-orchard:prop:27",
           "x": -94.5,
           "z": -27,
           "width": 1.1,
@@ -9061,7 +9331,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:30",
+          "id": "parcel:capital:west-orchard:prop:28",
           "x": -102.5,
           "z": 5,
           "width": 1.1,
@@ -9069,7 +9339,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:31",
+          "id": "parcel:capital:west-orchard:prop:29",
           "x": -86.5,
           "z": -55,
           "width": 1.1,
@@ -9077,7 +9347,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:32",
+          "id": "parcel:capital:west-orchard:prop:30",
           "x": -94.5,
           "z": -19,
           "width": 1.1,
@@ -9085,7 +9355,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:33",
+          "id": "parcel:capital:west-orchard:prop:31",
           "x": -102.5,
           "z": 13,
           "width": 1.1,
@@ -9093,7 +9363,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:34",
+          "id": "parcel:capital:west-orchard:prop:32",
           "x": -86.5,
           "z": -47,
           "width": 1.1,
@@ -9101,7 +9371,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:35",
+          "id": "parcel:capital:west-orchard:prop:33",
           "x": -94.5,
           "z": -11,
           "width": 1.1,
@@ -9109,7 +9379,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:36",
+          "id": "parcel:capital:west-orchard:prop:34",
           "x": -102.5,
           "z": 21,
           "width": 1.1,
@@ -9117,7 +9387,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:37",
+          "id": "parcel:capital:west-orchard:prop:35",
           "x": -86.5,
           "z": -39,
           "width": 1.1,
@@ -9125,7 +9395,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:38",
+          "id": "parcel:capital:west-orchard:prop:36",
           "x": -94.5,
           "z": -3,
           "width": 1.1,
@@ -9133,7 +9403,7 @@
           "height": 4
         },
         {
-          "id": "parcel:capital:west-orchard:prop:39",
+          "id": "parcel:capital:west-orchard:prop:37",
           "x": -86.5,
           "z": -31,
           "width": 1.1,
@@ -10450,9 +10720,9 @@
           "kind": "job",
           "asset": "field",
           "position": [
-            6,
+            10,
             0,
-            5
+            9
           ],
           "workplaceId": "LOC_CAP_MARKET",
           "jobIds": [
@@ -10634,6 +10904,16 @@
                 -8
               ],
               [
+                0,
+                0,
+                0
+              ],
+              [
+                14,
+                0,
+                0
+              ],
+              [
                 16,
                 0,
                 -8
@@ -10754,6 +11034,11 @@
             "points": [
               [
                 -56,
+                0,
+                -38
+              ],
+              [
+                -46,
                 0,
                 -38
               ],
@@ -11072,12 +11357,12 @@
                 13
               ],
               [
-                -32,
+                -42,
                 0,
                 16
               ],
               [
-                -22,
+                -42,
                 0,
                 22
               ],
@@ -11192,6 +11477,11 @@
                 -25,
                 0,
                 0
+              ],
+              [
+                -24,
+                0,
+                -12
               ],
               [
                 -24,
@@ -11379,7 +11669,7 @@
                 -58
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -11391,12 +11681,27 @@
                 -48
               ],
               [
+                6,
+                0,
+                -62
+              ],
+              [
+                -8,
+                0,
+                -62
+              ],
+              [
+                -8,
+                0,
+                -66
+              ],
+              [
                 3,
                 0,
                 -69
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -11410,10 +11715,15 @@
               [
                 -62,
                 0,
+                -38
+              ],
+              [
+                -62,
+                0,
                 -47
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -11425,31 +11735,21 @@
                 66
               ],
               [
-                26,
-                0,
-                74
-              ],
-              [
                 30,
                 0,
                 74
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
             "id": "capital:road:47",
             "points": [
               [
-                26,
+                30,
                 0,
                 74
-              ],
-              [
-                28,
-                0,
-                80
               ],
               [
                 28,
@@ -11462,14 +11762,14 @@
                 91
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
             "id": "capital:road:48",
             "points": [
               [
-                -32,
+                -42,
                 0,
                 16
               ],
@@ -11479,7 +11779,7 @@
                 16
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -11503,7 +11803,7 @@
             "id": "capital:road:50",
             "points": [
               [
-                -56,
+                -62,
                 0,
                 -38
               ],
@@ -11603,9 +11903,9 @@
                 -36
               ],
               [
-                -72,
+                -74,
                 0,
-                -48
+                -38
               ],
               [
                 -80,
@@ -11799,15 +12099,6 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "capital:foliage:55",
-            "x": -38,
-            "z": -20,
-            "height": 9.9,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "capital:foliage:59",
             "x": 1,
             "z": -34,
@@ -11869,6 +12160,15 @@
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
+          },
+          {
+            "id": "capital:foliage:74",
+            "x": -39,
+            "z": -12,
+            "height": 8.6,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
           }
         ],
         "boundaries": [
@@ -11898,9 +12198,9 @@
           },
           {
             "id": "capital:lower-court-return",
-            "x": -43,
+            "x": -47,
             "z": 17,
-            "width": 13,
+            "width": 5,
             "depth": 1,
             "height": 4
           },
@@ -11919,6 +12219,718 @@
             "width": 10,
             "depth": 1,
             "height": 3.5
+          },
+          {
+            "id": "court:capital:market-house:mouth-left",
+            "x": -36.4,
+            "z": 20.5,
+            "width": 7.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:market-house:mouth-right",
+            "x": -25.6,
+            "z": 20.5,
+            "width": 7.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:market-house:west-rear",
+            "x": -40,
+            "z": 13.399999999999999,
+            "width": 0.4,
+            "depth": 1.799999999999999,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:market-house:west-front",
+            "x": -40,
+            "z": 20,
+            "width": 0.4,
+            "depth": 1,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:market-house:east",
+            "x": -22,
+            "z": 16.5,
+            "width": 0.4,
+            "depth": 8,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:market-house:rear-left",
+            "x": -39.5,
+            "z": 12.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:market-house:rear-right",
+            "x": -22.5,
+            "z": 12.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:mouth-left",
+            "x": -66.9,
+            "z": -40.5,
+            "width": 6.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:mouth-right",
+            "x": -57.1,
+            "z": -40.5,
+            "width": 6.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:west",
+            "x": -70,
+            "z": -45.5,
+            "width": 0.4,
+            "depth": 10,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:east-rear",
+            "x": -54,
+            "z": -49.05,
+            "width": 0.4,
+            "depth": 2.8999999999999986,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:east-front",
+            "x": -54,
+            "z": -41.45,
+            "width": 0.4,
+            "depth": 1.8999999999999986,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:rear-left",
+            "x": -69.5,
+            "z": -50.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:clerk-house:rear-right",
+            "x": -54.5,
+            "z": -50.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:mouth-left",
+            "x": -2.4,
+            "z": -63.5,
+            "width": 7.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:mouth-right",
+            "x": 8.4,
+            "z": -63.5,
+            "width": 7.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:west-rear",
+            "x": -6,
+            "z": -71.32499999999999,
+            "width": 0.4,
+            "depth": 2.3500000000000085,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:west-front",
+            "x": -6,
+            "z": -64.225,
+            "width": 0.4,
+            "depth": 1.4500000000000028,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:east",
+            "x": 12,
+            "z": -68,
+            "width": 0.4,
+            "depth": 9,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:rear-left",
+            "x": -5.5,
+            "z": -72.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:capital:guard-quarters:rear-right",
+            "x": 11.5,
+            "z": -72.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:mouth-left",
+            "x": -6.6,
+            "z": -3.5,
+            "width": 6.8,
+            "depth": 0.4,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:mouth-right",
+            "x": 6.6,
+            "z": -3.5,
+            "width": 6.8,
+            "depth": 0.4,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:west",
+            "x": -10,
+            "z": -9.5,
+            "width": 0.4,
+            "depth": 12,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:east-rear",
+            "x": 10,
+            "z": -13.5,
+            "width": 0.4,
+            "depth": 4.000000000000002,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:east-front",
+            "x": 10,
+            "z": -4.8999999999999995,
+            "width": 0.4,
+            "depth": 2.799999999999999,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:rear-left",
+            "x": -9.5,
+            "z": -15.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_MARKET:rear-right",
+            "x": 9.5,
+            "z": -15.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.2
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:mouth-left",
+            "x": -29.9,
+            "z": -11.5,
+            "width": 8.2,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:mouth-right",
+            "x": -18.1,
+            "z": -11.5,
+            "width": 8.2,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:west-rear",
+            "x": -34,
+            "z": -21.5,
+            "width": 0.4,
+            "depth": 4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:west-front",
+            "x": -34,
+            "z": -12.899999999999999,
+            "width": 0.4,
+            "depth": 2.799999999999999,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:east",
+            "x": -14,
+            "z": -17.5,
+            "width": 0.4,
+            "depth": 12,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:rear-left",
+            "x": -33.5,
+            "z": -23.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CAP_WEAPON_SHOP:rear-right",
+            "x": -14.5,
+            "z": -23.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 2.3
+          }
+        ],
+        "courts": [
+          {
+            "siteId": "capital:market-house",
+            "width": 18,
+            "depth": 8,
+            "height": 1.4,
+            "opening": 3.6,
+            "side": "west",
+            "use": "residential",
+            "reason": "市場へ通う借家人の共同庭。荷運びの通過路から生活面を区別する",
+            "id": "court:capital:market-house",
+            "x": -31,
+            "z": 16.5,
+            "mouth": [
+              -31,
+              0,
+              20.5
+            ],
+            "service": [
+              -40,
+              0,
+              16.9
+            ],
+            "entrance": [
+              -31,
+              0,
+              12.5
+            ],
+            "walls": [
+              {
+                "id": "court:capital:market-house:mouth-left",
+                "x": -36.4,
+                "z": 20.5,
+                "width": 7.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:market-house:mouth-right",
+                "x": -25.6,
+                "z": 20.5,
+                "width": 7.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:market-house:west-rear",
+                "x": -40,
+                "z": 13.399999999999999,
+                "width": 0.4,
+                "depth": 1.799999999999999,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:market-house:west-front",
+                "x": -40,
+                "z": 20,
+                "width": 0.4,
+                "depth": 1,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:market-house:east",
+                "x": -22,
+                "z": 16.5,
+                "width": 0.4,
+                "depth": 8,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:market-house:rear-left",
+                "x": -39.5,
+                "z": 12.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:market-house:rear-right",
+                "x": -22.5,
+                "z": 12.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              }
+            ]
+          },
+          {
+            "siteId": "capital:clerk-house",
+            "width": 16,
+            "depth": 10,
+            "height": 1.4,
+            "opening": 3.6,
+            "side": "east",
+            "use": "residential",
+            "reason": "役所裏の長屋で出勤前後に使う共同庭",
+            "id": "court:capital:clerk-house",
+            "x": -62,
+            "z": -45.5,
+            "mouth": [
+              -62,
+              0,
+              -40.5
+            ],
+            "service": [
+              -54,
+              0,
+              -45
+            ],
+            "entrance": [
+              -62,
+              0,
+              -50.5
+            ],
+            "walls": [
+              {
+                "id": "court:capital:clerk-house:mouth-left",
+                "x": -66.9,
+                "z": -40.5,
+                "width": 6.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:clerk-house:mouth-right",
+                "x": -57.1,
+                "z": -40.5,
+                "width": 6.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:clerk-house:west",
+                "x": -70,
+                "z": -45.5,
+                "width": 0.4,
+                "depth": 10,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:clerk-house:east-rear",
+                "x": -54,
+                "z": -49.05,
+                "width": 0.4,
+                "depth": 2.8999999999999986,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:clerk-house:east-front",
+                "x": -54,
+                "z": -41.45,
+                "width": 0.4,
+                "depth": 1.8999999999999986,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:clerk-house:rear-left",
+                "x": -69.5,
+                "z": -50.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:clerk-house:rear-right",
+                "x": -54.5,
+                "z": -50.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              }
+            ]
+          },
+          {
+            "siteId": "capital:guard-quarters",
+            "width": 18,
+            "depth": 9,
+            "height": 1.4,
+            "opening": 3.6,
+            "side": "west",
+            "use": "residential",
+            "reason": "当直と帰宅の動線を分ける宿舎の前庭",
+            "id": "court:capital:guard-quarters",
+            "x": 3,
+            "z": -68,
+            "mouth": [
+              3,
+              0,
+              -63.5
+            ],
+            "service": [
+              -6,
+              0,
+              -67.55
+            ],
+            "entrance": [
+              3,
+              0,
+              -72.5
+            ],
+            "walls": [
+              {
+                "id": "court:capital:guard-quarters:mouth-left",
+                "x": -2.4,
+                "z": -63.5,
+                "width": 7.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:guard-quarters:mouth-right",
+                "x": 8.4,
+                "z": -63.5,
+                "width": 7.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:guard-quarters:west-rear",
+                "x": -6,
+                "z": -71.32499999999999,
+                "width": 0.4,
+                "depth": 2.3500000000000085,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:guard-quarters:west-front",
+                "x": -6,
+                "z": -64.225,
+                "width": 0.4,
+                "depth": 1.4500000000000028,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:guard-quarters:east",
+                "x": 12,
+                "z": -68,
+                "width": 0.4,
+                "depth": 9,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:guard-quarters:rear-left",
+                "x": -5.5,
+                "z": -72.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:capital:guard-quarters:rear-right",
+                "x": 11.5,
+                "z": -72.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              }
+            ]
+          },
+          {
+            "siteId": "LOC_CAP_MARKET",
+            "width": 20,
+            "depth": 12,
+            "height": 1.2,
+            "opening": 6.4,
+            "side": "east",
+            "use": "market",
+            "reason": "市場前の荷改めと買物客の待避。側道から荷を出せる",
+            "id": "court:LOC_CAP_MARKET",
+            "x": 0,
+            "z": -9.5,
+            "mouth": [
+              0,
+              0,
+              -3.5
+            ],
+            "service": [
+              10,
+              0,
+              -8.899999999999999
+            ],
+            "entrance": [
+              0,
+              0,
+              -15.5
+            ],
+            "walls": [
+              {
+                "id": "court:LOC_CAP_MARKET:mouth-left",
+                "x": -6.6,
+                "z": -3.5,
+                "width": 6.8,
+                "depth": 0.4,
+                "height": 1.2
+              },
+              {
+                "id": "court:LOC_CAP_MARKET:mouth-right",
+                "x": 6.6,
+                "z": -3.5,
+                "width": 6.8,
+                "depth": 0.4,
+                "height": 1.2
+              },
+              {
+                "id": "court:LOC_CAP_MARKET:west",
+                "x": -10,
+                "z": -9.5,
+                "width": 0.4,
+                "depth": 12,
+                "height": 1.2
+              },
+              {
+                "id": "court:LOC_CAP_MARKET:east-rear",
+                "x": 10,
+                "z": -13.5,
+                "width": 0.4,
+                "depth": 4.000000000000002,
+                "height": 1.2
+              },
+              {
+                "id": "court:LOC_CAP_MARKET:east-front",
+                "x": 10,
+                "z": -4.8999999999999995,
+                "width": 0.4,
+                "depth": 2.799999999999999,
+                "height": 1.2
+              },
+              {
+                "id": "court:LOC_CAP_MARKET:rear-left",
+                "x": -9.5,
+                "z": -15.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.2
+              },
+              {
+                "id": "court:LOC_CAP_MARKET:rear-right",
+                "x": 9.5,
+                "z": -15.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.2
+              }
+            ]
+          },
+          {
+            "siteId": "LOC_CAP_WEAPON_SHOP",
+            "width": 20,
+            "depth": 12,
+            "height": 2.3,
+            "opening": 3.6,
+            "side": "west",
+            "use": "workshop",
+            "reason": "武具の補修と受渡しを通過交通から分ける作業庭",
+            "id": "court:LOC_CAP_WEAPON_SHOP",
+            "x": -24,
+            "z": -17.5,
+            "mouth": [
+              -24,
+              0,
+              -11.5
+            ],
+            "service": [
+              -34,
+              0,
+              -16.9
+            ],
+            "entrance": [
+              -24,
+              0,
+              -23.5
+            ],
+            "walls": [
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:mouth-left",
+                "x": -29.9,
+                "z": -11.5,
+                "width": 8.2,
+                "depth": 0.4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:mouth-right",
+                "x": -18.1,
+                "z": -11.5,
+                "width": 8.2,
+                "depth": 0.4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:west-rear",
+                "x": -34,
+                "z": -21.5,
+                "width": 0.4,
+                "depth": 4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:west-front",
+                "x": -34,
+                "z": -12.899999999999999,
+                "width": 0.4,
+                "depth": 2.799999999999999,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:east",
+                "x": -14,
+                "z": -17.5,
+                "width": 0.4,
+                "depth": 12,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:rear-left",
+                "x": -33.5,
+                "z": -23.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CAP_WEAPON_SHOP:rear-right",
+                "x": -14.5,
+                "z": -23.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 2.3
+              }
+            ]
           }
         ],
         "parcels": [
@@ -13074,49 +14086,13 @@
               },
               {
                 "x": 6,
-                "z": 1,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 6,
-                "z": 5,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 6,
                 "z": 9,
                 "width": 4,
                 "depth": 4
               },
               {
                 "x": 10,
-                "z": 1,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 10,
-                "z": 5,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 10,
                 "z": 9,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 14,
-                "z": 1,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 14,
-                "z": 5,
                 "width": 4,
                 "depth": 4
               }
@@ -13999,12 +14975,6 @@
               },
               {
                 "x": -82.5,
-                "z": -59,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -82.5,
                 "z": -55,
                 "width": 4,
                 "depth": 4
@@ -14243,21 +15213,6 @@
             "parcelId": "parcel:capital:market-receiving",
             "asset": "town/cart.glb",
             "position": [
-              6,
-              0,
-              1
-            ],
-            "size": [
-              2,
-              1.1,
-              2
-            ]
-          },
-          {
-            "id": "parcel:capital:market-receiving:prop:8",
-            "parcelId": "parcel:capital:market-receiving",
-            "asset": "town/cart.glb",
-            "position": [
               2,
               0,
               17
@@ -14269,7 +15224,7 @@
             ]
           },
           {
-            "id": "parcel:capital:market-receiving:prop:9",
+            "id": "parcel:capital:market-receiving:prop:8",
             "parcelId": "parcel:capital:market-receiving",
             "asset": "town/cart.glb",
             "position": [
@@ -14284,22 +15239,7 @@
             ]
           },
           {
-            "id": "parcel:capital:market-receiving:prop:10",
-            "parcelId": "parcel:capital:market-receiving",
-            "asset": "town/cart.glb",
-            "position": [
-              14,
-              0,
-              1
-            ],
-            "size": [
-              2,
-              1.1,
-              2
-            ]
-          },
-          {
-            "id": "parcel:capital:castle-court:prop:11",
+            "id": "parcel:capital:castle-court:prop:9",
             "parcelId": "parcel:capital:castle-court",
             "asset": "town/stall-bench.glb",
             "position": [
@@ -14314,7 +15254,7 @@
             ]
           },
           {
-            "id": "parcel:capital:castle-court:prop:12",
+            "id": "parcel:capital:castle-court:prop:10",
             "parcelId": "parcel:capital:castle-court",
             "asset": "town/stall-bench.glb",
             "position": [
@@ -14329,7 +15269,7 @@
             ]
           },
           {
-            "id": "parcel:capital:castle-court:prop:13",
+            "id": "parcel:capital:castle-court:prop:11",
             "parcelId": "parcel:capital:castle-court",
             "asset": "town/stall-bench.glb",
             "position": [
@@ -14344,7 +15284,7 @@
             ]
           },
           {
-            "id": "parcel:capital:castle-court:prop:14",
+            "id": "parcel:capital:castle-court:prop:12",
             "parcelId": "parcel:capital:castle-court",
             "asset": "town/stall-bench.glb",
             "position": [
@@ -14359,7 +15299,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:15",
+            "id": "parcel:capital:west-orchard:prop:13",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14374,7 +15314,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:16",
+            "id": "parcel:capital:west-orchard:prop:14",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14389,7 +15329,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:17",
+            "id": "parcel:capital:west-orchard:prop:15",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14404,7 +15344,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:18",
+            "id": "parcel:capital:west-orchard:prop:16",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14419,7 +15359,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:19",
+            "id": "parcel:capital:west-orchard:prop:17",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14434,7 +15374,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:20",
+            "id": "parcel:capital:west-orchard:prop:18",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14449,7 +15389,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:21",
+            "id": "parcel:capital:west-orchard:prop:19",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14464,7 +15404,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:22",
+            "id": "parcel:capital:west-orchard:prop:20",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14479,7 +15419,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:23",
+            "id": "parcel:capital:west-orchard:prop:21",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14494,7 +15434,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:24",
+            "id": "parcel:capital:west-orchard:prop:22",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14509,7 +15449,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:25",
+            "id": "parcel:capital:west-orchard:prop:23",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14524,7 +15464,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:26",
+            "id": "parcel:capital:west-orchard:prop:24",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14539,7 +15479,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:27",
+            "id": "parcel:capital:west-orchard:prop:25",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14554,7 +15494,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:28",
+            "id": "parcel:capital:west-orchard:prop:26",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14569,7 +15509,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:29",
+            "id": "parcel:capital:west-orchard:prop:27",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14584,7 +15524,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:30",
+            "id": "parcel:capital:west-orchard:prop:28",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14599,7 +15539,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:31",
+            "id": "parcel:capital:west-orchard:prop:29",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14614,7 +15554,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:32",
+            "id": "parcel:capital:west-orchard:prop:30",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14629,7 +15569,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:33",
+            "id": "parcel:capital:west-orchard:prop:31",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14644,7 +15584,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:34",
+            "id": "parcel:capital:west-orchard:prop:32",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14659,7 +15599,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:35",
+            "id": "parcel:capital:west-orchard:prop:33",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14674,7 +15614,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:36",
+            "id": "parcel:capital:west-orchard:prop:34",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14689,7 +15629,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:37",
+            "id": "parcel:capital:west-orchard:prop:35",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14704,7 +15644,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:38",
+            "id": "parcel:capital:west-orchard:prop:36",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -14719,7 +15659,7 @@
             ]
           },
           {
-            "id": "parcel:capital:west-orchard:prop:39",
+            "id": "parcel:capital:west-orchard:prop:37",
             "parcelId": "parcel:capital:west-orchard",
             "asset": "town/tree.glb",
             "position": [
@@ -15290,34 +16230,44 @@
                     -70
                   ],
                   [
-                    -77.33333333333333,
+                    -78.8,
                     0,
-                    -62.666666666666664
+                    -63.6
                   ],
                   [
-                    -74.66666666666667,
+                    -77.6,
                     0,
-                    -55.333333333333336
+                    -57.2
                   ],
                   [
-                    -72,
+                    -76.4,
                     0,
-                    -48
+                    -50.8
                   ],
                   [
-                    -68,
+                    -75.2,
                     0,
-                    -44
+                    -44.4
                   ],
                   [
-                    -64,
+                    -74,
                     0,
-                    -40
+                    -38
+                  ],
+                  [
+                    -67,
+                    0,
+                    -37
                   ],
                   [
                     -60,
                     0,
                     -36
+                  ],
+                  [
+                    -62,
+                    0,
+                    -38
                   ],
                   [
                     -56,
@@ -15415,7 +16365,7 @@
                     -12
                   ]
                 ],
-                "metres": 158.96018680220718
+                "metres": 169.63629221796776
               },
               {
                 "fromId": "LOC_CAP_MARKET",
@@ -15472,14 +16422,14 @@
                     0
                   ],
                   [
-                    -24.666666666666668,
+                    -24.5,
                     0,
-                    -6.666666666666666
+                    -6
                   ],
                   [
-                    -24.333333333333332,
+                    -24,
                     0,
-                    -13.333333333333332
+                    -12
                   ],
                   [
                     -24,
@@ -15487,7 +16437,7 @@
                     -20
                   ]
                 ],
-                "metres": 71.24452885179367
+                "metres": 71.26113903608518
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -15610,9 +16560,24 @@
                     -8
                   ],
                   [
-                    8,
+                    15,
                     0,
-                    -8
+                    -4
+                  ],
+                  [
+                    14,
+                    0,
+                    0
+                  ],
+                  [
+                    7,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
                   ],
                   [
                     0,
@@ -15625,7 +16590,7 @@
                     -12
                   ]
                 ],
-                "metres": 34.317821063276355
+                "metres": 48.56403231451168
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -16175,9 +17140,14 @@
                     -39
                   ],
                   [
-                    -49.5,
+                    -46,
                     0,
-                    -38.5
+                    -38
+                  ],
+                  [
+                    -51,
+                    0,
+                    -38
                   ],
                   [
                     -56,
@@ -16285,7 +17255,7 @@
                     59
                   ]
                 ],
-                "metres": 145.35138093925974
+                "metres": 145.47525378902282
               },
               {
                 "fromId": "LOC_CAP_ORPHANAGE",
@@ -16468,9 +17438,24 @@
                     -8
                   ],
                   [
-                    8,
+                    15,
                     0,
-                    -8
+                    -4
+                  ],
+                  [
+                    14,
+                    0,
+                    0
+                  ],
+                  [
+                    7,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    0,
+                    0
                   ],
                   [
                     0,
@@ -16483,7 +17468,7 @@
                     -12
                   ]
                 ],
-                "metres": 78.49777357148896
+                "metres": 92.74398482272429
               },
               {
                 "fromId": "LOC_CAP_MARKET",
@@ -17249,6 +18234,14 @@
           "height": 4.2
         },
         {
+          "id": "tree:trade:foliage:31",
+          "x": -12,
+          "z": 64,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
           "id": "tree:trade:foliage:32",
           "x": 35,
           "z": -14,
@@ -17537,14 +18530,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:trade:foliage:118",
-          "x": 54,
-          "z": -17,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "parcel:trade:customs-yard:prop:0",
           "x": -31,
           "z": -22.5,
@@ -17595,15 +18580,15 @@
         {
           "id": "parcel:trade:timber-yard:prop:6",
           "x": -11,
-          "z": 67,
+          "z": 79,
           "width": 2,
           "depth": 2,
           "height": 0.6
         },
         {
           "id": "parcel:trade:timber-yard:prop:7",
-          "x": -11,
-          "z": 79,
+          "x": -7,
+          "z": 67,
           "width": 2,
           "depth": 2,
           "height": 0.6
@@ -19353,7 +20338,7 @@
                 -58
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -19365,7 +20350,7 @@
                 -36
               ],
               [
-                22,
+                26,
                 0,
                 -38
               ],
@@ -19375,7 +20360,7 @@
                 -53
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -19392,7 +20377,7 @@
                 -35
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -19409,7 +20394,7 @@
                 57
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -19423,7 +20408,7 @@
               [
                 -18,
                 0,
-                64
+                62
               ],
               [
                 -23,
@@ -19431,7 +20416,7 @@
                 64
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -19723,6 +20708,15 @@
             "x": 43,
             "z": 71,
             "height": 7.3,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
+          },
+          {
+            "id": "trade:foliage:31",
+            "x": -12,
+            "z": 64,
+            "height": 9.9,
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
@@ -20050,18 +21044,10 @@
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
-          },
-          {
-            "id": "trade:foliage:118",
-            "x": 54,
-            "z": -17,
-            "height": 8.6,
-            "asset": "town/tree.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:trade:customs-yard",
@@ -20365,12 +21351,6 @@
               {
                 "x": -15,
                 "z": 87,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": -11,
-                "z": 67,
                 "width": 4,
                 "depth": 4
               },
@@ -21091,7 +22071,7 @@
             "position": [
               -11,
               0,
-              67
+              79
             ],
             "size": [
               2,
@@ -21104,9 +22084,9 @@
             "parcelId": "parcel:trade:timber-yard",
             "asset": "town/planks.glb",
             "position": [
-              -11,
+              -7,
               0,
-              79
+              67
             ],
             "size": [
               2,
@@ -22994,6 +23974,174 @@
           "height": 3.5
         },
         {
+          "id": "court:crime:quay-tenement:mouth-left",
+          "x": -3.4,
+          "z": 4.5,
+          "width": 7.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:crime:quay-tenement:mouth-right",
+          "x": 7.4,
+          "z": 4.5,
+          "width": 7.2,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:crime:quay-tenement:west",
+          "x": -7,
+          "z": 1,
+          "width": 0.4,
+          "depth": 7,
+          "height": 1.4
+        },
+        {
+          "id": "court:crime:quay-tenement:east-rear",
+          "x": 11,
+          "z": -1.8749999999999998,
+          "width": 0.4,
+          "depth": 1.2500000000000004,
+          "height": 1.4
+        },
+        {
+          "id": "court:crime:quay-tenement:east-front",
+          "x": 11,
+          "z": 4.2250000000000005,
+          "width": 0.4,
+          "depth": 0.5499999999999994,
+          "height": 1.4
+        },
+        {
+          "id": "court:crime:quay-tenement:rear-left",
+          "x": -6.5,
+          "z": -2.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:crime:quay-tenement:rear-right",
+          "x": 10.5,
+          "z": -2.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 1.4
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:mouth-left",
+          "x": 16.4,
+          "z": -24.5,
+          "width": 8.8,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:mouth-right",
+          "x": 27.6,
+          "z": -24.5,
+          "width": 8.8,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:west",
+          "x": 12,
+          "z": -30.5,
+          "width": 0.4,
+          "depth": 12,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:east-rear",
+          "x": 32,
+          "z": -34.5,
+          "width": 0.4,
+          "depth": 4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:east-front",
+          "x": 32,
+          "z": -25.9,
+          "width": 0.4,
+          "depth": 2.799999999999997,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:rear-left",
+          "x": 13,
+          "z": -36.5,
+          "width": 2,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_FORGER:rear-right",
+          "x": 31,
+          "z": -36.5,
+          "width": 2,
+          "depth": 0.4,
+          "height": 2.3
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:mouth-left",
+          "x": 37.8,
+          "z": 46.5,
+          "width": 5.6,
+          "depth": 0.4,
+          "height": 2.6
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:mouth-right",
+          "x": 48.2,
+          "z": 46.5,
+          "width": 5.6,
+          "depth": 0.4,
+          "height": 2.6
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:west-rear",
+          "x": 35,
+          "z": 36.5,
+          "width": 0.4,
+          "depth": 4,
+          "height": 2.6
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:west-front",
+          "x": 35,
+          "z": 45.1,
+          "width": 0.4,
+          "depth": 2.799999999999997,
+          "height": 2.6
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:east",
+          "x": 51,
+          "z": 40.5,
+          "width": 0.4,
+          "depth": 12,
+          "height": 2.6
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:rear-left",
+          "x": 35.5,
+          "z": 34.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 2.6
+        },
+        {
+          "id": "court:LOC_CRIME_WAREHOUSE:rear-right",
+          "x": 50.5,
+          "z": 34.5,
+          "width": 1,
+          "depth": 0.4,
+          "height": 2.6
+        },
+        {
           "id": "ridge:-62:-43",
           "x": -62,
           "z": -43,
@@ -23202,14 +24350,6 @@
           "height": 4.2
         },
         {
-          "id": "tree:crime:foliage:57",
-          "x": 18,
-          "z": -27,
-          "width": 1.1,
-          "depth": 1.1,
-          "height": 4.2
-        },
-        {
           "id": "tree:crime:foliage:63",
           "x": 2,
           "z": -48,
@@ -23386,6 +24526,14 @@
           "height": 4.2
         },
         {
+          "id": "tree:crime:foliage:116",
+          "x": -40,
+          "z": -10,
+          "width": 1.1,
+          "depth": 1.1,
+          "height": 4.2
+        },
+        {
           "id": "parcel:crime:dock-loading:prop:0",
           "x": 29.5,
           "z": -6,
@@ -23412,15 +24560,15 @@
         {
           "id": "parcel:crime:warehouse-court:prop:3",
           "x": 49,
-          "z": 44,
+          "z": 60,
           "width": 2,
           "depth": 2,
           "height": 1.1
         },
         {
           "id": "parcel:crime:warehouse-court:prop:4",
-          "x": 49,
-          "z": 60,
+          "x": 33,
+          "z": 52,
           "width": 2,
           "depth": 2,
           "height": 1.1
@@ -23428,7 +24576,7 @@
         {
           "id": "parcel:crime:warehouse-court:prop:5",
           "x": 33,
-          "z": 48,
+          "z": 60,
           "width": 2,
           "depth": 2,
           "height": 1.1
@@ -24658,6 +25806,11 @@
                 -6
               ],
               [
+                -8,
+                0,
+                6
+              ],
+              [
                 0,
                 0,
                 8
@@ -24775,6 +25928,16 @@
                 -17
               ],
               [
+                34,
+                0,
+                -30
+              ],
+              [
+                26,
+                0,
+                -30
+              ],
+              [
                 22,
                 0,
                 -33
@@ -24800,6 +25963,11 @@
                 30,
                 0,
                 40
+              ],
+              [
+                38,
+                0,
+                42
               ],
               [
                 43,
@@ -24899,10 +26067,15 @@
               [
                 2,
                 0,
+                4
+              ],
+              [
+                2,
+                0,
                 1
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           },
           {
@@ -24919,7 +26092,7 @@
                 5
               ]
             ],
-            "width": 3.2,
+            "width": 1.8,
             "kind": "access"
           }
         ],
@@ -25164,15 +26337,6 @@
             "collisionDepth": 1.1
           },
           {
-            "id": "crime:foliage:57",
-            "x": 18,
-            "z": -27,
-            "height": 7.3,
-            "asset": "town/tree-high.glb",
-            "collisionWidth": 1.1,
-            "collisionDepth": 1.1
-          },
-          {
             "id": "crime:foliage:63",
             "x": 2,
             "z": -48,
@@ -25369,6 +26533,15 @@
             "asset": "town/tree.glb",
             "collisionWidth": 1.1,
             "collisionDepth": 1.1
+          },
+          {
+            "id": "crime:foliage:116",
+            "x": -40,
+            "z": -10,
+            "height": 6,
+            "asset": "town/tree.glb",
+            "collisionWidth": 1.1,
+            "collisionDepth": 1.1
           }
         ],
         "boundaries": [
@@ -25411,6 +26584,434 @@
             "width": 16,
             "depth": 1,
             "height": 3.5
+          },
+          {
+            "id": "court:crime:quay-tenement:mouth-left",
+            "x": -3.4,
+            "z": 4.5,
+            "width": 7.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:crime:quay-tenement:mouth-right",
+            "x": 7.4,
+            "z": 4.5,
+            "width": 7.2,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:crime:quay-tenement:west",
+            "x": -7,
+            "z": 1,
+            "width": 0.4,
+            "depth": 7,
+            "height": 1.4
+          },
+          {
+            "id": "court:crime:quay-tenement:east-rear",
+            "x": 11,
+            "z": -1.8749999999999998,
+            "width": 0.4,
+            "depth": 1.2500000000000004,
+            "height": 1.4
+          },
+          {
+            "id": "court:crime:quay-tenement:east-front",
+            "x": 11,
+            "z": 4.2250000000000005,
+            "width": 0.4,
+            "depth": 0.5499999999999994,
+            "height": 1.4
+          },
+          {
+            "id": "court:crime:quay-tenement:rear-left",
+            "x": -6.5,
+            "z": -2.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:crime:quay-tenement:rear-right",
+            "x": 10.5,
+            "z": -2.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 1.4
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:mouth-left",
+            "x": 16.4,
+            "z": -24.5,
+            "width": 8.8,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:mouth-right",
+            "x": 27.6,
+            "z": -24.5,
+            "width": 8.8,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:west",
+            "x": 12,
+            "z": -30.5,
+            "width": 0.4,
+            "depth": 12,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:east-rear",
+            "x": 32,
+            "z": -34.5,
+            "width": 0.4,
+            "depth": 4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:east-front",
+            "x": 32,
+            "z": -25.9,
+            "width": 0.4,
+            "depth": 2.799999999999997,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:rear-left",
+            "x": 13,
+            "z": -36.5,
+            "width": 2,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_FORGER:rear-right",
+            "x": 31,
+            "z": -36.5,
+            "width": 2,
+            "depth": 0.4,
+            "height": 2.3
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:mouth-left",
+            "x": 37.8,
+            "z": 46.5,
+            "width": 5.6,
+            "depth": 0.4,
+            "height": 2.6
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:mouth-right",
+            "x": 48.2,
+            "z": 46.5,
+            "width": 5.6,
+            "depth": 0.4,
+            "height": 2.6
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:west-rear",
+            "x": 35,
+            "z": 36.5,
+            "width": 0.4,
+            "depth": 4,
+            "height": 2.6
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:west-front",
+            "x": 35,
+            "z": 45.1,
+            "width": 0.4,
+            "depth": 2.799999999999997,
+            "height": 2.6
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:east",
+            "x": 51,
+            "z": 40.5,
+            "width": 0.4,
+            "depth": 12,
+            "height": 2.6
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:rear-left",
+            "x": 35.5,
+            "z": 34.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 2.6
+          },
+          {
+            "id": "court:LOC_CRIME_WAREHOUSE:rear-right",
+            "x": 50.5,
+            "z": 34.5,
+            "width": 1,
+            "depth": 0.4,
+            "height": 2.6
+          }
+        ],
+        "courts": [
+          {
+            "siteId": "crime:quay-tenement",
+            "width": 18,
+            "depth": 7,
+            "height": 1.4,
+            "opening": 3.6,
+            "side": "east",
+            "use": "residential",
+            "reason": "港の借家人の共同庭。船客の通過する路地へ二方向から出られる",
+            "id": "court:crime:quay-tenement",
+            "x": 2,
+            "z": 1,
+            "mouth": [
+              2,
+              0,
+              4.5
+            ],
+            "service": [
+              11,
+              0,
+              1.3500000000000005
+            ],
+            "entrance": [
+              2,
+              0,
+              -2.5
+            ],
+            "walls": [
+              {
+                "id": "court:crime:quay-tenement:mouth-left",
+                "x": -3.4,
+                "z": 4.5,
+                "width": 7.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:crime:quay-tenement:mouth-right",
+                "x": 7.4,
+                "z": 4.5,
+                "width": 7.2,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:crime:quay-tenement:west",
+                "x": -7,
+                "z": 1,
+                "width": 0.4,
+                "depth": 7,
+                "height": 1.4
+              },
+              {
+                "id": "court:crime:quay-tenement:east-rear",
+                "x": 11,
+                "z": -1.8749999999999998,
+                "width": 0.4,
+                "depth": 1.2500000000000004,
+                "height": 1.4
+              },
+              {
+                "id": "court:crime:quay-tenement:east-front",
+                "x": 11,
+                "z": 4.2250000000000005,
+                "width": 0.4,
+                "depth": 0.5499999999999994,
+                "height": 1.4
+              },
+              {
+                "id": "court:crime:quay-tenement:rear-left",
+                "x": -6.5,
+                "z": -2.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              },
+              {
+                "id": "court:crime:quay-tenement:rear-right",
+                "x": 10.5,
+                "z": -2.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 1.4
+              }
+            ]
+          },
+          {
+            "siteId": "LOC_CRIME_FORGER",
+            "width": 20,
+            "depth": 12,
+            "height": 2.3,
+            "opening": 2.4,
+            "side": "east",
+            "use": "workshop",
+            "reason": "工房の出入りと相談を分ける庭。脇道からも出入りできる",
+            "id": "court:LOC_CRIME_FORGER",
+            "x": 22,
+            "z": -30.5,
+            "mouth": [
+              22,
+              0,
+              -24.5
+            ],
+            "service": [
+              32,
+              0,
+              -29.9
+            ],
+            "entrance": [
+              22,
+              0,
+              -36.5
+            ],
+            "walls": [
+              {
+                "id": "court:LOC_CRIME_FORGER:mouth-left",
+                "x": 16.4,
+                "z": -24.5,
+                "width": 8.8,
+                "depth": 0.4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CRIME_FORGER:mouth-right",
+                "x": 27.6,
+                "z": -24.5,
+                "width": 8.8,
+                "depth": 0.4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CRIME_FORGER:west",
+                "x": 12,
+                "z": -30.5,
+                "width": 0.4,
+                "depth": 12,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CRIME_FORGER:east-rear",
+                "x": 32,
+                "z": -34.5,
+                "width": 0.4,
+                "depth": 4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CRIME_FORGER:east-front",
+                "x": 32,
+                "z": -25.9,
+                "width": 0.4,
+                "depth": 2.799999999999997,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CRIME_FORGER:rear-left",
+                "x": 13,
+                "z": -36.5,
+                "width": 2,
+                "depth": 0.4,
+                "height": 2.3
+              },
+              {
+                "id": "court:LOC_CRIME_FORGER:rear-right",
+                "x": 31,
+                "z": -36.5,
+                "width": 2,
+                "depth": 0.4,
+                "height": 2.3
+              }
+            ]
+          },
+          {
+            "siteId": "LOC_CRIME_WAREHOUSE",
+            "width": 16,
+            "depth": 12,
+            "height": 2.6,
+            "opening": 4.8,
+            "side": "west",
+            "use": "freight",
+            "reason": "倉庫の扉前に搬入待ちの場所を取り、生活路地へ逃がす",
+            "id": "court:LOC_CRIME_WAREHOUSE",
+            "x": 43,
+            "z": 40.5,
+            "mouth": [
+              43,
+              0,
+              46.5
+            ],
+            "service": [
+              35,
+              0,
+              41.1
+            ],
+            "entrance": [
+              43,
+              0,
+              34.5
+            ],
+            "walls": [
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:mouth-left",
+                "x": 37.8,
+                "z": 46.5,
+                "width": 5.6,
+                "depth": 0.4,
+                "height": 2.6
+              },
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:mouth-right",
+                "x": 48.2,
+                "z": 46.5,
+                "width": 5.6,
+                "depth": 0.4,
+                "height": 2.6
+              },
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:west-rear",
+                "x": 35,
+                "z": 36.5,
+                "width": 0.4,
+                "depth": 4,
+                "height": 2.6
+              },
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:west-front",
+                "x": 35,
+                "z": 45.1,
+                "width": 0.4,
+                "depth": 2.799999999999997,
+                "height": 2.6
+              },
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:east",
+                "x": 51,
+                "z": 40.5,
+                "width": 0.4,
+                "depth": 12,
+                "height": 2.6
+              },
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:rear-left",
+                "x": 35.5,
+                "z": 34.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 2.6
+              },
+              {
+                "id": "court:LOC_CRIME_WAREHOUSE:rear-right",
+                "x": 50.5,
+                "z": 34.5,
+                "width": 1,
+                "depth": 0.4,
+                "height": 2.6
+              }
+            ]
           }
         ],
         "parcels": [
@@ -25480,12 +27081,6 @@
             "tiles": [
               {
                 "x": 33,
-                "z": 48,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 33,
                 "z": 52,
                 "width": 4,
                 "depth": 4
@@ -25499,18 +27094,6 @@
               {
                 "x": 33,
                 "z": 60,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 37,
-                "z": 44,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 37,
-                "z": 48,
                 "width": 4,
                 "depth": 4
               },
@@ -25534,18 +27117,6 @@
               },
               {
                 "x": 41,
-                "z": 44,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 41,
-                "z": 48,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 41,
                 "z": 52,
                 "width": 4,
                 "depth": 4
@@ -25558,18 +27129,6 @@
               },
               {
                 "x": 45,
-                "z": 44,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 45,
-                "z": 48,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 45,
                 "z": 52,
                 "width": 4,
                 "depth": 4
@@ -25577,18 +27136,6 @@
               {
                 "x": 45,
                 "z": 56,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 49,
-                "z": 44,
-                "width": 4,
-                "depth": 4
-              },
-              {
-                "x": 49,
-                "z": 48,
                 "width": 4,
                 "depth": 4
               },
@@ -26167,7 +27714,7 @@
             "position": [
               49,
               0,
-              44
+              60
             ],
             "size": [
               2,
@@ -26180,9 +27727,9 @@
             "parcelId": "parcel:crime:warehouse-court",
             "asset": "town/cart.glb",
             "position": [
-              49,
+              33,
               0,
-              60
+              52
             ],
             "size": [
               2,
@@ -26197,7 +27744,7 @@
             "position": [
               33,
               0,
-              48
+              60
             ],
             "size": [
               2,
@@ -26538,9 +28085,14 @@
                     40
                   ],
                   [
-                    36.5,
+                    34,
                     0,
-                    39
+                    41
+                  ],
+                  [
+                    38,
+                    0,
+                    42
                   ],
                   [
                     43,
@@ -26548,7 +28100,7 @@
                     38
                   ]
                 ],
-                "metres": 90.48343643016332
+                "metres": 91.97982548086557
               }
             ],
             "execution": "traversable-layout-not-an-automatic-shipment"
@@ -26782,9 +28334,14 @@
                     38
                   ],
                   [
-                    36.5,
+                    38,
                     0,
-                    39
+                    42
+                  ],
+                  [
+                    34,
+                    0,
+                    41
                   ],
                   [
                     30,
@@ -26872,7 +28429,7 @@
                     42
                   ]
                 ],
-                "metres": 114.27680960462077
+                "metres": 115.77319865532303
               },
               {
                 "fromId": "LOC_CRIME_BACK_INN",
@@ -28542,6 +30099,7 @@
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:frontier:dry-fields",
@@ -30801,6 +32359,7 @@
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:temple:arrival-court",
@@ -35189,6 +36748,7 @@
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:forest:managed-wood",
@@ -44286,6 +45846,7 @@
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:elf:nursery",
@@ -46598,6 +48159,7 @@
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:fortress:supply-court",
@@ -49881,6 +51443,7 @@
             "material": "bedrock"
           }
         ],
+        "courts": [],
         "enclosure": {
           "kind": "cavern",
           "ceilingY": 15,
@@ -52551,6 +54114,7 @@
           }
         ],
         "boundaries": [],
+        "courts": [],
         "parcels": [
           {
             "id": "parcel:blackridge:exile-gardens",

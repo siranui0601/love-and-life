@@ -59,6 +59,7 @@ export class WorldScene {
    this.tiledGround(parcel.id,parcel.tiles,parcel.color,.016);
    if(['cropland','garden'].includes(parcel.use))this.tiledGround(`${parcel.id}:bed`,parcel.tiles.flatMap(t=>[-1,0,1].map(dx=>({x:t.x+dx,z:t.z,width:.45,depth:t.depth-.3}))),parcel.use==='garden'?'#426443':'#af9959',.019);
   }
+  for(const court of region.terrain?.courts||[])this.ground(court.id,court.width,court.depth,[court.x,.02,court.z],court.use==='market'?'#a89f8f':'#928574',this.regionRoot);
   for(const path of region.terrain?.paths||[])for(let i=1;i<path.points.length;i++){
    const a=v(path.points[i-1]),b=v(path.points[i]),d=Vector3.Distance(a,b);const road=this.ground('road',path.width,d,[(a.x+b.x)/2,.025,(a.z+b.z)/2],['city','ruins'].includes(region.biome)?'#b6b3a2':'#b3a181',this.regionRoot);road.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
   }

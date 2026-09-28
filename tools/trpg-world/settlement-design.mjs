@@ -105,7 +105,7 @@ export const spatialBoundaries={
  capital:[{id:'market-loading-wall',x:0,z:25,width:17,depth:1,height:5,purpose:'市場の荷捌き庭と駅馬車から来る歩行者を分ける背壁'},
           {id:'workshop-yard-wall',x:25,z:13,width:1,depth:18,height:4,purpose:'工房・薬屋側の作業庭を居住街への通りから分ける壁'},
           {id:'lower-court-west',x:-49,z:26,width:1,depth:14,height:4,purpose:'安宿の共同庭と西の路地を分ける'},
-          {id:'lower-court-return',x:-43,z:17,width:13,depth:1,height:4,purpose:'安宿の生活路地を曲げる庭壁'},
+          {id:'lower-court-return',x:-47,z:17,width:5,depth:1,height:4,purpose:'安宿の生活路地を曲げる庭壁'},
           {id:'tenement-yard-east',x:-19,z:13,width:1,depth:16,height:4,purpose:'長屋の共同庭を市場の通過交通から隔てる'},
           {id:'lower-garden-wall',x:-30,z:40,width:10,depth:1,height:3.5,purpose:'孤児院へ続く庭の境界'}],
 };

@@ -1,3 +1,4 @@
+import {authorCourtyards} from './courtyard-authoring.mjs';
 import {authorUrbanFrontage} from './urban-frontage.mjs';
 import {streetPlans} from './spatial-authoring.mjs';
 import {bindSettlementDesign,spatialBoundaries} from './settlement-design.mjs';
@@ -65,6 +66,7 @@ export function createRegion(spec,sheet,sourceUrl){
  addWaterObstacles(region);
  region.terrain.boundaries=(spatialBoundaries[id]||[]).map(({purpose,...body})=>({...body,id:`${id}:${body.id}`}));
  region.obstacles.push(...region.terrain.boundaries);
+ authorCourtyards(region);
  for(const r of region.terrain.ridges)region.obstacles.push({id:`ridge:${r.x}:${r.z}`,x:r.x,z:r.z,width:r.radius*2,depth:r.radius*2,height:r.height});
  return region;
 }
@@ -94,8 +96,8 @@ export function finalizeRegions(regions,npcs,events){
   const spine=layouts[region.id].spine.map(([x,z])=>point(x,z));
   for(let i=1;i<spine.length;i++)addRoad(region,spine[i-1],spine[i],region.id==='capital'?5:3.5,'main');
   for(const [kind,width,points] of streetPlans[region.id]||[]){for(let i=1;i<points.length;i++)addRoad(region,point(...points[i-1]),point(...points[i]),width,kind);}
-  const targets=[...region.objects.map(o=>({id:o.id,position:o.position})),...region.portals.map(p=>({...p,position:p.approach})),...events.filter(e=>e.region===region.id)];
-  for(const target of targets){const anchors=[region.spawn,...region.terrain.paths.flatMap(p=>p.points)].filter(p=>canOccupy(roadRegion(region,target.routeId?4:3.2),p)).sort((a,b)=>distance(a,target.position)-distance(b,target.position));addRoad(region,anchors[0],target.position,target.routeId?4:3.2,target.routeId?'exit':'access');}
+  const targets=[...region.objects.map(o=>({id:o.id,kind:o.kind,position:o.position})),...region.portals.map(p=>({...p,position:p.approach})),...events.filter(e=>e.region===region.id)];
+  for(const target of targets){const width=target.routeId?4:target.kind==='residence'?1.8:3.2;const anchors=[region.spawn,...region.terrain.paths.flatMap(p=>p.points)].filter(p=>canOccupy(roadRegion(region,width),p)).sort((a,b)=>distance(a,target.position)-distance(b,target.position));addRoad(region,anchors[0],target.position,width,target.routeId?'exit':'access');}
   for(const portal of region.portals)if(distance(portal.approach,portal.position)>5)addRoad(region,portal.approach,portal.position,4,'approach');
   region.spatial={geometryRevision:'graybox-streets-v2',stage:streetPlans[region.id]?'street-cluster':'legacy-blockout',arrivalPolicy:'reciprocal-route-mouth'};
   bindSettlementDesign(region);

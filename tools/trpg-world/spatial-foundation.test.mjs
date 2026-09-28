@@ -61,7 +61,9 @@ test('urban yard boundaries create blind corners without sealing public circulat
   for(const wall of r.terrain.boundaries){
    const axis=wall.width<wall.depth?'x':'z',a=[wall.x,0,wall.z],b=[...a],i=axis==='x'?0:2,extent=(axis==='x'?wall.width:wall.depth)/2+1;
    a[i]-=extent;b[i]+=extent;
-   assert(!hasLineOfSight(r,a,b),wall.id);
+   assert(!canOccupy(r,[wall.x,0,wall.z]),wall.id);
+   if(wall.height>1.4)assert(!hasLineOfSight(r,a,b),wall.id);
+   else assert(hasLineOfSight({...r,obstacles:[wall]},a,b),`${wall.id}: a low court wall must not become an opaque screen`);
   }
   for(const f of r.settlement.flows)for(const leg of f.legs)assert(pathIsTraversable(r,leg.points[0],leg.points.slice(1)),f.id);
  }
@@ -220,4 +222,17 @@ test('reviewed geometry migration only repairs overlapping bodies and invalid pa
  const changes=reconcileGeometry(state,c);assert.equal(changes.length,1);assert(distance(state.player.position,before.player.position)<=8);assert(canOccupy(c.regions[0],state.player.position));
  assert.deepEqual(state.npcs,before.npcs);assert.deepEqual(state.socialFacts,before.socialFacts);assert.deepEqual(state.properties,before.properties);
  assert.deepEqual(reconcileGeometry(state,c),[]);
+});
+
+test('occupied courts preserve two physical exits and a blocked street mouth leaves a real service detour',()=>{
+ for(const region of content.regions)for(const court of region.terrain.courts||[]){
+  const inside=[court.x,0,court.z],site=region.objects.find(o=>o.id===court.siteId);
+  assert(site?.buildingPosition);assert(court.reason);
+  for(const p of [court.mouth,court.service,site.position]){const path=findPath(region,inside,p);assert(path.length,court.id);assert(pathIsTraversable(region,inside,path),court.id);}
+  const closed={...region,obstacles:[...region.obstacles,{id:'temporary-closed-mouth',x:court.mouth[0],z:court.mouth[2],width:court.opening,depth:.5,height:3}]};
+  assert(!canOccupy(closed,court.mouth));
+  const out=[court.service[0]+(court.side==='west'?-2:2),0,court.service[2]],path=findPath(closed,inside,out);
+  assert(path.length,court.id);assert(pathIsTraversable(closed,inside,path),court.id);
+  for(const wall of court.walls)assert(!canOccupy(region,[wall.x,0,wall.z]),wall.id);
+ }
 });
