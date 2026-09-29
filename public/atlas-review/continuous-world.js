@@ -34,11 +34,12 @@ export class ContinuousWorld {
    m.specularColor=new Color3(.026,.026,.026);m.alpha=alpha;
    if(emissive)m.emissiveColor=Color3.FromHexString(hex).scale(.55);
    m.backFaceCulling=false;
-   if(['deep blue ocean','busy earthen artery','minor dirt track','woodland path','conditional hidden way','subterranean hint','ferry lane'].includes(id))m.disableLighting=true;
+   if(['busy earthen artery','minor dirt track','woodland path','conditional hidden way','subterranean hint','ferry lane'].includes(id))
+    m.emissiveColor=Color3.FromHexString(hex).scale(.65);
    return m;
   };
   this.mats={
-   ocean:makeMat('deep blue ocean','#244b60',{alpha:1}),
+   ocean:makeMat('deep blue ocean','#193d51',{alpha:1}),
    river:makeMat('river water','#4d9aa5',{alpha:.86}),
    highway:makeMat('busy earthen artery','#bfa782'),
    track:makeMat('minor dirt track','#b5a07d'),
@@ -57,19 +58,16 @@ export class ContinuousWorld {
   // Ocean is the only large flat plane; ALL dry land is generated in one mesh.
   const sea=MeshBuilder.CreateGround('continuous-ocean-to-horizon',{width:3200,height:3200},scene);
   sea.position=new Vector3(0,-.78,9);sea.material=this.mats.ocean;sea.isPickable=false;
-  // A subdued sea surface, tiled beyond the visible map; no cyan rectangular
-  // tabletop surrounding isolated miniature settlements.
-  const tex=new B.DynamicTexture('subtle ocean ripples',{width:256,height:256},scene,false);
-  const ctx=tex.getContext();ctx.fillStyle='#20475a';ctx.fillRect(0,0,256,256);
-  for(let i=0;i<45;i++){
-   const x=(i*83)%256,z=(i*47)%256;
-   ctx.strokeStyle=i%5===0?'rgba(179,211,203,.15)':'rgba(151,194,197,.07)';
-   ctx.lineWidth=i%4===0?1.5:1;
-   ctx.beginPath();ctx.moveTo(x,z);ctx.quadraticCurveTo(x+5,z-2,x+11,z);ctx.stroke();
+  // A large, naturally lit sea continues to the horizon. One batched line
+  // system adds small foam ripples, without a broken dynamic-texture shader.
+  const waveLines=[];
+  for(let i=0;i<260;i++){
+   const x=-260+(i*43.137)%552,z=-230+(i*69.73)%475;
+   if(landness(x,z)>.15)continue;
+   waveLines.push([new Vector3(x,-.68,z),new Vector3(x+2.2,-.68,z-.42),new Vector3(x+4.2,-.68,z)]);
   }
-  tex.update();tex.uScale=115;tex.vScale=115;
-  this.mats.ocean.diffuseColor=B.Color3.White();
-  this.mats.ocean.diffuseTexture=tex;
+  const ripples=MeshBuilder.CreateLineSystem('far-off sea ripples',{lines:waveLines},scene);
+  ripples.color=new Color3(.54,.74,.75);ripples.alpha=.32;ripples.isPickable=false;
   this.buildGeography();
   this.buildRivers();
   this.buildShorelines();
