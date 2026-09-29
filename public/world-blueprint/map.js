@@ -106,7 +106,27 @@ for(const [name,key] of [['terrain','biomes'],['activity','activity'],['roads','
  });
 }
 const defaultView={x:0,y:0,w:W,h:H};let view={...defaultView},drag;
-function apply(){view.w=Math.min(W,Math.max(150,view.w));view.h=view.w*H/W;view.x=Math.min(W-view.w,Math.max(0,view.x));view.y=Math.min(H-view.h,Math.max(0,view.y));svg.setAttribute('viewBox',[view.x,view.y,view.w,view.h].join(' '));}
+function updateScale(){
+ // Keep this ruler metrically correct at every zoom and screen width.
+ const ruler=document.querySelector('.measure');
+ const pxPerKm=(svg.getBoundingClientRect().width*S)/view.w;
+ const maxCss=Math.min(190,svg.getBoundingClientRect().width*.31);
+ const km=[10,5,2,1,.5,.2].find(k=>k*pxPerKm<=maxCss)||.2;
+ ruler.style.width=(km*pxPerKm)+'px';
+ const labels=ruler.querySelectorAll(':scope > span');
+ labels[0].textContent='0';
+ labels[1].textContent=String(km/2);
+ labels[2].textContent=km+' km';
+}
+function apply(){
+ view.w=Math.min(W,Math.max(150,view.w));
+ view.h=view.w*H/W;
+ view.x=Math.min(W-view.w,Math.max(0,view.x));
+ view.y=Math.min(H-view.h,Math.max(0,view.y));
+ svg.setAttribute('viewBox',[view.x,view.y,view.w,view.h].join(' '));
+ updateScale();
+}
+window.addEventListener('resize',updateScale);
 function zoom(f,cx=view.x+view.w/2,cy=view.y+view.h/2){
  const old=view.w;view.w=Math.min(W,Math.max(150,view.w*f));view.h=view.w*H/W;
  view.x=cx-(cx-view.x)*view.w/old;view.y=cy-(cy-view.y)*view.w/old;apply();
