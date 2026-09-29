@@ -87,6 +87,10 @@ export class ContinuousWorld {
   this.geographyRoot.scaling.x=VIEW_X_STRETCH;
   for(const label of this.architecture.labels)label.scaling.x/=VIEW_X_STRETCH;
   this.makePlayer();
+  // Roads are preferable traversable corridors, never movement-only rails.
+  // R05's subterranean hint is not an above-ground walking path; R08 is sea.
+  this.walkRoadSamples=manifest.routes.filter(r=>!['R05','R08'].includes(r.id))
+   .flatMap(r=>routePoints(r,this.byId,90).map(p=>[p[0],p[2]]));
   this.keys=new Set();this.walking=false;this.lastHud=0;
   this.previous=performance.now();
   this.keyDown=e=>{
@@ -331,7 +335,11 @@ export class ContinuousWorld {
    side=(k.has('KeyD')||k.has('ArrowRight')?1:0)-(k.has('KeyA')||k.has('ArrowLeft')?1:0);
   if(!fore&&!side)return;
   const cameraF=this.camera.target.subtract(this.camera.position);cameraF.y=0;cameraF.normalize();
-  const length=Math.hypot(fore,side)||1,velocity=(k.has('ShiftLeft')||k.has('ShiftRight')?13:7)*dt/length;
+  const length=Math.hypot(fore,side)||1;
+  const onRoad=this.walkRoadSamples.some(([rx,rz])=>(rx-this.position.x)**2+(rz-this.position.z)**2<2.6**2);
+  const terrainType=biomeAt(this.position.x,this.position.z);
+  const travelSpeed=onRoad?8.8:terrainType==='forest'?5.0:['alpine','arid','volcanic'].includes(terrainType)?5.5:6.5;
+  const velocity=travelSpeed*(k.has('ShiftLeft')||k.has('ShiftRight')?1.6:1)*dt/length;
   const dx=(cameraF.x*fore-cameraF.z*side)*velocity/VIEW_X_STRETCH;
   const dz=(cameraF.z*fore+cameraF.x*side)*velocity;
   const x=this.position.x,z=this.position.z;
@@ -351,7 +359,7 @@ export class ContinuousWorld {
    const nearest=[...this.byId.values()].sort((a,b)=>
     dist(this.position.x,this.position.z,...a.worldPosition)-dist(this.position.x,this.position.z,...b.worldPosition))[0];
    const d=dist(this.position.x,this.position.z,...nearest.worldPosition);
-   this.onStatus({mode:'walk',location:d<SITES[nearest.id].radius?nearest.name:'野外',position:[this.position.x,this.position.z]});
+   this.onStatus({mode:'walk',location:d<SITES[nearest.id].radius?nearest.name:'野外',surface:onRoad?'街道':'街道外',position:[this.position.x,this.position.z]});
   }
  }
  dispose(){
