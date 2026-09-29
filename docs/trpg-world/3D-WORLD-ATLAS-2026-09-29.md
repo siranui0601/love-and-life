@@ -30,6 +30,10 @@ Roads are **legible preferential travel corridors, not exclusive walkable strips
 
 The next spatial stage should derive a single shared coordinate frame, open-field collisions, region streaming, route section traversal, actual travel timing, NPC/cargo continuity, monster habitats and save migrations **from the existing canonical simulation**. The 3D overview is a spatial reference and inspection surface for that effort.
 
+## Full-world designer preview
+
+Run `node tools/trpg-world/spatial-review-server.mjs` and open `http://127.0.0.1:3103/atlas-review`. This **authoring-only** viewer receives the complete generated catalog and shows all eleven regions without pretending that the player has discovered them. The in-game map remains knowledge-filtered and dims unexplored geography. This makes the supplied art-direction reference reviewable before anyone has to travel through the whole game.
+
 ## Review instructions
 
 1. Run `npm run world:build` and `npm run world:test` (or `npm run world:check`) after pulling the PR branch.
