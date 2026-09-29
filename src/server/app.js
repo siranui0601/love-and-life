@@ -146,6 +146,13 @@ export function createApp() {
   app.use(trpgPath, trpgAssets);
   app.use(trpgEncodedPath, trpgAssets);
 
+  // Public, standalone atlas. Serve the exact /atlas-review URL without
+  // redirecting to a different trailing-slash-relative asset base. All atlas
+  // assets are under public/atlas-review and use absolute URLs.
+  app.get("/atlas-review", (_req, res) =>
+    res.sendFile(path.join(publicDirectory, "atlas-review", "index.html"))
+  );
+
   // Existing top page and game assets.
   app.use(express.static(publicDirectory));
 
