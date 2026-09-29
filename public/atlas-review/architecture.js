@@ -318,9 +318,13 @@ export function populateLandscape(scene,manifest,B,{trees=540,rocks=140}={}){
  trunk.material=trunkMat;trunk.position.x=10000;
  const foliage=leafMats.map((m,i)=>{const a=MeshBuilder.CreateSphere('foliage-base:'+i,{diameter:4.4,segments:6},scene);a.material=m;a.position.x=10000;return a;});
  const ids=new Map(manifest.regions.map(r=>[r.id,r]));
- const roadPaths=manifest.routes.filter(r=>['R13','R14','R15'].includes(r.id)).map(r=>routePoints(r,ids,72));
+ const roadPaths=manifest.routes.filter(r=>['R13','R14','R15'].includes(r.id))
+  .map(r=>({id:r.id,points:routePoints(r,ids,72)}));
  const nearRoad=(x,z)=>{
-  for(const path of roadPaths)for(const p of path)if(dist(x,z,p[0],p[2])<3.6)return true;
+  for(const path of roadPaths){
+   const clearance=path.id==='R13'?6.3:path.id==='R15'?4.8:3.8;
+   for(const p of path.points)if(dist(x,z,p[0],p[2])<clearance)return true;
+  }
   return false;
  };
  let planted=0;
