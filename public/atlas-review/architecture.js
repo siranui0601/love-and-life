@@ -106,7 +106,7 @@ export function buildArchitecture(scene,manifest,B){
   const material=new StandardMaterial('label-material-'+region.id,scene);
   material.diffuseTexture=tex;material.emissiveColor=new Color3(.69,.69,.69);
   material.useAlphaFromDiffuseTexture=true;material.backFaceCulling=false;
-  const mesh=MeshBuilder.CreatePlane('atlas-label:'+region.id,{width:region.name.length>5?26:22,height:4.8},scene);
+  const mesh=MeshBuilder.CreatePlane('atlas-label:'+region.id,{width:region.name.length>5?38:33,height:7.0},scene);
   mesh.position=V(x,y(x,z)+lift,z);mesh.billboardMode=Mesh.BILLBOARDMODE_ALL;mesh.material=material;mesh.isPickable=false;
   labels.push(mesh);
  }
@@ -160,17 +160,17 @@ export function buildArchitecture(scene,manifest,B){
    house('trade-district:'+i,px,pz,3.5+(i%4)*.5,4.3,4.2+(i%4)*1.2,
     i%3?M.stone:M.brick,i%4===0?M.blue:M.tile);
   }
-  tower('harbour-lighthouse',x-18,z-17,26,2.4,M.white,M.blue);
+  tower('harbour-lighthouse',x-8,z-17,26,2.4,M.white,M.blue);
   house('guild-hall',x+12,z-15,9,9,12,M.brick,M.blue);
   for(let i=0;i<5;i++){
    const pierZ=z-17+i*8,py=y(x-17,pierZ);
-   const pier=cuboid('harbour-pier:'+i,x-25,pierZ,22,2.1,.65,M.wood,false,py+.18);
+   const pier=cuboid('harbour-pier:'+i,x-21,pierZ,27,2.1,.65,M.wood,false,-.42);
    for(let k=0;k<3;k++){
-    pillar('quay-mooring',x-21-k*6,pierZ,.18,1.5,M.wood);
+    cuboid('quay-mooring',x-16-k*6,pierZ,.33,.33,1.8,M.wood,false,-.41);
    }
   }
   for(let i=0;i<4;i++){
-   const px=x-15,pz=z-15+i*9;
+   const px=x-7,pz=z-15+i*9;
    pillar('harbour-crane-mast',px,pz,.38,11,M.wood);
    const arm=cuboid('harbour-crane-arm',px-2.5,pz,8,.5,.5,M.wood,false,y(px,pz)+10);
   }
@@ -178,13 +178,13 @@ export function buildArchitecture(scene,manifest,B){
  // Crime city grows densely on its own rugged offshore island.
  {
   const r=regionMap.get('crime'),[x,z]=r.worldPosition;
-  for(let i=0;i<34;i++){
-   const a=i*2.399,radius=3+(i%6)*2.35,px=x+Math.cos(a)*radius,pz=z+Math.sin(a)*radius;
+  for(let i=0;i<48;i++){
+   const a=i*2.399,radius=3+(i%8)*2.55,px=x+Math.cos(a)*radius,pz=z+Math.sin(a)*radius;
    if(landness(px,pz)<.86)continue;
    house('crime-tenement:'+i,px,pz,2.7+(i%3)*.6,2.8+(i%4)*.6,5+(i%5)*1.4,
     i%4?M.dark:M.brick,M.blackRoof);
   }
-  keep('island-citadel',x,z-5,10,10,15,M.dark,M.blackRoof);
+  keep('island-citadel',x,z-5,13,12,19,M.dark,M.blackRoof);
   tower('smuggler-watch',x+13,z+3,19,2.4,M.dark,M.ember);
   for(let i=0;i<3;i++){
    const px=x+15+i*3,pz=z+11-i*2;
@@ -332,7 +332,7 @@ export function populateLandscape(scene,manifest,B,{trees=540,rocks=140}={}){
   const t=trunk.createInstance('woodland-trunk:'+i);
   t.position=new Vector3(x,base+h*.29,z);t.scaling=new Vector3(scale,h/5,scale);
   const f=foliage[i%foliage.length].createInstance('woodland-crown:'+i);
-  f.position=new Vector3(x,base+h*.79,z);f.scaling=new Vector3(scale*1.24,.7+scale*.17,scale*1.24);
+  f.position=new Vector3(x,base+h*.79,z);f.scaling=new Vector3(scale*1.68,.8+scale*.19,scale*1.68);
   planted++;
  }
  // Smaller groves outside the eastern rainforest create ecological transitions.
