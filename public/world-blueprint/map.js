@@ -118,6 +118,12 @@ for(const zone of landUse){
  scenicPath(polygon(zone.points),{fill:zone.color,opacity:zone.id==='farmlands'?.65:.39,
   stroke:zone.id==='farmlands'?'#aaa46a':'none','stroke-width':1},layers.landuse);
 }
+// Dashed land-use perimeters show why a capital/port/temple is bigger than the
+// decorative roof cluster; hover/select the actual core to get both areas.
+for(const site of settlements){
+ scenicPath(polygon(site.activity),{fill:'none',stroke:'#d8bd80','stroke-width':1.3,
+  'stroke-dasharray':'4 8',opacity:.54},layers.landuse);
+}
 const farm=landUse.find(z=>z.id==='farmlands'),[fx,fy,fw,fh]=bbox(farm.points);
 for(let i=0;i<425;i++){
  const x=fx+rand(i*13+18)*(fw-fx),y=fy+rand(i*41+60)*(fh-fy);
