@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#182c32">
 <link rel="icon" href="data:,">
-<meta name="description" content="TRPG（仮）の48×36kmの世界について、地形と拠点輪郭の面積・位置関係を比較する色分け2D設計図。">
+<meta name="description" content="添付の世界地図の海岸線・山脈・森林・都市圏を同じ地理座標上に描き直した色分け2D設計図。">
 <title>世界地理・2D設計図 | TRPG（仮）</title>
 <link rel="stylesheet" href="/world-blueprint/style.css">
 <script type="module" src="/world-blueprint/map.js"></script>
@@ -13,8 +13,8 @@
 <body>
 <header class="masthead">
  <div><div class="kicker">TRPG（仮） / GEOGRAPHIC BLUEPRINT — NOT YET GAME RUNTIME</div>
- <h1>世界地理の2D設計図</h1>
- <p>参考画像の地形・相対位置と、世界 48×36km の面積比を照合するための仮設計。</p></div>
+ <h1>世界地理の2D設計図 <small>改訂版</small></h1>
+ <p>参考画像を基に、地形・川筋・都市の構造を先に再構築。面積は描いた輪郭から再計測した。</p></div>
  <a class="go-back" href="/atlas-review">3D試作を見る ↗</a>
 </header>
 <main class="layout">
@@ -25,11 +25,12 @@
     <button type="button" id="zoom-in" aria-label="拡大">＋</button>
     <button type="button" id="zoom-out" aria-label="縮小">－</button>
     <button type="button" id="reset">全体表示</button>
+    <button type="button" id="focus-map" class="focus-map">地図を大きく</button>
    </div>
   </div>
   <div class="map-viewport">
    <svg id="map" viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="色分けされた連続地理。ドラッグで移動、ホイールで拡大縮小。地形と各拠点を選択できます。">
-    <title>世界の地図 — 48km × 36km</title>
+    <title>世界の地図 — 48km × 36km（暫定）</title>
    </svg>
    <div class="compass" aria-hidden="true"><span>北 N</span><b>↑</b></div>
    <div class="measure" aria-hidden="true"><span>0</span><span>5</span><span>10km</span><div class="ruler"><i></i><i></i></div></div>
@@ -43,7 +44,7 @@
    <p>世界全体 <strong>1,728 km²</strong></p>
    <div class="ratio"><span class="land-ratio"></span><span class="sea-ratio"></span></div>
    <div class="split"><span>陸地 <b id="land-area">算出中</b></span><span>海域 <b id="sea-area">算出中</b></span></div>
-   <p class="note">添付画像の200km目盛りは、既存の拠点間徒歩時間とは両立しないため、相対的な配置・輪郭を参考にした。</p>
+   <p class="note">48×36kmは仮の設計枠。添付画像は俯瞰・遠近の誇張を含むため、数値は画像輪郭からの平面換算による設計案で、スプレッドシートの確定値ではない。R01〜R15の時間も再検討対象。</p>
   </section>
   <section class="panel">
    <div class="small-cap">02 / LAND COVER</div><h2>地形の区分</h2>
@@ -57,7 +58,7 @@
     <span><i style="background:#989b86"></i>西部岩礁海岸</span>
     <span><i style="background:#d7c676"></i>田園の村の農地</span>
    </div>
-   <div class="forest-note"><span>翡翠の森の実面積</span><strong id="forest-area">計算中</strong><small>森は施設・点拠点ではなく、全域が歩行・探索の対象となる地形。</small></div>
+   <div class="forest-note"><span>翡翠の森の実面積</span><strong id="forest-area">計算中</strong><small>森林地形全域の平面換算面積。外縁の狩人道・世界樹の迷いの森・秘匿集落を含む。森は点拠点ではない。</small></div>
   </section>
   <section class="panel">
    <div class="small-cap">03 / LAYERS</div><h2>表示レイヤー</h2>
@@ -68,21 +69,22 @@
     <label><input id="show-activity" type="checkbox" checked>活動圏・農地</label>
     <label><input id="show-cities" type="checkbox" checked>拠点の実寸輪郭</label>
     <label><input id="show-labels" type="checkbox" checked>地名</label>
+    <label><input id="show-hazards" type="checkbox">生息域・通行上の危険</label>
    </div>
-   <p class="note">道路以外も歩行できる世界として設計。道路の線は移動可能域の境界ではない。</p>
+   <p class="note">街道は最短の直線とは限らない。橋・峠・集落・生息域に沿って迂回し、別の近道や獣道も存在する。街道以外も歩行できる。</p>
   </section>
   <section class="panel selected">
    <div class="small-cap">04 / INSPECTOR</div><div id="inspection" aria-live="polite"></div>
   </section>
   <section class="panel">
    <div class="small-cap">05 / SETTLEMENT FOOTPRINTS</div>
-   <h2>拠点本体の面積</h2>
+   <h2>参考画像から再計測した拠点・遺構輪郭</h2>
    <table><thead><tr><th>拠点</th><th>km²</th></tr></thead><tbody id="footprints"></tbody></table>
-   <p class="note">活動圏と建築域を混同しないため、森はこの表に含めていない。森は上記220km²の地形区分。</p>
+   <p class="note">拠点や遺構のまとまりを輪郭から計測したもの。王都などの市街、古代神殿の遺構敷地、ドワーフ坑口、周辺生活圏や地下床面積は意味が異なる。森林は別途地形として計測。</p>
    <button id="export" type="button" class="export">再利用できる座標データ（JSON）を保存 ↓</button>
   </section>
  </aside>
 </main>
-<footer class="page-footer">世界地理の設計確認用。ゲームの現行3D衝突判定・NPC生活座標・保存データにはまだ適用していません。</footer>
+<footer class="page-footer">制作側の地理設計レビュー。プレイヤー用地図には未発見の隠れ里・秘密ルートを開示しない。ゲーム本体の衝突判定・NPC座標・セーブデータは未変更。</footer>
 </body>
 </html>

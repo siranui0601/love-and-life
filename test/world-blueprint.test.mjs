@@ -1,56 +1,88 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
- WORLD,mainland,crimeIsland,terrain,settlements,places,routes,
- areaOf,pointInPolygon,landAreaKm2,seaAreaKm2,exportBlueprint
+ WORLD,REFERENCE,fromRef,toRef,mainland,crimeIsland,islets,terrain,forest,landUse,
+ settlements,places,routes,waterways,alternatePaths,hazards,areaOf,pointInPolygon,
+ landAreaKm2,seaAreaKm2,coast,exportBlueprint
 } from '../public/world-blueprint/geography.js';
-const eq=(a,b,e=.002)=>assert.ok(Math.abs(a-b)<e,'Expected '+a+' ~= '+b);
-test('whole world uses a 48 x 36 km frame and an honest coast-to-sea ratio',()=>{
- assert.equal(WORLD.areaKm2,48*36);
- eq(landAreaKm2+seaAreaKm2,WORLD.areaKm2,.001);
- assert.ok(landAreaKm2>1210&&landAreaKm2<1250,'near the planned ~1,240km² land ratio');
- assert.ok(seaAreaKm2>475&&seaAreaKm2<520);
- eq(areaOf(crimeIsland),4.5);
-});
-test('the Forest is exactly a 220km² terrain, NOT a tiny settlement marker',()=>{
- const forest=terrain.find(t=>t.id==='emerald-forest');
- assert.ok(forest);eq(areaOf(forest.points),220);
- assert.equal(settlements.find(s=>s.id==='forest'),undefined);
- assert.equal(places.find(s=>s.id==='forest')?.type,'terrain');
- assert.ok(pointInPolygon([35.8,17.9],forest.points));
- assert.ok(pointInPolygon([43.3,17.3],forest.points),'Elven village is inside the forest');
-});
-test('all ten actual settlement footprints preserve the agreed km² ratios',()=>{
- const agreed={capital:3.2,trade:1.8,blackridge:2.4,crime:.85,fortress:.40,dwarf:.12,farm:.15,temple:.35,frontier:.07,elf:.30};
- assert.equal(settlements.length,Object.keys(agreed).length);
- for(const s of settlements){
-  eq(areaOf(s.points),agreed[s.id],.001);
-  eq(areaOf(s.activity),s.activityKm2,.001);
-  assert.ok(s.points.every(([x,y])=>x>=0&&x<=48&&y>=0&&y<=36),'footprint within frame: '+s.id);
-  const ground=s.id==='crime'?crimeIsland:mainland;
-  assert.ok(pointInPolygon(s.center,ground),'city placed on the actual landmass: '+s.id);
+
+const close=(a,b,t=.03)=>assert.ok(Math.abs(a-b)<t,'Expected '+a+' to be close to '+b);
+test('image coordinates preserve 4:3 world geometry without pretending the printed 200km bar is literal',()=>{
+ assert.equal(WORLD.widthKm,48);assert.equal(WORLD.heightKm,36);
+ assert.equal(REFERENCE.width/REFERENCE.height,4/3);
+ for(const q of [[0,0],[1448,1086],[582,618],[1097,167],[1283,424]]){
+  const r=toRef(fromRef(q));close(r[0],q[0],.0001);close(r[1],q[1],.0001);
  }
- assert.ok(areaOf(settlements.find(s=>s.id==='capital').points)>areaOf(settlements.find(s=>s.id==='farm').points)*15);
- eq(areaOf(settlements.find(s=>s.id==='farm').activity),6);
+ close(landAreaKm2+seaAreaKm2,1728,.001);
+ assert.ok(landAreaKm2>0&&seaAreaKm2>0);
+ assert.equal(coast.isletAreaKm2,islets.reduce((a,p)=>a+areaOf(p),0));
 });
-test('the fifteen routes connect the correct sites without declaring off-road travel illegal',()=>{
- const ids=['dwarf:fortress','fortress:blackridge','trade:fortress','trade:dwarf','dwarf:blackridge','trade:capital','trade:temple','trade:crime','temple:frontier','farm:temple','capital:temple','capital:farm','capital:forest','forest:elf','forest:blackridge'];
- const placesById=new Map(places.map(s=>[s.id,s]));
+test('forest is an expansive traversable terrain and elven community is INSIDE it, never a dot replacement',()=>{
+ assert.equal(forest.kind,'biome');
+ assert.ok(forest.points.length>15);
+ assert.ok(areaOf(forest.points)>115,'Forest has real woodland territory');
+ assert.equal(settlements.some(s=>s.id==='forest'),false);
+ assert.equal(places.find(p=>p.id==='forest').type,'terrain');
+ assert.ok(pointInPolygon(settlements.find(s=>s.id==='elf').center,forest.points));
+});
+test('city metrics come from traced footprints rather than prior hard-coded 3.2/1.8/2.4 km² targets',()=>{
+ assert.equal(settlements.length,10);
+ const m=new Map(settlements.map(s=>[s.id,s]));
+ for(const city of settlements){
+  close(city.areaKm2,areaOf(city.points),.00001);
+  close(city.activityKm2,areaOf(city.activity),.00001);
+  assert.ok(city.areaKm2>0);
+  for(const q of city.points)assert.ok(q[0]>=0&&q[0]<=48&&q[1]>=0&&q[1]<=36,'in world '+city.id);
+  const land=city.id==='crime'?crimeIsland:mainland;
+  assert.ok(pointInPolygon(city.center,land),'core center located on land '+city.id);
+ }
+ assert.ok(m.get('capital').areaKm2>3.2);
+ assert.ok(m.get('trade').areaKm2>1.8);
+ assert.ok(m.get('blackridge').areaKm2>2.4);
+ assert.ok(m.get('temple').areaKm2>m.get('frontier').areaKm2);
+ assert.ok(m.get('farm').activityKm2>m.get('farm').areaKm2);
+ assert.equal(m.get('blackridge').districts.length,5);
+ assert.ok(m.get('blackridge').districts.some(d=>d.name.includes('亡命者')));
+ assert.ok(m.get('capital').districts.some(d=>d.name.includes('亜人')));
+});
+test('sheet-based place identity: temple is a non-commercial ruin, blackridge is multi-species national capital',()=>{
+ const m=new Map(settlements.map(s=>[s.id,s]));
+ assert.equal(m.get('temple').type,'ruins-not-city');
+ assert.equal(m.get('blackridge').type,'multi-species-capital');
+ assert.ok(m.get('frontier').description.includes('巡礼'));
+ assert.ok(m.get('elf').description.includes('人間向け宿'));
+ assert.ok(m.get('dwarf').description.includes('地下'));
+});
+test('all fifteen routes have correct macro endpoints, hazards and intentional non-shortest detours',()=>{
+ const ids=['dwarf:fortress','fortress:blackridge','trade:fortress','trade:dwarf','dwarf:blackridge',
+ 'trade:capital','trade:temple','trade:crime','temple:frontier','farm:temple','capital:temple',
+ 'capital:farm','capital:forest','forest:elf','forest:blackridge'];
+ const loc=new Map(places.map(v=>[v.id,v]));
  assert.equal(routes.length,15);
  for(let i=0;i<routes.length;i++){
   const r=routes[i];assert.equal(r.id,'R'+String(i+1).padStart(2,'0'));
   assert.equal(r.from+':'+r.to,ids[i]);
-  assert.deepEqual(r.points[0],placesById.get(r.from).center);
-  assert.deepEqual(r.points.at(-1),placesById.get(r.to).center);
-  assert.ok(r.points.every(p=>p.length===2&&p.every(Number.isFinite)));
+  assert.deepEqual(r.path[0],loc.get(r.from).center);
+  assert.deepEqual(r.path.at(-1),loc.get(r.to).center);
+  assert.ok(r.path.length>=4,'detour waypoints '+r.id);
  }
  assert.equal(routes.find(r=>r.id==='R08').type,'sea');
- assert.equal(routes.find(r=>r.id==='R10').to,'temple');
+ assert.equal(routes.find(r=>r.id==='R14').type,'maze-conditional');
+ assert.ok(routes.find(r=>r.id==='R14').notes.includes('到達不可'));
+ assert.ok(alternatePaths.some(p=>p.kind==='monster-trail'));
+ assert.ok(hazards.some(h=>h.kind==='habitat'));
 });
-test('geographic design is serializable and independent from runtime NPC/crisis state',()=>{
- const data=exportBlueprint();
- assert.equal(data.world.widthKm,48);assert.equal(data.world.heightKm,36);
- assert.equal(data.terrain.length,6);
- assert.ok(!JSON.stringify(data).includes('causalScenarios'));
- assert.ok(!JSON.stringify(data).includes('npcState'));
+test('rivers have geographically authored courses AND width ranges separate from drawn exaggeration',()=>{
+ assert.ok(waterways.length>=5);
+ for(const r of waterways){assert.ok(r.path.length>=5);assert.ok(r.visualWidthPx>0);assert.ok(r.widthMeters[0]>0);}
+ assert.ok(waterways.some(r=>r.id==='capital-fork'));
+ assert.ok(waterways.some(r=>r.id==='elf-cascade'));
+ assert.ok(landUse.some(z=>z.kind==='agricultural'));
+});
+test('export remains proposed design data, never overwrites live NPC/quest/save semantics',()=>{
+ const json=exportBlueprint();
+ assert.equal(json.status,'PROPOSED; independent from live 3D runtime');
+ assert.ok(json.areaNote.includes('Perspective'));
+ assert.equal(json.routes.length,15);
+ assert.ok(!JSON.stringify(json).includes('npcState'));
 });
