@@ -19,9 +19,10 @@ try{
   const option=document.createElement('option');option.value=region.id;option.textContent=region.name;selector.append(option);
  }
  selector.value='capital';
- world=new ContinuousWorld(canvas,manifest,{onStatus:({mode,location,position,trees})=>{
+ world=new ContinuousWorld(canvas,manifest,{onStatus:({mode,location,surface,position,trees})=>{
   let text=mode==='walk'?'徒歩探索':'立体俯瞰';
   text+=' · '+location;
+  if(surface)text+=' · '+surface;
   if(position)text+=' · X '+position[0].toFixed(0)+' / Z '+position[1].toFixed(0);
   if(trees!=null)text+=' · 樹木 '+trees;
   status.textContent=text;
