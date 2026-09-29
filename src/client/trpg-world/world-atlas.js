@@ -64,7 +64,10 @@ export function mountWorldAtlas(canvas,content,{currentRegionId}={}){
  for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){
   const x=minX+i*step,z=minZ+j*step,y=atlasHeight(x,z),land=atlasLandness(x,z);
   positions.push(x,y,z);
-  const col=ATLAS_COLORS[atlasBiome(x,z)],shade=.91+Math.min(.16,Math.max(0,y)*.006);
+  const col=ATLAS_COLORS[atlasBiome(x,z)];
+  const nearestKnown=Math.min(Infinity,...content.regions.map(r=>Math.hypot(x-r.worldPosition[0],z-r.worldPosition[1])));
+  const unexplored=Math.min(1,Math.max(0,(nearestKnown-43)/62));
+  const shade=(.91+Math.min(.16,Math.max(0,y)*.006))*(1-.70*unexplored);
   colors.push(col[0]*shade,col[1]*shade,col[2]*shade,land<.35?0:1);
  }
  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
@@ -115,13 +118,15 @@ export function mountWorldAtlas(canvas,content,{currentRegionId}={}){
  }
  // Tree cover: biome shapes the broad field; local inhabitants are not spawned here.
  for(let i=0;i<120;i++){
+  if(!regions.has('forest'))break;
   const x=69+((i*37)%119),z=-61+((i*47)%118);
   if(atlasBiome(x,z)!=='forest'||Math.hypot(x-150,z+55)<14)continue;
   tree('forest:'+i,x,z,1.1+(i%4)*.22,3.2+(i%5)*.45,i%3?leaf:moss);
  }
  // Farming surrounds the farm settlement; buildings do not all share one size.
- const farm=regions.get('farm'),[fx,fz]=farm.worldPosition;
- for(let i=0;i<12;i++){
+ const farm=regions.get('farm');
+ for(let i=0;farm&&i<12;i++){
+  const [fx,fz]=farm.worldPosition;
   const x=fx-22+(i%4)*10,z=fz-17+Math.floor(i/4)*10;
   const m=MeshBuilder.CreateGround('farm-plot:'+i,{width:7,height:6},scene);
   m.position=V(x,atlasHeight(x,z)+.08,z);m.material=material('harvest',i%2?'#a99a53':'#8b9851');m.isPickable=false;
