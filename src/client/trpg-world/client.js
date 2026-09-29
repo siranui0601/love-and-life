@@ -4,6 +4,8 @@ const modeNames={foot:'徒歩',horse:'乗馬',broom:'箒飛行'};
 const statusNames={latent:'兆候',active:'進行中',critical:'緊急',failed:'悪化',resolved:'解決',prevented:'抑止'};
 const weatherNames={clear:'晴れ',cloud:'曇り',rain:'雨',storm:'雷雨',snow:'雪'};
 const keys=new Set();let view,content,scene,seq=0,active=false,busy=false,polling=false,selected=null,lastInput='',inputAt=0,dialogTarget=null,displayRevision=-1;
+let activeAtlas=null;
+function destroyAtlas(){activeAtlas?.dispose();activeAtlas=null;document.getElementById('panel')?.classList.remove('atlas-mode');}
 function element(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;}
 function toast(message){if(!message)return;$('toast').textContent=message;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),4800);}
 async function api(path,body){const r=await fetch(`/TRPG/api/world/${path}`,{method:body?'POST':'GET',credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const data=await r.json();if(!data.ok){const e=new Error(data.message||'通信に失敗しました。');e.code=data.error;throw e;}return data;}
@@ -15,8 +17,8 @@ async function command(cmd,{quiet=false}={}){
  finally{busy=false;}
 }
 function stopInput(){keys.clear();if(scene)scene.input={x:0,z:0,ascend:0};lastInput='';}
-function closePanel(){if(active)void command({type:'resume'},{quiet:true});dialogTarget=null;$('panel').hidden=true;$('panelBody').replaceChildren();$('game').focus();}
-function openPanel(title){if(active&&$('panel').hidden&&view?.player.activity?.worldTimePolicy!=='paused')void command({type:'pause'},{quiet:true});stopInput();$('panelTitle').textContent=title;$('panel').hidden=false;$('panelBody').replaceChildren();$('closePanel').focus();}
+function closePanel(){destroyAtlas();if(active)void command({type:'resume'},{quiet:true});dialogTarget=null;$('panel').hidden=true;$('panelBody').replaceChildren();$('game').focus();}
+function openPanel(title){destroyAtlas();if(active&&$('panel').hidden&&view?.player.activity?.worldTimePolicy!=='paused')void command({type:'pause'},{quiet:true});stopInput();$('panelTitle').textContent=title;$('panel').hidden=false;$('panelBody').replaceChildren();$('closePanel').focus();}
 function button(text,fn){const b=element('button',text,'action');b.type='button';b.onclick=fn;return b;}
 function actionCommand(action,target){const {id,label,available,missing,price,...rest}=action;return {type:rest.type||'interact',targetId:target.id,action:rest.action||id,...rest};}
 function openInteraction(targetId){
@@ -47,7 +49,7 @@ function inventory(){dialogTarget=null;openPanel('持ち物と身につけたこ
  body.append(element('h3','移動手段'));for(const mode of ['foot','horse','broom'])body.append(button(modeNames[mode],()=>command({type:'mount',mode}).then(inventory)));
  body.append(element('h3','技能'));for(const skill of content.skills){body.append(element('p',`${view.player.skills.includes(skill.id)?'✓':'◇'} ${skill.name} — ${skill.description}`,'history'));}
 }
-function map(){dialogTarget=null;openPanel('世界の地図');const body=$('panelBody'),canvas=element('canvas');canvas.width=800;canvas.height=650;canvas.className='world-map';body.append(canvas);const ctx=canvas.getContext('2d');ctx.fillStyle='#16242b';ctx.fillRect(0,0,800,650);
+function map2D(){dialogTarget=null;openPanel('世界の地図');const body=$('panelBody'),canvas=element('canvas');canvas.width=800;canvas.height=650;canvas.className='world-map';body.append(canvas);const ctx=canvas.getContext('2d');ctx.fillStyle='#16242b';ctx.fillRect(0,0,800,650);
  const point=r=>[(r.worldPosition[0]+190)*2.05,60+(r.worldPosition[1]+155)*1.55];const regions=new Map(content.regions.map(r=>[r.id,r]));
  for(const route of content.routes){const a=point(regions.get(route.from)),b=point(regions.get(route.to));ctx.strokeStyle=route.modes.includes('boat')?'#6ea7b3':'#7f826a';ctx.setLineDash(route.modes.includes('boat')?[4,7]:[]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();}
  ctx.setLineDash([]);ctx.textAlign='center';ctx.font='14px sans-serif';for(const r of content.regions){const [x,y]=point(r);ctx.fillStyle=r.id===view.region.id?'#efd097':r.color;ctx.beginPath();ctx.arc(x,y,r.id===view.region.id?9:6,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ebe4d3';ctx.fillText(r.name,x,y-16);
@@ -59,6 +61,19 @@ function map(){dialogTarget=null;openPanel('世界の地図');const body=$('pane
  }
  body.append(element('p','道の先へは、地域の出口まで歩いて向かいます。馬車と船は運賃、乗馬と箒は技能と乗り物が必要です。地図の小さな印は、あなたが見聞きした事件です。','muted'));
  for(const r of content.regions)body.append(element('p',`${r.name}：${r.description}`,'history'));
+}
+
+function map(){
+ dialogTarget=null;openPanel('世界の地図');document.getElementById('panel').classList.add('atlas-mode');
+ const body=$('panelBody'),canvas=element('canvas');canvas.className='world-atlas';canvas.setAttribute('aria-label','立体的な世界の俯瞰。ドラッグで回転、ホイールで拡大縮小できます。');
+ body.append(element('p','11の土地をひと続きの地形として俯瞰する。ドラッグで回転、ホイールで拡大縮小。街道は主な道筋であり、街道の外が歩行禁止という意味ではない。','muted'),canvas);
+ const actions=element('div',null,'atlas-actions');
+ actions.append(button('軽量な2D表示へ',map2D));body.append(actions);
+ body.append(element('p','この図は公開された地理の概観です。人物の現在位置・未発見の事件・隠された原因を表示しません。建物と地形は後から差し替え可能な縮尺模型で、実ゲームの衝突判定や移動時間を変更しません。','muted'));
+ void import('./world-atlas.js').then(({mountWorldAtlas})=>{
+  if(!canvas.isConnected||!document.getElementById('panel').classList.contains('atlas-mode'))return;
+  activeAtlas=mountWorldAtlas(canvas,content,{currentRegionId:view.region.id});
+ }).catch(error=>{console.error('World atlas unavailable',error);if(canvas.isConnected){toast('立体地図の表示に失敗しました。2D地図に切り替えます。');map2D();}});
 }
 function miniMap(){if(!view)return;const c=$('minimap'),ctx=c.getContext('2d'),scale=156/(view.region.size||160),p=scene.position;ctx.clearRect(0,0,180,180);ctx.fillStyle='rgba(17,29,25,.88)';ctx.fillRect(0,0,180,180);ctx.strokeStyle='#657464';
  const at=p=>[90+p[0]*scale,90+p[2]*scale];for(const path of view.region.terrain?.paths||[]){ctx.beginPath();path.points.forEach((p,i)=>i?ctx.lineTo(...at(p)):ctx.moveTo(...at(p)));ctx.stroke();}
