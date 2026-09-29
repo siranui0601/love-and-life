@@ -50,3 +50,14 @@ test('player maps accept knowledge-filtered geography and reject accidental new 
  assert.throws(()=>auditAtlasContent({regions:[farm],routes:[content.routes.find(r=>r.id==='R12')]}),/undiscovered/);
  assert.throws(()=>auditAtlasContent({regions:[farm],routes:[{id:'R99',from:'farm',to:'farm'}]}),/route/);
 });
+
+test('game atlas and standalone designer atlas compile as browser entrypoints',async()=>{
+ const {build}=await import('esbuild');
+ const result=await build({
+  absWorkingDir:new URL('../../',import.meta.url).pathname,
+  entryPoints:['src/client/trpg-world/world-atlas.js','tools/trpg-world/world-atlas-review-client.mjs'],
+  bundle:true,write:false,format:'esm',platform:'browser',target:['es2022'],
+  outdir:'ignored-atlas-test-build',logLevel:'silent'
+ });
+ assert.ok(result.outputFiles.length>=2);
+});
