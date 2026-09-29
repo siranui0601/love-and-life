@@ -376,7 +376,9 @@ const pointers=new Map();
 function scaleBar(){
  const ruler=document.querySelector('.measure'),width=svg.getBoundingClientRect().width;
  if(!width)return;
- const pxPerKm=width*(W/WORLD.widthKm)/view.w,max=Math.min(190,width*.29);
+ const box=svg.getBoundingClientRect(),isFocused=document.querySelector('.map-shell')?.classList.contains('is-focused');
+ const scale=(isFocused?Math.max:Math.min)(box.width/view.w,box.height/view.h);
+ const pxPerKm=scale*(W/WORLD.widthKm),max=Math.min(190,width*.29);
  const km=[10,5,2,1,.5,.2].find(v=>v*pxPerKm<=max)||.2;
  ruler.style.width=(km*pxPerKm)+'px';
  const labels=ruler.querySelectorAll(':scope > span');
@@ -391,8 +393,12 @@ function zoom(f,x=view.x+view.w/2,y=view.y+view.h/2){
  const old=view.w;view.w=Math.min(W,Math.max(155,view.w*f));
  view.h=view.w*H/W;view.x=x-(x-view.x)*view.w/old;view.y=y-(y-view.y)*view.h/old;apply();
 }
-const local=e=>{const b=svg.getBoundingClientRect();return[
- view.x+(e.clientX-b.left)/b.width*view.w,view.y+(e.clientY-b.top)/b.height*view.h];};
+const projection=()=>{const b=svg.getBoundingClientRect();
+ const focused=document.querySelector('.map-shell')?.classList.contains('is-focused');
+ const scale=(focused?Math.max:Math.min)(b.width/view.w,b.height/view.h);
+ return {b,scale,offsetX:(b.width-view.w*scale)/2,offsetY:(b.height-view.h*scale)/2};};
+const local=e=>{const {b,scale,offsetX,offsetY}=projection();return[
+ view.x+(e.clientX-b.left-offsetX)/scale,view.y+(e.clientY-b.top-offsetY)/scale];};
 svg.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY>0?1.14:.86,...local(e));},{passive:false});
 svg.addEventListener('pointerdown',e=>{
  if(e.button!==0&&e.pointerType==='mouse')return;
@@ -404,14 +410,14 @@ svg.addEventListener('pointerdown',e=>{
 svg.addEventListener('pointermove',e=>{
  if(!pointers.has(e.pointerId))return;
  pointers.set(e.pointerId,[e.clientX,e.clientY]);
- const b=svg.getBoundingClientRect();
+ const {scale}=projection();
  if(pointers.size===2&&pinch){
   const [a,c]=[...pointers.values()],d=Math.hypot(a[0]-c[0],a[1]-c[1]);
   if(d>5){const old=view.w;view.w=Math.min(W,Math.max(155,pinch.w*pinch.d/d));
    view.x+=(old-view.w)/2;view.y+=(old-view.w)*H/W/2;apply();}
  }else if(drag&&pointers.size===1){
-  view.x=drag.ox-(e.clientX-drag.x)/b.width*view.w;
-  view.y=drag.oy-(e.clientY-drag.y)/b.height*view.h;apply();
+  view.x=drag.ox-(e.clientX-drag.x)/scale;
+  view.y=drag.oy-(e.clientY-drag.y)/scale;apply();
  }
 });
 const release=e=>{pointers.delete(e.pointerId);drag=null;pinch=null;if(!pointers.size)svg.classList.remove('dragging');};
@@ -423,7 +429,9 @@ document.getElementById('reset').onclick=()=>{view={...all};apply();};
 const fullButton=document.getElementById('focus-map'),shell=document.querySelector('.map-shell');
 fullButton?.addEventListener('click',()=>{
  shell.classList.toggle('is-focused');document.body.classList.toggle('map-fullscreen',shell.classList.contains('is-focused'));
- fullButton.textContent=shell.classList.contains('is-focused')?'閉じる':'地図を大きく';
+ const focused=shell.classList.contains('is-focused');
+ svg.setAttribute('preserveAspectRatio',focused?'xMidYMid slice':'xMidYMid meet');
+ fullButton.textContent=focused?'閉じる':'地図を大きく';
  requestAnimationFrame(scaleBar);
 });
 document.getElementById('export').onclick=()=>{
