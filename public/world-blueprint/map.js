@@ -133,6 +133,55 @@ for(let i=0;i<135;i++){
   {stroke:i%3?'#a8875e':'#e9d199','stroke-width':.6+rand(i+6),opacity:.55,fill:'none'},layers.texture);
 }
 // A broad painted river with its physical width stored separately in geography.js.
+
+// South is a dry HIGH PLATEAU with rock spires, gullies, ruins and pilgrimage
+// traces, not a single empty yellow quadrilateral.
+const dry=terrain.find(t=>t.id==='drylands'),dryBox=bbox(dry.points);
+for(let i=0;i<310;i++){
+ const x=dryBox[0]+rand(i*9+45)*(dryBox[2]-dryBox[0]);
+ const y=dryBox[1]+rand(i*15+73)*(dryBox[3]-dryBox[1]);
+ if(!pointInPolygon(wr(x,y),dry.points))continue;
+ const h=3+rand(i*29+4)*19,w=6+rand(i*37+6)*28;
+ scenicPath('M'+fp(x-w/2)+','+fp(y+2)+'L'+fp(x-w*.21)+','+fp(y-h*.62)+
+  'L'+fp(x)+','+fp(y-h)+'L'+fp(x+w*.24)+','+fp(y-h*.37)+
+  'L'+fp(x+w/2)+','+fp(y+2)+'Z',
+  {fill:i%4===0?'#a98359':i%3===0?'#c39d70':'#b08b62',
+   stroke:'#806a4f','stroke-width':.7,opacity:.65+rand(i+40)*.2},layers.texture);
+ scenicPath('M'+fp(x)+','+fp(y-h)+'L'+fp(x+w*.24)+','+fp(y-h*.37)+
+  'L'+fp(x+w/2)+','+fp(y+2)+'L'+fp(x+w*.1)+','+fp(y+1)+'Z',
+  {fill:'#866d55',opacity:.37},layers.texture);
+}
+for(let i=0;i<70;i++){
+ const x=630+rand(i*23+71)*710,y=728+rand(i*37+23)*287;
+ if(!pointInPolygon(wr(x,y),dry.points))continue;
+ scenicPath('M'+fp(x-18)+','+fp(y+2)+'Q'+fp(x)+','+fp(y-6-rand(i+7)*5)+
+  ' '+fp(x+29)+','+fp(y+1),
+  {fill:'none',stroke:'#f2d9a5','stroke-width':.8,opacity:.45},layers.texture);
+}
+// Roads pass real inhabited landscapes: warehouses, field sheds and stopping
+// places are visible WITHOUT adding invented major city/quest entities.
+function hamlet(x,y,count,roofColor){
+ for(let j=0;j<count;j++){
+  const px=x+(j%4)*12+(rand(j+x)*4),py=y+Math.floor(j/4)*10+(rand(j+y)*3);
+  scenicPath('M'+fp(px-5)+','+fp(py)+'L'+fp(px)+','+fp(py-7)+
+   'L'+fp(px+6)+','+fp(py)+'V'+fp(py+5)+'H'+fp(px-5)+'Z',
+   {fill:roofColor,stroke:'#594c3c','stroke-width':.8,opacity:.87},layers.farms);
+ }
+}
+for(const [x,y,n,c] of [
+ [344,444,7,'#a47a57'],[407,427,5,'#c48a61'],[476,462,8,'#b48864'],
+ [512,494,8,'#bc946b'],[461,560,7,'#ad7755'],[528,659,6,'#b98662'],
+ [698,546,6,'#aa805e'],[756,580,4,'#ad865f'],[419,696,5,'#a67d62'],
+ [700,727,4,'#b08f73']
+])hamlet(x,y,n,c);
+// Quarry carts, pilgrim waystations and old roads make the mountains and
+// temple approaches visibly inhabited/used.
+for(const [x,y] of [[400,306],[445,290],[494,251],[546,211],[452,694],[520,707],[627,829],[605,862]]){
+ scenicPath('M'+(x-7)+','+(y+3)+'h14v3h-14Z',{fill:'#9d7a53',stroke:'#68513e','stroke-width':1},layers.farms);
+ el('circle',{cx:x-4,cy:y+7,r:2,fill:'#665349'},layers.farms);
+ el('circle',{cx:x+4,cy:y+7,r:2,fill:'#665349'},layers.farms);
+}
+
 for(const river of waterways){
  const d=curve(river.path),w=river.visualWidthPx;
  scenicPath(d,{fill:'none',stroke:'#ccdac3','stroke-width':w*1.9,opacity:.48,'stroke-linejoin':'round'},layers.rivers);
