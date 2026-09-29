@@ -57,16 +57,19 @@ function edgeDistance(x,z,polygon){
  return d;
 }
 const islands=[
- [-155,-30,22,25],[-123,49,8,6],[-121,88,5,8],
+ [-155,-30,30,30],[-123,49,8,6],[-121,88,5,8],
  [-172,53,5,5],[-143,103,6,4],[-84,199,5,6],
  [-96,-78,4,5],[-126,-91,6,4],[-192,-16,4,3]
 ];
 export function landness(x,z){
- const d=edgeDistance(x,z,COAST),land=polygonInside(x,z,COAST)?.5+.5*smooth(0,4,d):.5-.5*smooth(0,4,d);
- let score=land;
+ const d=edgeDistance(x,z,COAST),side=polygonInside(x,z,COAST)?1:-1;
+ const coastNoise=1.4*Math.sin(x*.17)*Math.cos(z*.23)+.75*Math.sin(x*.39+z*.16);
+ let score=smooth(-3.8,3.8,side*d+coastNoise);
  for(const [cx,cz,rx,rz] of islands){
+  const theta=Math.atan2((z-cz)/rz,(x-cx)/rx);
+  const wobble=.067*Math.sin(theta*7+cz*.01)+.038*Math.sin(theta*13+cx*.02);
   const q=Math.hypot((x-cx)/rx,(z-cz)/rz);
-  score=Math.max(score,1-smooth(.86,1.12,q));
+  score=Math.max(score,1-smooth(.89+wobble,1.13+wobble,q));
  }
  return clamp(score,0,1);
 }
@@ -117,20 +120,25 @@ export function heightAt(x,z){
  const landHeight=relief(x,z)-1.25*(1-smooth(1.8,8,bank));
  return -3+land*(landHeight+3);
 }
+export function forestCoverage(x,z){
+ const ellipse=((x-134)/88)**2+((z+1)/112)**2;
+ const irregular=.12*Math.sin(x*.076+z*.03)+.07*Math.sin(z*.19-x*.10);
+ return 1-smooth(.68,1.38,ellipse+irregular);
+}
 export function biomeAt(x,z){
  if(landness(x,z)<.40)return 'ocean';
  if(dist(x,z,-155,-30)<26)return 'island';
  if(x>47&&z< -91)return 'volcanic';
  if(z< -89&&x<55)return 'alpine';
- if(x>75&&z<81)return 'forest';
  if(z>112)return 'arid';
+ if(forestCoverage(x,z)>.37)return 'forest';
  if(x< -61&&z<30)return 'coastal';
  return 'temperate';
 }
 export const BIOMES=Object.freeze({
- ocean:[.10,.25,.33],island:[.25,.31,.28],volcanic:[.29,.20,.19],
- alpine:[.63,.65,.62],forest:[.22,.39,.27],arid:[.60,.47,.30],
- coastal:[.46,.56,.40],temperate:[.43,.54,.31]
+ ocean:[.10,.25,.33],island:[.30,.35,.30],volcanic:[.32,.24,.22],
+ alpine:[.68,.69,.66],forest:[.19,.38,.24],arid:[.69,.53,.34],
+ coastal:[.51,.62,.42],temperate:[.51,.62,.36]
 });
 export function pointAlong(list,t){
  if(list.length===1)return [...list[0]];
