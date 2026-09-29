@@ -1,6 +1,8 @@
 import {BOUNDS,SITES,ROUTE_KIND,RIVERS,BIOMES,COAST,forestCoverage,landness,biomeAt,heightAt,routePoints,pointAlong,assertAtlas,dist,smooth} from './geography.js';
 import {buildArchitecture,populateLandscape} from './architecture.js';
 
+const VIEW_X_STRETCH=1.40; // Aspect-ratio presentation only; canonical site coordinates remain unchanged.
+
 // This is one physical coordinate frame and continuous heightfield in the
 // standalone spatial review. No scene swaps and no region-to-region teleports.
 // Existing RPG saves/NPCs are intentionally not simulated in this preview.
@@ -40,9 +42,10 @@ export class ContinuousWorld {
   };
   this.mats={
    ocean:makeMat('deep blue ocean','#193d51',{alpha:1}),
-   river:makeMat('river water','#4d9aa5',{alpha:.86}),
+   river:makeMat('river water','#4d9aa5',{alpha:.86,emissive:true}),
    highway:makeMat('busy earthen artery','#bfa782'),
    track:makeMat('minor dirt track','#b5a07d'),
+   mesa:makeMat('southern mesa rock','#927657'),
    forest:makeMat('woodland path','#a7a07b'),
    hidden:makeMat('conditional hidden way','#86b69a'),
    tunnel:makeMat('subterranean hint','#827081'),
@@ -76,6 +79,13 @@ export class ContinuousWorld {
   this.architecture=buildArchitecture(scene,manifest,B);
   this.foliage=populateLandscape(scene,manifest,B);
   this.buildFerries();
+  // Geographic sites preserve their canonical X/Z positions in data and the
+  // walking rules. This single display transform gives the visible continent
+  // the wider west-to-east composition of the illustrated reference.
+  this.geographyRoot=new B.TransformNode('the entire geographic world',scene);
+  for(const mesh of [...scene.meshes])mesh.parent=this.geographyRoot;
+  this.geographyRoot.scaling.x=VIEW_X_STRETCH;
+  for(const label of this.architecture.labels)label.scaling.x/=VIEW_X_STRETCH;
   this.makePlayer();
   this.keys=new Set();this.walking=false;this.lastHud=0;
   this.previous=performance.now();
@@ -209,7 +219,7 @@ export class ContinuousWorld {
   const {MeshBuilder,Vector3}=this.B;
   // Snowy northern geological spine. Leave real valleys around inhabited sites.
   for(let i=0;i<110;i++){
-   const x=-94+(i%22)*11.6,z=-184+Math.floor(i/22)*10.4+(i%4)*1.9;
+   const x=-94+(i%22)*11.6+Math.sin(i*4.9)*3.2,z=-184+Math.floor(i/22)*10.4+Math.cos(i*2.4)*3.1;
    if(landness(x,z)<.92||dist(x,z,-15,-120)<19||dist(x,z,-70,-110)<16)continue;
    const height=6+(i*7%15),radius=3.1+(i%5)*1.45;
    const m=MeshBuilder.CreateCylinder('snowy mountain spire:'+i,{diameterBottom:radius*2,diameterTop:0,height,tessellation:5},this.scene);
@@ -222,7 +232,7 @@ export class ContinuousWorld {
   }
   // The black ridge surrounds an occupied city; volcanic cones are NOT the city.
   for(let i=0;i<49;i++){
-   const x=62+(i%10)*13.2,z=-177+Math.floor(i/10)*12+(i%3)*2.5;
+   const x=62+(i%10)*13.2+Math.sin(i*1.71)*3.1,z=-177+Math.floor(i/10)*12+Math.cos(i*3.12)*3.6;
    if(landness(x,z)<.93||dist(x,z,95,-135)<30)continue;
    const height=6+(i*11%17);
    const m=MeshBuilder.CreateCylinder('volcanic crag:'+i,{diameterBottom:6+(i%5)*2.5,diameterTop:0,height,tessellation:5},this.scene);
@@ -238,12 +248,12 @@ export class ContinuousWorld {
   this.makeRibbon('volcano lava flow',sample,2.3,this.mats.lava,.38,true);
   // The southern plateau is stratified dry rock, not a flat tan cutout.
   for(let i=0;i<39;i++){
-   const x=5+(i*37.5)%155,z=131+(i*13.7)%65;
+   const x=5+(i*47.71+Math.sin(i*12.1)*9)%155,z=127+(i*29.43+Math.cos(i*5.3)*8)%70;
    if(landness(x,z)<.96||dist(x,z,-65,175)<18||dist(x,z,-45,125)<25)continue;
-   const h=3+(i%4)*1.4;
+   const h=2.2+(i%5)*1.05;
    const r=MeshBuilder.CreateCylinder('mesa:'+i,{diameterTop:4.3,diameterBottom:6.9,height:h,tessellation:6},this.scene);
    r.position=new Vector3(x,heightAt(x,z)+h*.42,z);
-   r.material=this.architecture?.materials?.sand||this.mats.track;r.isPickable=false;
+   r.material=this.mats.mesa;r.isPickable=false;
   }
  }
  buildFerries(){
@@ -276,7 +286,7 @@ export class ContinuousWorld {
   const region=this.byId.get(id);if(!region)return;
   this.walking=false;this.keys?.clear();this.avatar?.setEnabled(false);
   const [x,z]=region.worldPosition;
-  this.camera.target=new this.B.Vector3(x,heightAt(x,z)+10,z);
+  this.camera.target=new this.B.Vector3(x*VIEW_X_STRETCH,heightAt(x,z)+10,z);
   this.camera.radius=radius||({capital:112,trade:96,forest:125,blackridge:109}[id]||74);
   this.camera.alpha=Math.PI/2+.32;this.camera.beta=.82;
   this.architecture.labels.forEach(l=>l.setEnabled(true));
@@ -284,7 +294,7 @@ export class ContinuousWorld {
  }
  overview(){
   this.walking=false;this.keys?.clear();this.avatar?.setEnabled(false);
-  this.camera.target=new this.B.Vector3(-3,7,6);
+  this.camera.target=new this.B.Vector3(-3*VIEW_X_STRETCH,7,6);
   this.camera.radius=570;this.camera.beta=.44;this.camera.alpha=Math.PI/2;
   this.camera.panningSensibility=950;
   this.architecture.labels.forEach(l=>l.setEnabled(true));
@@ -296,9 +306,9 @@ export class ContinuousWorld {
    frontier:[1,14],temple:[-2,25],forest:[-2,10],elf:[-7,21],
    fortress:[0,27],dwarf:[5,23],blackridge:[0,31]}[region.id]||[0,12];
   const px=x+offset[0],pz=z+offset[1],py=heightAt(px,pz);
-  this.position=new this.B.Vector3(px,py,pz);this.avatar.position.copyFrom(this.position);
+  this.position=new this.B.Vector3(px,py,pz);this.avatar.position.set(px*VIEW_X_STRETCH,py,pz);
   this.avatar.setEnabled(true);this.walking=true;this.keys.clear();
-  this.camera.target=new this.B.Vector3(px,py+1.6,pz);
+  this.camera.target=new this.B.Vector3(px*VIEW_X_STRETCH,py+1.6,pz);
   this.camera.radius=16;this.camera.beta=1.1;this.camera.alpha=Math.PI/2;
   this.camera.panningSensibility=0;
   this.architecture.labels.forEach(l=>l.setEnabled(false));
@@ -322,7 +332,7 @@ export class ContinuousWorld {
   if(!fore&&!side)return;
   const cameraF=this.camera.target.subtract(this.camera.position);cameraF.y=0;cameraF.normalize();
   const length=Math.hypot(fore,side)||1,velocity=(k.has('ShiftLeft')||k.has('ShiftRight')?13:7)*dt/length;
-  const dx=(cameraF.x*fore-cameraF.z*side)*velocity;
+  const dx=(cameraF.x*fore-cameraF.z*side)*velocity/VIEW_X_STRETCH;
   const dz=(cameraF.z*fore+cameraF.x*side)*velocity;
   const x=this.position.x,z=this.position.z;
   const tryMove=(nx,nz)=>{if(this.walkable(nx,nz,this.position.x,this.position.z)){this.position.x=nx;this.position.z=nz;}};
@@ -331,8 +341,8 @@ export class ContinuousWorld {
    tryMove(x+dx,z);tryMove(this.position.x,z+dz);
   }
   this.position.y=heightAt(this.position.x,this.position.z);
-  const target=new this.B.Vector3(this.position.x,this.position.y+1.6,this.position.z);
-  this.avatar.position.copyFrom(this.position);
+  const target=new this.B.Vector3(this.position.x*VIEW_X_STRETCH,this.position.y+1.6,this.position.z);
+  this.avatar.position.set(this.position.x*VIEW_X_STRETCH,this.position.y,this.position.z);
   this.avatar.rotation.y=Math.atan2(dx,dz);
   this.camera.target=this.B.Vector3.Lerp(this.camera.target,target,Math.min(1,dt*10));
   this.lastHud+=dt;
