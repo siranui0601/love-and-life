@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "description": "Public geographic overview only, no NPCs, event sources, skills or hidden simulation data.",
+  "regions": [
+    {
+      "id": "farm",
+      "name": "田園の村",
+      "worldPosition": [
+        0,
+        90
+      ]
+    },
+    {
+      "id": "capital",
+      "name": "王都",
+      "worldPosition": [
+        35,
+        25
+      ]
+    },
+    {
+      "id": "trade",
+      "name": "交易都市",
+      "worldPosition": [
+        -65,
+        -35
+      ]
+    },
+    {
+      "id": "crime",
+      "name": "犯罪都市",
+      "worldPosition": [
+        -155,
+        -30
+      ]
+    },
+    {
+      "id": "frontier",
+      "name": "辺境の村",
+      "worldPosition": [
+        -65,
+        175
+      ]
+    },
+    {
+      "id": "temple",
+      "name": "古代神殿",
+      "worldPosition": [
+        -45,
+        125
+      ]
+    },
+    {
+      "id": "forest",
+      "name": "森",
+      "worldPosition": [
+        115,
+        5
+      ]
+    },
+    {
+      "id": "elf",
+      "name": "エルフの隠れ里",
+      "worldPosition": [
+        150,
+        -55
+      ]
+    },
+    {
+      "id": "fortress",
+      "name": "北陵要塞",
+      "worldPosition": [
+        -15,
+        -120
+      ]
+    },
+    {
+      "id": "dwarf",
+      "name": "ドワーフ洞窟",
+      "worldPosition": [
+        -70,
+        -110
+      ]
+    },
+    {
+      "id": "blackridge",
+      "name": "魔王領",
+      "worldPosition": [
+        95,
+        -135
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "R01",
+      "from": "fortress",
+      "to": "dwarf",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R02",
+      "from": "fortress",
+      "to": "blackridge",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R03",
+      "from": "fortress",
+      "to": "trade",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R04",
+      "from": "dwarf",
+      "to": "trade",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R05",
+      "from": "dwarf",
+      "to": "blackridge",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R06",
+      "from": "trade",
+      "to": "capital",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R07",
+      "from": "trade",
+      "to": "temple",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R08",
+      "from": "trade",
+      "to": "crime",
+      "modes": [
+        "boat",
+        "ship",
+        "broom"
+      ]
+    },
+    {
+      "id": "R09",
+      "from": "frontier",
+      "to": "temple",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R10",
+      "from": "temple",
+      "to": "farm",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R11",
+      "from": "temple",
+      "to": "capital",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R12",
+      "from": "farm",
+      "to": "capital",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R13",
+      "from": "capital",
+      "to": "forest",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R14",
+      "from": "forest",
+      "to": "elf",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    },
+    {
+      "id": "R15",
+      "from": "forest",
+      "to": "blackridge",
+      "modes": [
+        "foot",
+        "horse",
+        "carriage",
+        "wagon",
+        "broom"
+      ]
+    }
+  ]
+}
