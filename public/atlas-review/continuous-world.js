@@ -259,6 +259,19 @@ export class ContinuousWorld {
    r.position=new Vector3(x,heightAt(x,z)+h*.42,z);
    r.material=this.mats.mesa;r.isPickable=false;
   }
+  // Dry southeastern massif: broad mesas and fractured ridges dominate the
+  // far horizon instead of repeating pebble-sized markers on an empty plane.
+  for(let i=0;i<70;i++){
+   const x=35+(i*47.91+Math.sin(i*3.17)*7)%152;
+   const z=117+(i*31.29+Math.cos(i*5.63)*9)%81;
+   if(landness(x,z)<.97||biomeAt(x,z)!=='arid')continue;
+   const h=5+(i*7%13),diameter=5+(i%5)*2.35;
+   const mesa=MeshBuilder.CreateCylinder('southern massif:'+i,{
+    diameterTop:diameter*.63,diameterBottom:diameter,height:h,tessellation:5
+   },this.scene);
+   mesa.position=new Vector3(x,heightAt(x,z)+h*.29,z);
+   mesa.material=i%8===0?this.mats.mountain:this.mats.mesa;mesa.isPickable=false;
+  }
  }
  buildFerries(){
   const {MeshBuilder,Vector3}=this.B;
