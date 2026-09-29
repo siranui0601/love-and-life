@@ -1,4 +1,4 @@
-import {BOUNDS,SITES,ROUTE_KIND,RIVERS,BIOMES,COAST,landness,biomeAt,heightAt,routePoints,pointAlong,assertAtlas,dist,smooth} from './geography.js';
+import {BOUNDS,SITES,ROUTE_KIND,RIVERS,BIOMES,COAST,forestCoverage,landness,biomeAt,heightAt,routePoints,pointAlong,assertAtlas,dist,smooth} from './geography.js';
 import {buildArchitecture,populateLandscape} from './architecture.js';
 
 // This is one physical coordinate frame and continuous heightfield in the
@@ -16,7 +16,7 @@ export class ContinuousWorld {
   this.engine.setHardwareScalingLevel(Math.max(1,(window.devicePixelRatio||1)/1.5));
   const scene=this.scene=new Scene(this.engine);
   scene.useRightHandedSystem=true; // north-up overview also places east on screen-right.
-  scene.clearColor=new Color4(.26,.38,.48,1);
+  scene.clearColor=new Color4(.095,.23,.30,1);
   scene.fogMode=Scene.FOGMODE_NONE;
   this.camera=new ArcRotateCamera('one-world-orbit',Math.PI/2,.44,570,new Vector3(-5,5,6),scene);
   this.camera.fov=.80;
@@ -26,20 +26,22 @@ export class ContinuousWorld {
   this.camera.attachControl(canvas,true);
   this.camera.inputs.attached.pointers.buttons=[0,2];
   const ambient=new HemisphericLight('sky fill',new Vector3(0,1,0),scene);
-  ambient.intensity=1.0;ambient.groundColor=new Color3(.22,.23,.21);
+  ambient.intensity=.77;ambient.groundColor=new Color3(.22,.23,.21);
   const sun=new DirectionalLight('sun',new Vector3(-.42,-1,.51),scene);
-  sun.position=new Vector3(-120,190,-75);sun.intensity=1.35;
+  sun.position=new Vector3(-120,190,-75);sun.intensity=.88;
   const makeMat=(id,hex,{alpha=1,emissive=false}={})=>{
    const m=new StandardMaterial(id,scene);m.diffuseColor=Color3.FromHexString(hex);
    m.specularColor=new Color3(.026,.026,.026);m.alpha=alpha;
    if(emissive)m.emissiveColor=Color3.FromHexString(hex).scale(.55);
-   m.backFaceCulling=false;return m;
+   m.backFaceCulling=false;
+   if(['deep blue ocean','busy earthen artery','minor dirt track','woodland path','conditional hidden way','subterranean hint','ferry lane'].includes(id))m.disableLighting=true;
+   return m;
   };
   this.mats={
-   ocean:makeMat('deep blue ocean','#1b5871',{alpha:.94}),
+   ocean:makeMat('deep blue ocean','#244b60',{alpha:1}),
    river:makeMat('river water','#4d9aa5',{alpha:.86}),
-   highway:makeMat('busy earthen artery','#b7a77b'),
-   track:makeMat('minor dirt track','#b7a078'),
+   highway:makeMat('busy earthen artery','#bfa782'),
+   track:makeMat('minor dirt track','#b5a07d'),
    forest:makeMat('woodland path','#a7a07b'),
    hidden:makeMat('conditional hidden way','#86b69a'),
    tunnel:makeMat('subterranean hint','#827081'),
@@ -53,10 +55,24 @@ export class ContinuousWorld {
    waypoint:makeMat('location marker','#dfc27b',{emissive:true})
   };
   // Ocean is the only large flat plane; ALL dry land is generated in one mesh.
-  const sea=MeshBuilder.CreateGround('one-ocean',{width:BOUNDS.maxX-BOUNDS.minX+80,height:BOUNDS.maxZ-BOUNDS.minZ+80},scene);
+  const sea=MeshBuilder.CreateGround('continuous-ocean-to-horizon',{width:3200,height:3200},scene);
   sea.position=new Vector3(0,-.78,9);sea.material=this.mats.ocean;sea.isPickable=false;
+  // A subdued sea surface, tiled beyond the visible map; no cyan rectangular
+  // tabletop surrounding isolated miniature settlements.
+  const tex=new B.DynamicTexture('subtle ocean ripples',{width:256,height:256},scene,false);
+  const ctx=tex.getContext();ctx.fillStyle='#20475a';ctx.fillRect(0,0,256,256);
+  for(let i=0;i<45;i++){
+   const x=(i*83)%256,z=(i*47)%256;
+   ctx.strokeStyle=i%5===0?'rgba(179,211,203,.15)':'rgba(151,194,197,.07)';
+   ctx.lineWidth=i%4===0?1.5:1;
+   ctx.beginPath();ctx.moveTo(x,z);ctx.quadraticCurveTo(x+5,z-2,x+11,z);ctx.stroke();
+  }
+  tex.update();tex.uScale=115;tex.vScale=115;
+  this.mats.ocean.diffuseColor=B.Color3.White();
+  this.mats.ocean.diffuseTexture=tex;
   this.buildGeography();
   this.buildRivers();
+  this.buildShorelines();
   this.buildRoutes();
   this.buildRidges();
   this.architecture=buildArchitecture(scene,manifest,B);
@@ -93,8 +109,14 @@ export class ContinuousWorld {
   for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){
    const x=minX+i*step,z=minZ+j*step,h=heightAt(x,z),biome=biomeAt(x,z);
    positions.push(x,h,z);
-   const tone=BIOMES[biome],grain=(Math.sin(x*.83+z*.41)+Math.sin(x*.19-z*.31))*.033;
-   const shade=.93+grain+(biome==='alpine'?Math.min(.17,Math.max(0,h-8)*.014):0);
+   let tone=BIOMES[biome];
+   if(biome==='forest'||biome==='temperate'){
+    const green=forestCoverage(x,z),base=BIOMES.temperate,wood=BIOMES.forest;
+    tone=base.map((v,k)=>v*(1-green)+wood[k]*green);
+   }
+   const grain=(Math.sin(x*.39+z*.21)+Math.sin(x*.16-z*.28))*.031;
+   const slope=Math.hypot(heightAt(x+.7,z)-h,heightAt(x,z+.7)-h);
+   const shade=.99+grain-Math.min(.24,slope*.09)+(biome==='alpine'?Math.min(.18,Math.max(0,h-8)*.012):0);
    colors.push(Math.max(0,tone[0]*shade),Math.max(0,tone[1]*shade),Math.max(0,tone[2]*shade),1);
   }
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
@@ -139,6 +161,30 @@ export class ContinuousWorld {
    });
    this.makeRibbon('carved-river:'+index,samples,index===0?4.2:2.9,this.mats.river,.14,true);
   }
+ }
+ buildShorelines(){
+  const {MeshBuilder,Vector3,Color3}=this.B;
+  const makeLine=(name,points,alpha)=>{
+   const l=MeshBuilder.CreateLines(name,{points:points.map(([x,z])=>new Vector3(x,-.69,z))},this.scene);
+   l.color=new Color3(.79,.85,.78);l.alpha=alpha;l.isPickable=false;
+  };
+  // A continuous surf ring follows the real continental coast, not a rectangle.
+  const surf=[];
+  for(let i=0;i<COAST.length;i++){
+   const a=COAST[i],b=COAST[(i+1)%COAST.length],dx=b[0]-a[0],dz=b[1]-a[1],len=Math.hypot(dx,dz);
+   const steps=Math.max(2,Math.ceil(len/3));
+   for(let k=0;k<steps;k++){
+    const t=k/steps,wave=Math.sin((i*steps+k)*.81)*.55;
+    surf.push([a[0]+dx*t-dz/len*(3.1+wave),a[1]+dz*t+dx/len*(3.1+wave)]);
+   }
+  }
+  if(surf.length>2){surf.push(surf[0]);makeLine('mainland breaking surf',surf,.46);}
+  const offshore=[];
+  for(let i=0;i<=120;i++){
+   const a=i/120*Math.PI*2,r=1+.034*Math.sin(a*7)+.02*Math.sin(a*13);
+   offshore.push([-155+Math.cos(a)*30*r,-30+Math.sin(a)*30*r]);
+  }
+  makeLine('criminal island shore',offshore,.57);
  }
  buildRoutes(){
   const {MeshBuilder,Vector3}=this.B;
