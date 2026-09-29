@@ -106,3 +106,14 @@ body.map-fullscreen{overflow:hidden}
  .measure{bottom:9px;left:11px}
  .compass{right:9px;top:8px}
 }
+
+/* Portrait headers and the immersive slice viewport */
+@media(max-width:570px){
+ .masthead{display:block;position:relative;padding:14px 12px 15px}
+ .masthead .go-back{position:absolute;top:12px;right:12px}
+ .masthead .kicker{max-width:calc(100% - 112px)}
+ .masthead h1{font-size:24px;letter-spacing:.015em;white-space:nowrap;margin-top:16px}
+ .masthead h1 small{font-size:10px;white-space:nowrap;vertical-align:middle}
+ .masthead p{max-width:100%;margin-top:9px}
+ .map-shell.is-focused #map{max-height:unset}
+}
