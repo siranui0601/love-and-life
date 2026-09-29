@@ -1,0 +1,32 @@
+name: Public 3D atlas preview
+
+on:
+  pull_request:
+    paths:
+      - 'public/atlas-review/**'
+      - 'src/server/app.js'
+      - 'test/atlas-review.test.mjs'
+      - '.github/workflows/atlas-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-atlas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Syntax checks and geographic manifest contracts
+        run: |
+          node --check src/server/app.js
+          node --check public/atlas-review/atlas-data.js
+          node --check public/atlas-review/atlas.js
+          node --check public/atlas-review/main.js
+          node --test test/atlas-review.test.mjs
