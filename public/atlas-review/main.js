@@ -41,6 +41,14 @@ try{
  }
  status.textContent='世界全体 · 11地域 / 15ルート';
  setMode('overview');
+ // Shareable spatial-review camera presets; still uses exactly the same scene.
+ const params=new URLSearchParams(location.search);
+ const target=params.get('walk')||params.get('focus');
+ if(target&&manifest.regions.some(r=>r.id===target)){
+  selector.value=target;
+  if(params.has('walk'))view.walk.click();
+  else view.focus.click();
+ }
 }catch(cause){
  console.error('Continuous world preview failed:',cause);
  error.textContent=cause instanceof Error?cause.message:'世界の描画に失敗しました。';
