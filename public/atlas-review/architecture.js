@@ -20,7 +20,7 @@ export function buildArchitecture(scene,manifest,B){
   straw:color('farm roof','#a98d54'),sand:color('sandstone','#bca17a'),
   gold:color('gilding','#c6a361'),snow:color('snow masonry','#d0d1c9'),
   elf:color('living timber','#665d3c'),canopy:color('forest','#376540'),
-  paleLeaf:color('elven canopy','#83a765'),ember:color('molten rock','#d15a32',true),
+  paleLeaf:color('elven canopy','#75955e'),ember:color('molten rock','#d15a32',true),
   blackRoof:color('black basalt','#272a31'),sea:color('water','#34728a'),
   earth:color('earth','#695e41'),glass:color('magic glass','#4fa9a1',true)
  };
@@ -327,7 +327,7 @@ export function populateLandscape(scene,manifest,B,{trees=540,rocks=140}={}){
  for(let i=0;i<trees*3&&planted<trees;i++){
   const x=55+((i*83.176)%156),z=-88+((i*47.319)%200);
   if(biomeAt(x,z)!=='forest'||landness(x,z)<.98||
-     dist(x,z,150,-55)<20||dist(x,z,115,5)<9||nearRoad(x,z))continue;
+     dist(x,z,150,-55)<20||dist(x,z,115,5)<9||dist(x,z,35,25)<52||nearRoad(x,z))continue;
   const h=5.3+(i%9)*.62,scale=.6+(i%5)*.16,base=heightAt(x,z);
   const t=trunk.createInstance('woodland-trunk:'+i);
   t.position=new Vector3(x,base+h*.29,z);t.scaling=new Vector3(scale,h/5,scale);
@@ -338,7 +338,7 @@ export function populateLandscape(scene,manifest,B,{trees=540,rocks=140}={}){
  // Smaller groves outside the eastern rainforest create ecological transitions.
  for(let i=0;i<125;i++){
   const x=-65+((i*37.713)%164),z=-5+((i*19.131)%156);
-  if(landness(x,z)<.98||biomeAt(x,z)==='arid'||nearRoad(x,z))continue;
+  if(landness(x,z)<.98||biomeAt(x,z)==='arid'||dist(x,z,35,25)<41||dist(x,z,-65,-35)<26||dist(x,z,0,90)<16||nearRoad(x,z))continue;
   const h=3.2+(i%5)*.7,base=heightAt(x,z);
   const t=trunk.createInstance('plain-tree-trunk:'+i);t.position=new Vector3(x,base+h*.28,z);t.scaling=new Vector3(.57,h/5,.57);
   const f=foliage[1].createInstance('plain-tree-crown:'+i);
