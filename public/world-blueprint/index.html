@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#182c32">
+<link rel="icon" href="data:,">
+<meta name="description" content="TRPG（仮）の48×36kmの世界について、地形と拠点輪郭の面積・位置関係を比較する色分け2D設計図。">
+<title>世界地理・2D設計図 | TRPG（仮）</title>
+<link rel="stylesheet" href="/world-blueprint/style.css">
+<script type="module" src="/world-blueprint/map.js"></script>
+</head>
+<body>
+<header class="masthead">
+ <div><div class="kicker">TRPG（仮） / GEOGRAPHIC BLUEPRINT — NOT YET GAME RUNTIME</div>
+ <h1>世界地理の2D設計図</h1>
+ <p>参考画像の地形・相対位置と、世界 48×36km の面積比を照合するための仮設計。</p></div>
+ <a class="go-back" href="/atlas-review">3D試作を見る ↗</a>
+</header>
+<main class="layout">
+ <section class="map-shell" aria-label="世界地図">
+  <div class="map-heading">
+   <div><strong>世界全図</strong><span>西：碧の海　/　東：翡翠の森　/　北：山脈　/　南：黄昏の荒野</span></div>
+   <div class="map-tools" aria-label="地図操作">
+    <button type="button" id="zoom-in" aria-label="拡大">＋</button>
+    <button type="button" id="zoom-out" aria-label="縮小">－</button>
+    <button type="button" id="reset">全体表示</button>
+   </div>
+  </div>
+  <div class="map-viewport">
+   <svg id="map" viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="色分けされた連続地理。ドラッグで移動、ホイールで拡大縮小。地形と各拠点を選択できます。">
+    <title>世界の地図 — 48km × 36km</title>
+   </svg>
+   <div class="compass" aria-hidden="true"><span>北 N</span><b>↑</b></div>
+   <div class="measure" aria-hidden="true"><span>0</span><span>5</span><span>10km</span><div class="ruler"><i></i><i></i></div></div>
+  </div>
+  <div class="map-footer"><span>ドラッグ：移動 ／ ホイール・＋－：拡大縮小 ／ 地形・拠点に触れると面積を表示</span><span>座標単位：km・グリッド非表示</span></div>
+ </section>
+ <aside class="side" aria-label="設計値と凡例">
+  <section class="panel">
+   <div class="small-cap">01 / SPATIAL SCALE</div>
+   <h2>48 × 36 km</h2>
+   <p>世界全体 <strong>1,728 km²</strong></p>
+   <div class="ratio"><span class="land-ratio"></span><span class="sea-ratio"></span></div>
+   <div class="split"><span>陸地 <b id="land-area">算出中</b></span><span>海域 <b id="sea-area">算出中</b></span></div>
+   <p class="note">添付画像の200km目盛りは、既存の拠点間徒歩時間とは両立しないため、相対的な配置・輪郭を参考にした。</p>
+  </section>
+  <section class="panel">
+   <div class="small-cap">02 / LAND COVER</div><h2>地形の区分</h2>
+   <div class="legend">
+    <span><i style="background:#305b77"></i>海・入江</span>
+    <span><i style="background:#8c9899"></i>北部雪山・岩山</span>
+    <span><i style="background:#575760"></i>黒嶺火山帯</span>
+    <span><i style="background:#3c7554"></i>翡翠の森</span>
+    <span><i style="background:#a9ba83"></i>中央平原</span>
+    <span><i style="background:#dbb77a"></i>南部乾燥高原</span>
+    <span><i style="background:#989b86"></i>西部岩礁海岸</span>
+    <span><i style="background:#d7c676"></i>田園の村の農地</span>
+   </div>
+   <div class="forest-note"><span>翡翠の森の実面積</span><strong id="forest-area">計算中</strong><small>森は施設・点拠点ではなく、全域が歩行・探索の対象となる地形。</small></div>
+  </section>
+  <section class="panel">
+   <div class="small-cap">03 / LAYERS</div><h2>表示レイヤー</h2>
+   <div class="switches">
+    <label><input id="show-biomes" type="checkbox" checked>地形・植生</label>
+    <label><input id="show-water" type="checkbox" checked>河川・水路</label>
+    <label><input id="show-roads" type="checkbox" checked>主要街道・航路</label>
+    <label><input id="show-activity" type="checkbox" checked>活動圏・農地</label>
+    <label><input id="show-cities" type="checkbox" checked>拠点の実寸輪郭</label>
+    <label><input id="show-labels" type="checkbox" checked>地名</label>
+   </div>
+   <p class="note">道路以外も歩行できる世界として設計。道路の線は移動可能域の境界ではない。</p>
+  </section>
+  <section class="panel selected">
+   <div class="small-cap">04 / INSPECTOR</div><div id="inspection" aria-live="polite"></div>
+  </section>
+  <section class="panel">
+   <div class="small-cap">05 / SETTLEMENT FOOTPRINTS</div>
+   <h2>拠点本体の面積</h2>
+   <table><thead><tr><th>拠点</th><th>km²</th></tr></thead><tbody id="footprints"></tbody></table>
+   <p class="note">活動圏と建築域を混同しないため、森はこの表に含めていない。森は上記220km²の地形区分。</p>
+   <button id="export" type="button" class="export">再利用できる座標データ（JSON）を保存 ↓</button>
+  </section>
+ </aside>
+</main>
+<footer class="page-footer">世界地理の設計確認用。ゲームの現行3D衝突判定・NPC生活座標・保存データにはまだ適用していません。</footer>
+</body>
+</html>

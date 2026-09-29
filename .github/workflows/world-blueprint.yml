@@ -1,0 +1,33 @@
+name: World geography 2D blueprint
+
+on:
+  pull_request:
+    paths:
+      - "public/world-blueprint/**"
+      - "test/world-blueprint.test.mjs"
+      - ".github/workflows/world-blueprint.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-geometry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax
+        run: |
+          node --check public/world-blueprint/geography.js
+          node --check public/world-blueprint/map.js
+      - name: Metric geometry and topological contracts
+        run: node --test test/world-blueprint.test.mjs
+      - name: Ensure standalone page assets exist
+        run: |
+          test -f public/world-blueprint/index.html
+          test -f public/world-blueprint/style.css
+          grep -q '/world-blueprint/map.js' public/world-blueprint/index.html
