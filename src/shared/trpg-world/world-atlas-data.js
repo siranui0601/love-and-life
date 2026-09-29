@@ -55,7 +55,7 @@ export function atlasRoadPoints(route,from,to,steps=24){
  const bend={R02:-7,R03:7,R04:8,R05:12,R06:4,R07:-9,R08:25,R10:4,R11:-8,R13:8,R15:10}[route.id]||0;
  const sea=ATLAS_ROUTE_STYLES[route.id]==='sea';
  return Array.from({length:steps+1},(_,i)=>{
-  const t=i/steps,offset=Math.sin(Math.PI*t)*bend;
+  const t=i/steps,offset=(i===0||i===steps)?0:Math.sin(Math.PI*t)*bend;
   const x=ax+dx*t-dz/length*offset,z=az+dz*t+dx/length*offset;
   return [x,sea?-.22:atlasHeight(x,z)+.30,z];
  });
