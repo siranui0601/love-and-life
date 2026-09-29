@@ -3,7 +3,6 @@ const status=document.getElementById('status'),canvas=document.getElementById('a
 let instance=null;
 try{
  if(!globalThis.BABYLON)throw new Error('3D描画ライブラリを読み込めませんでした。通信を確認してください。');
- if(!globalThis.BABYLON.Engine.isSupported())throw new Error('このブラウザでWebGLが利用できません。');
  const response=await fetch('/atlas-review/content.json',{cache:'no-store'});
  if(!response.ok)throw new Error('地理データを取得できませんでした（'+response.status+'）。');
  const content=await response.json();
