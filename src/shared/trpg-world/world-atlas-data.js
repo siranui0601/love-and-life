@@ -20,7 +20,7 @@ const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);};
 const peak=(x,z,cx,cz,rx,rz)=>Math.exp(-(((x-cx)/rx)**2+((z-cz)/rz)**2)*1.5);
 export function atlasLandness(x,z){
- const coast=-110+8*Math.sin((z+30)/37)+(z>95?-8:0);
+ const coast=-110+32*Math.exp(-Math.pow((z+35)/48,2))+8*Math.sin((z+30)/37)+(z>95?-8:0);
  const mainland=smooth(coast-5,coast+5,x)*smooth(-187,-177,z)*(1-smooth(199,210,z));
  const island=1-smooth(13,24,Math.hypot(x+155,z+30));
  return clamp(Math.max(mainland,island),0,1);
