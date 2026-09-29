@@ -6,6 +6,7 @@ on:
       - 'public/atlas-review/**'
       - 'src/server/app.js'
       - 'test/atlas-review.test.mjs'
+      - 'test/continuous-world.test.mjs'
       - '.github/workflows/atlas-review.yml'
   workflow_dispatch:
 
@@ -29,4 +30,7 @@ jobs:
           node --check public/atlas-review/atlas-data.js
           node --check public/atlas-review/atlas.js
           node --check public/atlas-review/main.js
-          node --test test/atlas-review.test.mjs
+          node --check public/atlas-review/geography.js
+          node --check public/atlas-review/architecture.js
+          node --check public/atlas-review/continuous-world.js
+          node --test test/atlas-review.test.mjs test/continuous-world.test.mjs
