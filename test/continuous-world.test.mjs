@@ -58,6 +58,13 @@ test('roads are known corridors, and continuous land exists beyond road lines',(
  assert.ok(routePoints(ferry,byId).every(v=>v[1]===-.30),'R08 is maritime, not an artificial road over the sea');
  assert.equal(ROUTE_KIND.R05,'tunnel');assert.equal(ROUTE_KIND.R14,'hidden');
 });
+test('all land corridors stay above the physical coastline, including R04',()=>{
+ for(const route of manifest.routes.filter(r=>r.id!=='R08')){
+  const p=routePoints(route,byId,180);
+  const lowest=Math.min(...p.map(vertex=>landness(vertex[0],vertex[2])));
+  assert.ok(lowest>.63,route.id+' wrongly crosses open water: '+lowest);
+ }
+});
 test('standalone renderer preserves the same scene through region selection and walks',async()=>{
  const source=await readFile(new URL('../public/atlas-review/continuous-world.js',import.meta.url),'utf8');
  assert.match(source,/this\.camera\.target=/);
