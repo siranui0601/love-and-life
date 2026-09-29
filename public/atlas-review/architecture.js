@@ -67,7 +67,7 @@ export function buildArchitecture(scene,manifest,B){
   for(let i=0;i<count;i++){
    const dx=w>d?(-w/2+(i+.5)*w/count):0;
    const dz=d>w?(-d/2+(i+.5)*d/count):0;
-   cuboid(name+':merlon',x+dx,z+dz,w>d?.9:d*.95,d>w?.9:w*.95,.7,body,false,y(x+dx,z+dz)+h-.1);
+   cuboid(name+':merlon',x+dx,z+dz,w>d?.9:w*.95,d>w?.9:d*.95,.7,body,false,y(x+dx,z+dz)+h-.1);
   }
   return a;
  }
