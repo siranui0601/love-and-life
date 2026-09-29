@@ -42,7 +42,11 @@ test('each published journey connects canonical region coordinates, with a sea l
   }
  }
 });
-test('content changes cannot silently omit or invent map regions and routes',()=>{
- assert.throws(()=>auditAtlasContent({...content,regions:content.regions.slice(1)}),/region IDs/);
- assert.throws(()=>auditAtlasContent({...content,routes:content.routes.slice(1)}),/route count/);
+test('player maps accept knowledge-filtered geography and reject accidental new IDs',()=>{
+ const farm=regions.get('farm');
+ assert.equal(auditAtlasContent({regions:[farm],routes:[]}),true,'new player sees only farm');
+ assert.throws(()=>auditAtlasContent({regions:[farm,{...farm,id:'unknown'}],routes:[]}),/region IDs/);
+ assert.throws(()=>auditAtlasContent({regions:[farm,farm],routes:[]}),/region IDs/);
+ assert.throws(()=>auditAtlasContent({regions:[farm],routes:[content.routes.find(r=>r.id==='R12')]}),/undiscovered/);
+ assert.throws(()=>auditAtlasContent({regions:[farm],routes:[{id:'R99',from:'farm',to:'farm'}]}),/route/);
 });
