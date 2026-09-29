@@ -62,7 +62,7 @@ const islands=[
  [-96,-78,4,5],[-126,-91,6,4],[-192,-16,4,3]
 ];
 export function landness(x,z){
- const d=edgeDistance(x,z,COAST),land=polygonInside(x,z,COAST)?smooth(-3,4,d):smooth(4,-3,d);
+ const d=edgeDistance(x,z,COAST),land=polygonInside(x,z,COAST)?.5+.5*smooth(0,4,d):.5-.5*smooth(0,4,d);
  let score=land;
  for(const [cx,cz,rx,rz] of islands){
   const q=Math.hypot((x-cx)/rx,(z-cz)/rz);
