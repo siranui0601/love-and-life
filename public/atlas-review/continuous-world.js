@@ -15,6 +15,7 @@ export class ContinuousWorld {
   this.engine=new Engine(canvas,true,{preserveDrawingBuffer:false,stencil:true,adaptToDeviceRatio:true});
   this.engine.setHardwareScalingLevel(Math.max(1,(window.devicePixelRatio||1)/1.5));
   const scene=this.scene=new Scene(this.engine);
+  scene.useRightHandedSystem=true; // north-up overview also places east on screen-right.
   scene.clearColor=new Color4(.26,.38,.48,1);
   scene.fogMode=Scene.FOGMODE_NONE;
   this.camera=new ArcRotateCamera('one-world-orbit',Math.PI/2,.44,570,new Vector3(-5,5,6),scene);
@@ -98,7 +99,7 @@ export class ContinuousWorld {
   }
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
    const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;
-   indices.push(a,c,b,b,c,d);
+   indices.push(a,b,c,b,d,c);
   }
   VertexData.ComputeNormals(positions,indices,normals);
   const data=new VertexData();Object.assign(data,{positions,indices,normals,colors});
