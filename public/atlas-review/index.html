@@ -2,41 +2,82 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111c24">
-<meta name="description" content="TRPG（仮）の11地域を3Dで俯瞰できる世界地図。">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#152a36">
+<meta name="description" content="11の地域が一続きの大地に存在するTRPG（仮）ワールドの3D空間レビュー。">
 <meta name="robots" content="noindex,nofollow">
-<title>世界の地図 | TRPG（仮）</title>
+<title>世界の地図 — TRPG（仮）</title>
 <style>
-:root{color-scheme:dark;--gold:#d6bc84;--ink:#e6e3d7;--panel:#182730;--line:#64726d}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;background:#0c161d;color:var(--ink)}
-body{display:flex;flex-direction:column;height:100dvh}
-header{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:15px clamp(15px,3vw,40px);background:#101e26;z-index:1;border-bottom:1px solid #43565b}
-header a{font-size:12px;text-decoration:none;color:var(--gold)}
-h1{font:normal clamp(22px,3vw,34px)/1.2 "Yu Mincho","Hiragino Mincho ProN",serif;letter-spacing:.15em;margin:4px 0}
-.kicker{font-size:10px;letter-spacing:.2em;color:#b5aa8d}
-.viewport{position:relative;flex:1;min-height:300px;overflow:hidden}
-canvas{display:block;width:100%;height:100%;touch-action:none;background:#19313d}
-.legend{position:absolute;right:clamp(10px,2vw,30px);bottom:18px;max-width:240px;border:1px solid #887a5b;background:#15242be8;padding:16px 17px;pointer-events:none;backdrop-filter:blur(4px)}
-.legend h2{margin:0 0 9px;font:normal 19px "Yu Mincho",serif;color:#e6d2a3}
-.legend p{font-size:12px;line-height:1.75;margin:5px 0;color:#d6d5c8}
-.status{position:absolute;top:16px;left:16px;background:#15252ae9;padding:9px 12px;border:1px solid #60736d;color:#e0dfce;font-size:12px;max-width:min(460px,calc(100% - 32px))}
+:root{color-scheme:dark;--ink:#ece5d1;--muted:#b5b9aa;--gold:#e1c48a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;min-height:100%;overflow:hidden;background:#142b39;color:var(--ink);font:13px/1.6 "Yu Gothic","Meiryo",sans-serif}
+body{display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px clamp(14px,2.6vw,40px);border-bottom:1px solid #d1bf9366;background:#111f2b;z-index:5}
+.eyebrow{font-size:10px;letter-spacing:.25em;color:#d3b982}
+h1{font:normal clamp(24px,3vw,36px) "Yu Mincho","Noto Serif JP",serif;margin:0;letter-spacing:.12em}
+header a{color:#d8c18f;text-decoration:none;font-size:12px}
+.world{flex:1;position:relative;min-height:300px;overflow:hidden;background:#23546b}
+canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+.controls{position:absolute;top:16px;left:18px;max-width:min(520px,calc(100% - 36px));display:flex;gap:7px;flex-wrap:wrap;background:#152530e9;border:1px solid #d2bd8b9c;padding:10px;z-index:4;box-shadow:0 7px 30px #101c2280;backdrop-filter:blur(7px)}
+select,button{color:#f0e7d1;border:1px solid #938363;border-radius:2px;background:#213642;padding:8px 12px;font:inherit;cursor:pointer}
+button:hover,select:focus{border-color:#e4cc91;background:#35474a}
+button:focus-visible,select:focus-visible{outline:2px solid #f5d590;outline-offset:2px}
+button.active{color:#18272b;background:#ecd29d;border-color:#ecd29d}
+select{min-width:138px;flex:1}
+.status{position:absolute;right:16px;top:17px;max-width:235px;color:#e0d0a7;text-align:right;background:#11222bcc;border:1px solid #93836375;padding:8px 12px;z-index:3}
 .status[hidden]{display:none}
-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:10px clamp(15px,3vw,40px);border-top:1px solid #43565b;background:#101e26;color:#b1bdb6;font-size:11px}
-button{font:inherit;color:#e5d1a1;border:1px solid #a28d60;background:transparent;padding:8px 14px;cursor:pointer}
-button:hover{background:#35433c}
-@media(max-width:660px){header{padding:12px 15px}.legend{left:10px;right:auto;bottom:10px;padding:10px 12px;max-width:215px}.legend p{font-size:10px}.viewport{min-height:300px}footer{font-size:10px;padding:8px 12px}}
+.legend{position:absolute;right:16px;bottom:16px;width:min(260px,calc(100% - 32px));padding:13px 17px;background:#17262ddd;border:1px solid #b6a27c99;backdrop-filter:blur(6px);pointer-events:none}
+.legend h2{font:normal 20px "Yu Mincho",serif;margin:0 0 5px;color:#f2d9a1}
+.legend p{font-size:11px;line-height:1.75;margin:5px 0;color:#e0ddcf}
+.legend strong{color:#d6bd89}
+.walk-hint{position:absolute;left:18px;bottom:18px;background:#14262ad9;border:1px solid #8e967d;padding:10px 14px;color:#eee6c9;font-size:12px;display:none;pointer-events:none}
+body.walking .walk-hint{display:block}
+.badge{background:#715636;color:#fff0cb;padding:1px 5px}
+.error{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);padding:18px 26px;background:#2d2629f2;color:#ffdcbe;border:1px solid #df9c68;max-width:90vw;z-index:10;line-height:1.8}
+.error[hidden]{display:none}
+footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;padding:7px clamp(14px,2.6vw,40px);background:#111f2b;border-top:1px solid #d1bf9366;color:#c3bda8;font-size:11px}
+footer p{margin:0}footer code{color:#f0d18b}
+.touch-pad{display:none;position:absolute;bottom:20px;left:12px;grid-template-columns:repeat(3,44px);gap:4px;z-index:6}
+.touch-pad button{touch-action:none;user-select:none;font-size:19px;padding:6px}
+body.walking .touch-pad{display:grid}
+@media(max-width:930px){.status{top:auto;bottom:20px;right:15px}.legend{bottom:70px;max-width:220px}}
+@media(max-width:640px){header{padding:7px 12px}.eyebrow{font-size:8px}h1{font-size:22px}.controls{top:8px;left:8px;max-width:calc(100% - 16px);padding:7px;gap:5px}select,button{font-size:11px;padding:7px 8px}select{min-width:114px}.legend{bottom:65px;right:8px;max-width:166px;padding:7px}.legend h2{font-size:15px}.legend p{font-size:9px;line-height:1.5}.status{bottom:8px;right:8px;font-size:10px;padding:5px}.walk-hint{left:10px;bottom:165px;font-size:10px;max-width:160px}.touch-pad{bottom:10px}}
 </style>
 <script defer src="https://cdn.jsdelivr.net/npm/babylonjs@9.25.0/babylon.js"></script>
 <script type="module" src="/atlas-review/main.js"></script>
 </head>
 <body>
-<header><div><span class="kicker">TRPG（仮） / GEOGRAPHIC ATLAS</span><h1>世界の地図</h1></div><a href="/">← 不知火遊技場</a></header>
-<main class="viewport">
- <canvas id="atlas" tabindex="0" aria-label="回転・拡大できる3D世界地図。マウスでドラッグして回転します。"></canvas>
- <div id="status" class="status" role="status">11の土地を描画しています…</div>
- <aside class="legend" aria-label="地図の説明"><h2>世界の俯瞰</h2><p>主要地域 11 / 接続ルート 15</p><p>ドラッグ：回転・傾き<br>ホイール：拡大縮小<br>右ドラッグ：視点の移動</p><p>街道は往来の目安。草原や森のすべてが道で区切られているわけではありません。</p></aside>
+<header>
+ <div><div class="eyebrow">TRPG（仮） / A CONTINUOUS WORLD</div><h1>世界の地図</h1></div>
+ <a href="/">不知火遊技場へ戻る ↗</a>
+</header>
+<main class="world">
+ <canvas id="atlas" tabindex="0" aria-label="ひと続きの3Dワールド。ドラッグで視点を回転し、歩行モードではWASDで街道の外も探索できます。"></canvas>
+ <section class="controls" aria-label="世界探索の操作">
+  <select id="region" aria-label="地域を選ぶ"><option value="">地域を選ぶ</option></select>
+  <button id="focus" type="button">現地を俯瞰</button>
+  <button id="walk" type="button">現地を歩く</button>
+  <button id="overview" type="button" class="active">世界全景</button>
+ </section>
+ <div id="status" class="status" role="status">世界を読み込んでいます…</div>
+ <div id="error" class="error" role="alert" hidden></div>
+ <aside class="legend" aria-label="地図凡例">
+  <h2>ひとつの大地</h2>
+  <p>11地域を同一座標系に配置。山脈、海岸、河川、農地、都市、森林、火山帯がつながっている。</p>
+  <p><strong>回転：</strong>ドラッグ<br><strong>拡大：</strong>ホイール / ピンチ<br><strong>徒歩：</strong>WASD・矢印 / Shiftで走る</p>
+  <p>街道は通りやすい道筋。<strong>道の外も歩ける</strong>（海と急斜面・建造物は別）。</p>
+  <p>R08は海路。R05・R14・R15は地下・条件つき／危険ルートを含む。</p>
+ </aside>
+ <div class="walk-hint"><span class="badge">自由探索</span><br>WASD / 矢印で移動<br>Shiftで走る<br>マウスドラッグで視点変更<br>Escで俯瞰に戻る</div>
+ <div class="touch-pad" aria-label="歩行操作">
+  <span></span><button data-move="KeyW" type="button" aria-label="前へ">↑</button><span></span>
+  <button data-move="KeyA" type="button" aria-label="左へ">←</button>
+  <button data-move="KeyS" type="button" aria-label="後ろへ">↓</button>
+  <button data-move="KeyD" type="button" aria-label="右へ">→</button>
+ </div>
 </main>
-<footer><span>地理の3D縮尺模型。ゲーム内の自由歩行・NPC生活の実装とは別です。</span><button id="reset" type="button">視点をリセット</button></footer>
+<footer>
+ <p>地理・街並みの3D空間レビュー。既存RPGの生活・NPC・セーブはこのページでは実行しません。</p>
+ <p>添付の世界地図を構図参考とした地形ブロックアウト。Blender用精密アセットは未使用。</p>
+</footer>
 </body>
 </html>
