@@ -60,15 +60,20 @@ export function atlasRoadPoints(route,from,to,steps=24){
   return [x,sea?-.22:atlasHeight(x,z)+.30,z];
  });
 }
+// The server projects ONLY discovered regions/routes to a player. Both the
+// complete authoring catalog and any legal discovered subset must be accepted.
 export function auditAtlasContent(content){
- const expected=Object.keys(ATLAS_SITES).sort();
- const actual=(content.regions||[]).map(r=>r.id).sort();
- if(JSON.stringify(expected)!==JSON.stringify(actual))throw new Error('Atlas region IDs no longer match canonical world content');
- if((content.routes||[]).length!==15)throw new Error('Atlas route count must be reviewed after content changes');
- const ids=new Set(actual);
- for(const route of content.routes){
-  if(!ATLAS_ROUTE_STYLES[route.id]||!ids.has(route.from)||!ids.has(route.to))
-   throw new Error('Unknown world atlas route '+route.id);
+ const valid=new Set(Object.keys(ATLAS_SITES));
+ const actual=(content.regions||[]).map(r=>r.id),known=new Set(actual);
+ if(actual.length>valid.size||known.size!==actual.length||actual.some(id=>!valid.has(id)))
+  throw new Error('Atlas region IDs no longer match canonical world content');
+ const routes=content.routes||[];
+ if(routes.length>Object.keys(ATLAS_ROUTE_STYLES).length)throw new Error('Atlas route count exceeds reviewed world routes');
+ const routeIds=new Set();
+ for(const route of routes){
+  if(!ATLAS_ROUTE_STYLES[route.id]||routeIds.has(route.id)||!known.has(route.from)||!known.has(route.to))
+   throw new Error('Unknown or undiscovered world atlas route '+route.id);
+  routeIds.add(route.id);
  }
  return true;
 }
