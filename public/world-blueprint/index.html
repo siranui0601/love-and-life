@@ -70,14 +70,28 @@
     <label><input id="show-cities" type="checkbox" checked>拠点の実寸輪郭</label>
     <label><input id="show-labels" type="checkbox" checked>地名</label>
     <label><input id="show-hazards" type="checkbox">生息域・通行上の危険</label>
+    <label><input id="show-level-design" type="checkbox">探索負荷・レベルデザイン</label>
+    <label><input id="show-ecology" type="checkbox" checked>南東の水龍（固有生物）</label>
    </div>
    <p class="note">街道は最短の直線とは限らない。橋・峠・集落・生息域に沿って迂回し、別の近道や獣道も存在する。街道以外も歩行できる。</p>
   </section>
+  <section class="panel dragon-panel">
+   <div class="small-cap">04 / OPTIONAL ENCOUNTER</div>
+   <h2>飢えた水龍 <small>非トラブル</small></h2>
+   <p>南東の荒野、枯れかけた河跡の淵にいる固有個体。放置すれば本人が衰弱して死ぬ。それだけで世界規模の危機は発生しない。</p>
+   <p><strong>給餌・世話</strong>または<strong>非致死戦闘による服従</strong>から騎乗に至る可能性。ただしどちらの経路でも、水・食料・体力の回復が必要。</p>
+   <p class="note">水辺での高速移動が強み。地下、険しい山、迷いの森を万能に通過する乗り物ではない。地図の水龍に触れると詳細を確認できる。</p>
+  </section>
+  <section class="panel level-panel">
+   <div class="small-cap">05 / LEVEL DESIGN</div><h2>地形から難度を読む</h2>
+   <p>王都周辺の橋・農地と公共街道 → 痕跡を追う森外縁 → 峠・増水・地下封印区画・南部の補給制約。一本道でも適正レベルによる強制封鎖でもない。</p>
+   <p class="note">レイヤー「探索負荷・レベルデザイン」をオンにすると各地の予兆、複数の対処、関連Tを確認できる。</p>
+  </section>
   <section class="panel selected">
-   <div class="small-cap">04 / INSPECTOR</div><div id="inspection" aria-live="polite"></div>
+   <div class="small-cap">06 / INSPECTOR</div><div id="inspection" aria-live="polite"></div>
   </section>
   <section class="panel">
-   <div class="small-cap">05 / SETTLEMENT FOOTPRINTS</div>
+   <div class="small-cap">07 / SETTLEMENT FOOTPRINTS</div>
    <h2>参考画像から再計測した拠点・遺構輪郭</h2>
    <table><thead><tr><th>拠点</th><th>km²</th></tr></thead><tbody id="footprints"></tbody></table>
    <p class="note">拠点や遺構のまとまりを輪郭から計測したもの。王都などの市街、古代神殿の遺構敷地、ドワーフ坑口、周辺生活圏や地下床面積は意味が異なる。森林は別途地形として計測。</p>
@@ -85,6 +99,6 @@
   </section>
  </aside>
 </main>
-<footer class="page-footer">制作側の地理設計レビュー。プレイヤー用地図には未発見の隠れ里・秘密ルートを開示しない。ゲーム本体の衝突判定・NPC座標・セーブデータは未変更。</footer>
+<footer class="page-footer">制作側の地理・任意生態の設計レビュー。水龍は現行スプレッドシートのT01〜T19には追加していない。実ゲームの騎乗・生存AI・衝突判定・セーブデータは未変更。</footer>
 </body>
 </html>
