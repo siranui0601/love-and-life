@@ -130,7 +130,8 @@ const encounterStates={
  T16:{name:'亜人街の襲撃・避難',districts:['ajin','lower'],blockedEdgeIds:['ajin_east__ajin'],investigationNodes:['ajin','newspaper'],refugeNodes:['orphanage','inn','market'],resolution:'高橋・下層経由の複数避難路。平時は敵なし。'},
  T17:{name:'宮廷魔術塔の異変',districts:['mage'],blockedEdgeIds:['mage_gate__mage_court'],investigationNodes:['mage_tower','office'],refugeNodes:['market'],resolution:'宮廷連絡路が調査迂回。事件終了で塔前の封鎖解除。'},
 };
-const viewpoints=[{id:'west_castle',name:'西門から王城の高塔',position:N('west_inside').position,target:'castle',intent:'大通りの空隙から北の高塔を断続視認。'},{id:'south_castle',name:'南大橋から王城',position:N('south_bridge_north').position,target:'castle',intent:'橋の解放部から坂上の王城を視認。'},{id:'ajin_tower',name:'亜人街から宮廷魔術塔',position:N('ajin').position,target:'mage_tower',intent:'南東地区で第二の垂直軸を得る。'}];
+const viewpoints=[{id:'west_castle',name:'西門から王城の高塔',position:N('west_inside').position,target:'castle',corridorWidthM:34,intent:'大通りの空隙から北の高塔を断続視認。'},{id:'south_castle',name:'南大橋から王城',position:N('south_bridge_north').position,target:'castle',corridorWidthM:42,intent:'橋の解放部から坂上の王城を視認。'},{id:'ajin_tower',name:'亜人街から宮廷魔術塔',position:N('ajin').position,target:'mage_tower',corridorWidthM:28,intent:'南東地区で第二の垂直軸を得る。'}];
+const sightCorridors=viewpoints.map(v=>({id:v.id,points:[v.position,N(v.target).position],widthM:v.corridorWidthM,target:v.target,intent:v.intent}));
 
 // Shared deterministic greybox/collider footprints. A regular parcelling lattice is
 // jittered inside district boundaries, then carved by streets, plazas and water.
@@ -139,10 +140,11 @@ const plazaRadii={market:100,castle:110,mage_tower:52,stable:62,office:60,orphan
 for(let x=21.18;x<23.92;x+=.041)for(let y=20.13;y<22.94;y+=.041){const p=[x+(rnd()-.5)*.009,y+(rnd()-.5)*.009];if(!inside(p,corePolygon))continue;const d=districts.find(v=>inside(p,v.polygon));if(!d||rnd()>d.density)continue;const widthM=17+rnd()*12,depthM=17+rnd()*12,radius=Math.hypot(widthM,depthM)/2+4;
  if(distanceToLine(p,[...corePolygon,corePolygon[0]])<radius+8||distanceToLine(p,rivers[0].points)<radius+22)continue;
  if(edges.some(e=>distanceToLine(p,e.points)<radius+e.widthM/2+3))continue;
+ if(sightCorridors.some(c=>distanceToLine(p,c.points)<radius+c.widthM/2))continue;
  if(nodes.some(n=>distance(p,n.position)<radius+(plazaRadii[n.id]||12)))continue;
  buildings.push({id:`building_${buildings.length}`,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),district:d.id,color:d.color});
 }
 // Facility masses sit north of their exact anchor; the anchor remains the door.
 for(const f of facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE'))buildings.push({id:`building_${f.id}`,facilityId:f.id,position:f.buildingPosition,widthM:f.footprintM[0],depthM:f.footprintM[1],heightM:f.heightM,district:f.district,color:districts.find(d=>d.id===f.district)?.color});
 
-export const CAPITAL={version:'capital-vertical-slice-v1',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,buildings,contextWaterways:waterways,sourceNotes:['PDFのcoreと非門ランドマーク座標を保持。門だけ城壁へ最小距離投影。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。']};
+export const CAPITAL={version:'capital-vertical-slice-v1',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,buildings,contextWaterways:waterways,sourceNotes:['PDFのcoreと非門ランドマーク座標を保持。門だけ城壁へ最小距離投影。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。']};
