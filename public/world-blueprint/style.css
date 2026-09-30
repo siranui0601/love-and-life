@@ -117,3 +117,16 @@ body.map-fullscreen{overflow:hidden}
  .masthead p{max-width:100%;margin-top:9px}
  .map-shell.is-focused #map{max-height:unset}
 }
+
+/* Optional ecology / world-reading design pass, 2026-09-30. */
+.dragon-panel{border-color:#528b88;background:linear-gradient(145deg,#204348,#172e35)}
+.dragon-panel h2{color:#c5e7d6}
+.dragon-panel h2 small{font:600 10px sans-serif;color:#a9c8b6;background:#28585b;padding:4px 7px;border-radius:3px;vertical-align:middle}
+.dragon-panel strong{color:#daf1e1}
+.level-panel{border-color:#797e66;background:linear-gradient(145deg,#293b35,#1a2c31)}
+.level-panel h2{color:#ded5a9}
+#map [data-layer="level-design"] .interactive:hover,
+#map [data-layer="ecology"] .interactive:hover,
+#map [data-layer="ecology"] .interactive:focus{filter:brightness(1.26) drop-shadow(0 0 5px #b1ece1)}
+.switches label{line-height:1.4}
+@media(max-width:840px){.dragon-panel,.level-panel{grid-column:auto}}
