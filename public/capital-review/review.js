@@ -141,9 +141,10 @@ function renderBeats(){
  for(const n of compressions){
   const [x,y]=project(n.position);el('rect',{x:x-7,y:y-7,width:14,height:14,fill:'none',stroke:'#765c76','stroke-width':2,transform:'rotate(45 '+x+' '+y+')'},layers.beats);
  }
- for(const v of CAPITAL.viewpoints){
-  const a=project(v.position),target=nodeById(v.target),b=target?project(target.position):null;if(!b)continue;
-  el('path',{d:'M'+a[0]+','+a[1]+'L'+b[0]+','+b[1],stroke:'#897340','stroke-width':1.4,'stroke-dasharray':'4 7',fill:'none'},layers.beats);
+ for(const c of CAPITAL.sightCorridors||[]){
+  const a=project(c.points[0]),b=project(c.points[1]),wide=Math.max(5,metresPx(c.widthM));
+  el('path',{d:'M'+a[0]+','+a[1]+'L'+b[0]+','+b[1],stroke:'#d8c07a','stroke-width':wide,'stroke-opacity':.16,'stroke-linecap':'round',fill:'none'},layers.beats);
+  const line=el('path',{d:'M'+a[0]+','+a[1]+'L'+b[0]+','+b[1],stroke:'#897340','stroke-width':1.4,'stroke-dasharray':'4 7',fill:'none'},layers.beats);title(line,c.intent);
  }
 }
 function renderFacilities(){
@@ -299,7 +300,7 @@ function mount3D(){
  const hemi=new HemisphericLight('sky',V(0,1,0),scene);hemi.intensity=.85;hemi.groundColor=new Color3(.32,.34,.31);
  const sun=new DirectionalLight('sun',V(-.5,-1,.35),scene);sun.intensity=1.05;
  const mats=new Map(),mat=(key,hex,alpha=1)=>{if(mats.has(key))return mats.get(key);const m=new StandardMaterial(key,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=Color3.Black();m.alpha=alpha;mats.set(key,m);return m;};
- const stone=mat('stone','#aea895'),wallMat=mat('wall','#8e897d'),roadMat=mat('road','#a88e6e'),waterMat=mat('water','#4d8d9b',.88),closureMat=mat('closure','#b9433f',.72),gold=mat('gold','#c9a65d'),roof=mat('roof','#6f5b53'),marketMat=mat('market','#c6a45f');
+ const stone=mat('stone','#b8b3a4'),wallMat=mat('wall','#77736b'),roadMat=mat('road','#8f7658'),ceremonialMat=mat('ceremonial','#b99a58'),waterMat=mat('water','#3f8ca0',.92),closureMat=mat('closure','#b9433f',.72),gold=mat('gold','#d1ae55'),roof=mat('roof','#66504a'),marketMat=mat('market','#c9a35a');
  mountStage='terrain';
  const coreB=bbox(CAPITAL.core.polygon),margin=.14,minX=coreB.minX-margin,maxX=coreB.maxX+margin,minY=coreB.minY-margin,maxY=coreB.maxY+margin,nx=64,nz=64;
  const positions=[],indices=[],normals=[],uvs=[];
@@ -320,7 +321,7 @@ function mount3D(){
   const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],closeArray:false,closePath:false,sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
  }
  mountStage='roads';
- for(const e of CAPITAL.edges.filter(e=>e.class!=='world'))strip('road:'+e.id,e.points,Math.max(3,e.widthM),roadMat,.28);
+ for(const e of CAPITAL.edges.filter(e=>e.class!=='world'))strip('road:'+e.id,e.points,Math.max(3,e.widthM),e.class==='ceremonial'?ceremonialMat:roadMat,.28);
  strip('river',CAPITAL.rivers[0].points,CAPITAL.rivers[0].widthM,waterMat,.36);
  function segmentBox(name,a,b,width,height,material){
   const [ax,az]=toLocal(a),[bx,bz]=toLocal(b),dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz),mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],y=elevationAt(...mid);
@@ -347,11 +348,12 @@ function mount3D(){
  for(const f of CAPITAL.facilities.filter(x=>x.footprintM[0]&&x.id!=='LOC_CAP_BIG_STORE')){
   const [x,z]=toLocal(f.buildingPosition),y=elevationAt(...f.buildingPosition);
   if(f.id==='LOC_CAP_CASTLE'){
-   const keep=MeshBuilder.CreateBox('王城',{width:130,height:55,depth:105},scene);keep.position=V(x,y+27.5,z);keep.material=stone;keep.checkCollisions=true;
-   for(const [ox,oz] of [[-52,-40],[52,-40],[-52,40],[52,40]])tower(x+ox,z+oz,y,72,9,stone);
-   tower(x,z,y+18,88,12,stone);
+   const keep=MeshBuilder.CreateBox('王城',{width:150,height:62,depth:118},scene);keep.position=V(x,y+31,z);keep.material=stone;keep.checkCollisions=true;
+   for(const [ox,oz] of [[-62,-46],[62,-46],[-62,46],[62,46]])tower(x+ox,z+oz,y,82,10,stone);
+   tower(x,z,y+19,108,13,stone);
+   const crown=MeshBuilder.CreateCylinder('王城主塔冠',{diameterTop:0,diameterBottom:34,height:34,tessellation:8},scene);crown.position=V(x,y+144,z);crown.material=roof;
   }else if(f.id==='LOC_CAP_MAGE_TOWER'){
-   tower(x,z,y,98,16,mat('mage','#858aa8'));tower(x,z,y+65,48,8,mat('mage','#858aa8'));
+   tower(x,z,y,118,17,mat('mage','#777e9e'));tower(x,z,y+80,58,8.5,mat('mage','#777e9e'));
   }else{
    const m=MeshBuilder.CreateBox(f.id,{width:f.footprintM[0],height:f.heightM,depth:f.footprintM[1]},scene);m.position=V(x,y+f.heightM/2,z);m.material=stone;m.checkCollisions=true;
   }
@@ -370,7 +372,8 @@ function mount3D(){
   const barrier=MeshBuilder.CreateBox('closure:'+id,{width:12,height:3,depth:2},scene);barrier.position=V(x,y+1.5,z);barrier.material=closureMat;barrier.checkCollisions=true;barrier.setEnabled(false);closureMeshes.set(id,barrier);
  }
  mountStage='camera';
- const target=V(mx,my+28,mz),orbit=new ArcRotateCamera('capital-orbit',-Math.PI/2.2,.92,2850,target,scene);orbit.minZ=.5;orbit.lowerRadiusLimit=180;orbit.upperRadiusLimit=4800;orbit.wheelPrecision=5;orbit.panningSensibility=850;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
+ const castleNode=nodeById('castle'),[cx,cz]=toLocal(castleNode.position),cy=elevationAt(...castleNode.position);
+ const target=V((mx+cx)*.5,(my+cy)*.5+30,(mz+cz)*.5),orbit=new ArcRotateCamera('capital-orbit',Math.PI/2,.82,2450,target,scene);orbit.minZ=.5;orbit.lowerRadiusLimit=180;orbit.upperRadiusLimit=4800;orbit.wheelPrecision=5;orbit.panningSensibility=850;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
  let walk=null;const pressed=new Set();
  const keydown=e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code)){pressed.add(e.code);if(walk)e.preventDefault();}};
  const keyup=e=>pressed.delete(e.code);window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);
