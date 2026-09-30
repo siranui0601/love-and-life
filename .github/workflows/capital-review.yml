@@ -1,0 +1,32 @@
+name: Capital Review
+
+on:
+  pull_request:
+    paths:
+      - "public/capital-review/**"
+      - "test/capital-review.test.mjs"
+      - ".github/workflows/capital-review.yml"
+      - "public/world-blueprint/geography.js"
+  push:
+    branches: [main]
+    paths:
+      - "public/capital-review/**"
+      - "test/capital-review.test.mjs"
+      - ".github/workflows/capital-review.yml"
+      - "public/world-blueprint/geography.js"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: |
+          node --check public/capital-review/capital-data.js
+          node --check public/capital-review/capital-routing.js
+          node --check public/capital-review/review.js
+      - name: Capital spatial contracts
+        run: node --test test/capital-review.test.mjs

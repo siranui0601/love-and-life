@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#172d32">
+  <meta name="description" content="王都の実寸レベルデザイン。街路、地区、高低差、生活導線と事件による経路変化を同じ空間でレビュー。">
+  <link rel="icon" href="data:,">
+  <title>王都 — 実寸レベルデザイン | TRPG（仮）</title>
+  <link rel="stylesheet" href="/capital-review/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/babylonjs@9.25.0/babylon.js"></script>
+  <script type="module" src="/capital-review/review.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="/world-blueprint/" aria-label="世界地図へ">TRPG<span>WORLD DESIGN / 01</span></a>
+    <div class="heading"><p class="eyebrow">CAPITAL · AUTHORED CORE</p><h1>王都 <span>街のかたちを、歩いて確かめる。</span></h1></div>
+    <a class="atlas-link" href="/world-blueprint/">世界地図へ ↗</a>
+  </header>
+  <main>
+    <section class="workspace" aria-label="王都の空間レビュー">
+      <div class="toolbar">
+        <div class="tabs" role="tablist" aria-label="レビュー表示">
+          <button id="view-map" role="tab" aria-selected="true" aria-controls="map-panel">01 設計図</button>
+          <button id="view-3d" role="tab" aria-selected="false" aria-controls="scene-panel">02 3D・歩行</button>
+        </div>
+        <div class="scale-summary"><b id="core-area">6.50</b> km² <span>中核市街 / 実寸 1:1</span></div>
+      </div>
+      <section id="map-panel" class="viewport" role="tabpanel" aria-labelledby="view-map">
+        <svg id="capital-map" viewBox="0 0 1100 900" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="王都の地区・街路・河川・施設を示す地図。ドラッグで移動、ホイールで拡大。"></svg>
+        <div class="map-tools"><button id="zoom-in" aria-label="地図を拡大">＋</button><button id="zoom-out" aria-label="地図を縮小">−</button><button id="reset-map">中核市街</button><button id="envelope-map">活動圏</button></div>
+        <div class="north">N<span>↑</span></div>
+        <div class="map-caption"><span id="map-scale"></span><span>南西原点 · x 東 / y 北 · km</span></div>
+      </section>
+      <section id="scene-panel" class="viewport" role="tabpanel" aria-labelledby="view-3d" hidden>
+        <canvas id="greybox" tabindex="0" aria-label="王都の3D greybox。歩行開始後はWASDまたは矢印キーで移動、ドラッグで方向を変えます。"></canvas>
+        <p id="scene-loading" class="scene-message" role="status">3D表示を準備しています…</p>
+        <div class="scene-tools"><button id="walk-start">選択地点から歩く</button><button id="walk-stop">俯瞰に戻る</button><button id="focus-castle">王城を見る</button></div>
+        <div class="walk-pad" aria-label="タッチ歩行操作"><button data-walk="ArrowUp" aria-label="前へ">↑</button><div><button data-walk="ArrowLeft" aria-label="左へ">←</button><button data-walk="ArrowDown" aria-label="後ろへ">↓</button><button data-walk="ArrowRight" aria-label="右へ">→</button></div></div>
+        <div class="telemetry" id="telemetry" aria-live="off">俯瞰：ドラッグで回転 / ホイールで拡大</div>
+      </section>
+      <div class="map-bottom"><div class="legend"><span><i class="primary"></i>大通り</span><span><i class="secondary"></i>生活路</span><span><i class="water"></i>河川</span><span><i class="route"></i>選択経路</span><span><i class="closure"></i>通行制限</span></div><button id="export">設計データ ↓</button></div>
+      <section class="rationale"><div><p class="eyebrow">THE CITY HAS A REASON</p><h2>高台の王権、街道の市場、河岸の暮らし。</h2></div><p>交易の荷が西門を通り、市場で分かれ、下層と亜人街へ届く。王城を見失っても魔術塔が方角を伝える。橋を渡るか、生活路を回るか。時刻・天候・事件が、同じ街の歩き方を変える。</p></section>
+    </section>
+    <aside class="sidebar" aria-label="経路と状態の設定">
+      <section class="panel routes-panel">
+        <p class="eyebrow">01 / WALK THE NETWORK</p><h2>道を選ぶ</h2>
+        <div class="route-fields"><label>出発<select id="route-from"></select></label><span>→</span><label>目的地<select id="route-to"></select></label></div>
+        <div id="route-options" aria-live="polite"></div>
+        <p class="note">徒歩 1.4m/s＋上り勾配の計画補正。これは都市内の実寸歩行レビュー値で、広域R06等のmacro時間とは別です。</p>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">02 / SAME STREETS, DIFFERENT DAYS</p><h2>街の状態</h2>
+        <div class="two-fields"><label>天候<select id="weather"><option value="clear">晴れ</option><option value="rain">雨</option><option value="flood">増水</option><option value="fog">霧</option><option value="wind">強風</option></select></label><label>時刻<select id="hour"><option value="12">昼 12:00</option><option value="7">朝 07:00</option><option value="20">夜 20:00</option></select></label></div>
+        <label class="full-label">社会的な通行条件<select id="access"><option value="public">一般来訪者</option><option value="permitted">紹介・通行許可あり</option></select></label>
+        <details id="events-controls"><summary>事件の空間変化 <span>T10 / T11 / T16 / T17</span></summary><div id="event-fields"></div><p class="note">因果状態を手動でレビューします。旧版の固定日数で事件を発生させません。</p></details>
+        <div id="state-notes" class="state-notes" aria-live="polite"></div>
+      </section>
+      <section class="panel">
+        <p class="eyebrow">03 / READ THE CITY</p><h2>重ねて見る</h2>
+        <div class="layer-switches"><label><input id="layer-districts" type="checkbox" checked>地区</label><label><input id="layer-buildings" type="checkbox" checked>街区密度</label><label><input id="layer-facilities" type="checkbox" checked>主要施設</label><label><input id="layer-elevation" type="checkbox">標高</label><label><input id="layer-sightlines" type="checkbox" checked>ランドマーク視線・圧縮/解放</label><label><input id="layer-world" type="checkbox">外部街道</label></div>
+        <label class="full-label">NPCの生活導線<select id="npc-flow"><option value="">すべての生活</option></select></label>
+        <div id="flow-note" class="note"></div>
+      </section>
+      <section class="panel inspector"><p class="eyebrow">04 / PLACE & PURPOSE</p><div id="inspection" aria-live="polite"><h2>中央市場</h2><p>街の地点を選ぶと、施設や地区の役割を確認できます。</p></div></section>
+      <section class="panel spatial-panel"><p class="eyebrow">05 / THREE SCALES</p><dl><div><dt>中核市街</dt><dd id="core-metric"></dd></div><div><dt>活動圏</dt><dd id="envelope-metric"></dd></div><div><dt>atlasの輪郭</dt><dd id="silhouette-metric"></dd></div></dl><p class="note">48×36kmの暫定世界座標を継承。中核の実寸を圧縮せず、郊外と遠景の輪郭を分けて扱います。</p></section>
+    </aside>
+  </main>
+  <footer><p>実装レビュー / 地形・街路・衝突・生活導線の検証用 greybox</p><p>施設の正本：TRPGスプレッドシート（2026-10-01確認） · 座標・街区形状：設計提案</p><p>本編のセーブ・NPC AI・事件進行との接続は、共通IDと状態アダプターを通す次工程です。</p></footer>
+</body>
+</html>
