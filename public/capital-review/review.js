@@ -379,8 +379,11 @@ function mount3D(){
  const keyup=e=>pressed.delete(e.code);window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);
  function startWalk(){
   if(walk){walk.dispose();walk=null;}
-  const start=nodeById(document.getElementById('route-from').value)||market,[x,z]=toLocal(start.position),y=elevationAt(...start.position);
-  orbit.detachControl();walk=new UniversalCamera('walker',V(x,y+2.0,z),scene);walk.minZ=.12;walk.inertia=.25;walk.angularSensibility=3300;walk.checkCollisions=true;walk.applyGravity=true;walk.ellipsoid=V(.48,.9,.48);walk.ellipsoidOffset=V(0,.9,0);walk.keysUp=[];walk.keysDown=[];walk.keysLeft=[];walk.keysRight=[];walk.attachControl(canvas,true);scene.activeCamera=walk;document.body.classList.add('walking-capital');loading.hidden=true;
+  const requested=document.getElementById('route-from').value;
+  const innerGate={west_gate:'west_inside',south_gate:'south_inside',east_gate:'east_bend'};
+  const start=nodeById(innerGate[requested]||requested)||market,[x,z]=toLocal(start.position),y=elevationAt(...start.position);
+  const destination=nodeById(document.getElementById('route-to').value)||market,[tx,tz]=toLocal(destination.position),ty=elevationAt(...destination.position);
+  orbit.detachControl();walk=new UniversalCamera('walker',V(x,y+2.0,z),scene);walk.minZ=.12;walk.inertia=.25;walk.angularSensibility=3300;walk.checkCollisions=true;walk.applyGravity=true;walk.ellipsoid=V(.48,.9,.48);walk.ellipsoidOffset=V(0,.9,0);walk.keysUp=[];walk.keysDown=[];walk.keysLeft=[];walk.keysRight=[];walk.setTarget(V(tx,ty+2,tz));walk.attachControl(canvas,true);scene.activeCamera=walk;document.body.classList.add('walking-capital');loading.hidden=true;
  }
  function stopWalk(){if(walk){walk.detachControl();walk.dispose();walk=null;}scene.activeCamera=orbit;orbit.attachControl(canvas,true);document.body.classList.remove('walking-capital');}
  document.getElementById('walk-start').onclick=startWalk;document.getElementById('walk-stop').onclick=stopWalk;
