@@ -22,3 +22,8 @@ code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em}
  .walk-pad{right:8px;bottom:44px}
  #event-fields{grid-template-columns:1fr}
 }
+
+.route-character{margin-top:6px;font-size:9px;font-weight:700;letter-spacing:.04em;color:#7a674d}
+#capital-map [data-layer="beats"] .map-hit{cursor:help}
+#capital-map [data-layer="beats"] .map-hit:hover,
+#capital-map [data-layer="beats"] .map-hit:focus{filter:brightness(1.18) drop-shadow(0 0 4px #f3cc7a)}
