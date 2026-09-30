@@ -289,7 +289,10 @@ tabs.map.onclick=()=>switchTab('map');tabs.scene.onclick=()=>switchTab('scene');
 
 function mount3D(){
  const B=globalThis.BABYLON,canvas=document.getElementById('greybox'),loading=document.getElementById('scene-loading');
+ let mountStage='bootstrap';
+ try {
  if(!B){loading.textContent='Babylon.jsを読み込めませんでした。';return {resize(){},updateState(){}};}
+ mountStage='babylon-symbols';
  const {Engine,Scene,Vector3,Color3,Color4,HemisphericLight,DirectionalLight,ArcRotateCamera,UniversalCamera,MeshBuilder,Mesh,VertexData,StandardMaterial}=B;
  const V=(x,y,z)=>new Vector3(x,y,z),engine=new Engine(canvas,true,{antialias:true,adaptToDeviceRatio:true}),scene=new Scene(engine);
  scene.clearColor=new Color4(.68,.79,.84,1);scene.collisionsEnabled=true;scene.gravity=V(0,-.32,0);
@@ -297,6 +300,7 @@ function mount3D(){
  const sun=new DirectionalLight('sun',V(-.5,-1,.35),scene);sun.intensity=1.05;
  const mats=new Map(),mat=(key,hex,alpha=1)=>{if(mats.has(key))return mats.get(key);const m=new StandardMaterial(key,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=Color3.Black();m.alpha=alpha;mats.set(key,m);return m;};
  const stone=mat('stone','#aea895'),wallMat=mat('wall','#8e897d'),roadMat=mat('road','#a88e6e'),waterMat=mat('water','#4d8d9b',.88),closureMat=mat('closure','#b9433f',.72),gold=mat('gold','#c9a65d'),roof=mat('roof','#6f5b53'),marketMat=mat('market','#c6a45f');
+ mountStage='terrain';
  const coreB=bbox(CAPITAL.core.polygon),margin=.14,minX=coreB.minX-margin,maxX=coreB.maxX+margin,minY=coreB.minY-margin,maxY=coreB.maxY+margin,nx=64,nz=64;
  const positions=[],indices=[],normals=[],uvs=[];
  for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){
@@ -315,14 +319,17 @@ function mount3D(){
   }
   const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],closeArray:false,closePath:false,sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
  }
+ mountStage='roads';
  for(const e of CAPITAL.edges.filter(e=>e.class!=='world'))strip('road:'+e.id,e.points,Math.max(3,e.widthM),roadMat,.28);
  strip('river',CAPITAL.rivers[0].points,CAPITAL.rivers[0].widthM,waterMat,.36);
  function segmentBox(name,a,b,width,height,material){
   const [ax,az]=toLocal(a),[bx,bz]=toLocal(b),dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz),mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],y=elevationAt(...mid);
   const m=MeshBuilder.CreateBox(name,{width:len,height,depth:width},scene);m.position=V((ax+bx)/2,y+height/2,(az+bz)/2);m.rotation.y=-Math.atan2(dz,dx);m.material=material;m.checkCollisions=true;m.isPickable=false;return m;
  }
+ mountStage='walls';
  for(const w of CAPITAL.walls)segmentBox(w.id,w.points[0],w.points[1],w.widthM,w.heightM,wallMat);
  for(const b of CAPITAL.bridges){const m=segmentBox('bridge:'+b.id,b.points[0],b.points[1],b.widthM,1.1,stone);m.position.y=b.deckHeightM;}
+ mountStage='district-buildings';
  const districtMeshes=new Map();
  for(const d of CAPITAL.districts){
   const parts=[];
@@ -336,6 +343,7 @@ function mount3D(){
   const shaft=MeshBuilder.CreateCylinder('tower',{diameter:r*2,height:h,tessellation:8},scene);shaft.position=V(x,y+h/2,z);shaft.material=material;shaft.checkCollisions=true;
   const cap=MeshBuilder.CreateCylinder('spire',{diameterTop:0,diameterBottom:r*2.5,height:r*2.2,tessellation:8},scene);cap.position=V(x,y+h+r*1.1,z);cap.material=roof;return shaft;
  }
+ mountStage='facilities';
  for(const f of CAPITAL.facilities.filter(x=>x.footprintM[0]&&x.id!=='LOC_CAP_BIG_STORE')){
   const [x,z]=toLocal(f.buildingPosition),y=elevationAt(...f.buildingPosition);
   if(f.id==='LOC_CAP_CASTLE'){
@@ -348,17 +356,20 @@ function mount3D(){
    const m=MeshBuilder.CreateBox(f.id,{width:f.footprintM[0],height:f.heightM,depth:f.footprintM[1]},scene);m.position=V(x,y+f.heightM/2,z);m.material=stone;m.checkCollisions=true;
   }
  }
+ mountStage='market-and-gates';
  const market=nodeById('market'),[mx,mz]=toLocal(market.position),my=elevationAt(...market.position);
  const plaza=MeshBuilder.CreateCylinder('market-plaza',{diameter:175,height:.55,tessellation:48},scene);plaza.position=V(mx,my+.35,mz);plaza.material=marketMat;
  for(const g of CAPITAL.gates){
   const [x,z]=toLocal(g.position),y=elevationAt(...g.position);tower(x-11,z,y,24,5,stone);tower(x+11,z,y,24,5,stone);
  }
+ mountStage='closures';
  const closureMeshes=new Map();
  const closable=new Set([...Object.values(CAPITAL.encounterStates).flatMap(e=>e.blockedEdgeIds),...CAPITAL.bridges.filter(b=>b.floodClosed).map(b=>b.id)]);
  for(const id of closable){
   const e=CAPITAL.edges.find(x=>x.id===id);if(!e)continue;const a=e.points[0],b=e.points.at(-1),mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],[x,z]=toLocal(mid),y=elevationAt(...mid);
   const barrier=MeshBuilder.CreateBox('closure:'+id,{width:12,height:3,depth:2},scene);barrier.position=V(x,y+1.5,z);barrier.material=closureMat;barrier.checkCollisions=true;barrier.setEnabled(false);closureMeshes.set(id,barrier);
  }
+ mountStage='camera';
  const target=V(mx,my+28,mz),orbit=new ArcRotateCamera('capital-orbit',-Math.PI/2.2,.92,2850,target,scene);orbit.minZ=.5;orbit.lowerRadiusLimit=180;orbit.upperRadiusLimit=4800;orbit.wheelPrecision=5;orbit.panningSensibility=850;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
  let walk=null;const pressed=new Set();
  const keydown=e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code)){pressed.add(e.code);if(walk)e.preventDefault();}};
@@ -394,8 +405,15 @@ function mount3D(){
   document.getElementById('telemetry').textContent='徒歩 · '+(district?.name||'城門外')+' · 標高 '+fmt(elevationAt(wx,wy),1)+'m · 近い目印 '+landmarks[0].name+' '+fmt(distance([wx,wy],landmarks[0].position))+'m'+(fast?' · 走行':'');
  });
  engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
+ mountStage='render-loop';
  loading.hidden=true;
  return {resize(){engine.resize();},updateState,dispose(){window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);engine.dispose();}};
+ } catch (error) {
+  console.error('Capital 3D mount failed at '+mountStage,error);
+  loading.hidden=false;
+  loading.textContent='3D初期化エラー ['+mountStage+']：'+(error?.message||String(error));
+  return {resize(){},updateState(){}};
+ }
 }
 
 document.getElementById('export').onclick=()=>{
