@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CAPITAL,pointInPolygon,polygonArea} from '../public/capital-review/capital-data.js';
+import {CAPITAL,pointInPolygon,polygonArea,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives,edgeAvailability,normalizeState,pathMetrics,stateClosures} from '../public/capital-review/capital-routing.js';
 
 const facilityIds=new Set(CAPITAL.facilities.map(f=>f.id));
@@ -89,4 +89,28 @@ test('level-design contracts include distinct landmarks, compression/release nod
  const castle=node('castle'),market=node('market');
  assert.ok(castle&&market);
  assert.ok(CAPITAL.facilities.find(f=>f.id==='LOC_CAP_CASTLE').heightM>CAPITAL.facilities.find(f=>f.id==='LOC_CAP_OFFICE').heightM);
+});
+
+
+test('authored sight corridors stay physically clear enough for cognitive-map landmarks',()=>{
+ assert.ok(CAPITAL.sightCorridors.length>=3);
+ for(const corridor of CAPITAL.sightCorridors){
+  const target=node(corridor.target);assert.ok(target,'missing target '+corridor.target);
+  for(const b of CAPITAL.buildings.filter(x=>!x.facilityId)){
+   const radius=Math.hypot(b.widthM,b.depthM)/2;
+   const clearance=distanceToLine(b.position,corridor.points);
+   assert.ok(clearance>=radius+corridor.widthM/2-1e-6,
+    b.id+' blocks '+corridor.id+' at '+clearance.toFixed(2)+'m');
+  }
+ }
+});
+
+test('compression/release rhythm is encoded as gates/checkpoints feeding plazas rather than a uniform street field',()=>{
+ const compressions=CAPITAL.nodes.filter(n=>['gate','checkpoint','bridge-end'].includes(n.kind));
+ const releases=CAPITAL.nodes.filter(n=>n.kind==='plaza');
+ assert.ok(compressions.length>=10);
+ assert.ok(releases.length>=5);
+ assert.ok(CAPITAL.edges.some(e=>e.class==='alley'));
+ assert.ok(CAPITAL.edges.some(e=>e.class==='stairs'));
+ assert.ok(CAPITAL.edges.some(e=>e.class==='ceremonial'));
 });
