@@ -47,7 +47,7 @@
         <p class="eyebrow">01 / WALK THE NETWORK</p><h2>道を選ぶ</h2>
         <div class="route-fields"><label>出発<select id="route-from"></select></label><span>→</span><label>目的地<select id="route-to"></select></label></div>
         <div id="route-options" aria-live="polite"></div>
-        <p class="note">徒歩 1.4m/s＋上り勾配の計画補正。これは都市内の実寸歩行レビュー値で、広域R06等のmacro時間とは別です。</p>
+        <p class="note">経路時間は徒歩1.4m/s＋上り勾配の計画補正。3D歩行も通常1.4m/s、Shift時のみ4.5m/s。広域R06等のmacro時間とは別です。</p>
       </section>
       <section class="panel">
         <p class="eyebrow">02 / SAME STREETS, DIFFERENT DAYS</p><h2>街の状態</h2>
@@ -58,7 +58,7 @@
       </section>
       <section class="panel">
         <p class="eyebrow">03 / READ THE CITY</p><h2>重ねて見る</h2>
-        <div class="layer-switches"><label><input id="layer-districts" type="checkbox" checked>地区</label><label><input id="layer-buildings" type="checkbox" checked>街区密度</label><label><input id="layer-facilities" type="checkbox" checked>主要施設</label><label><input id="layer-elevation" type="checkbox">標高</label><label><input id="layer-sightlines" type="checkbox" checked>ランドマーク視線・圧縮/解放</label><label><input id="layer-world" type="checkbox">外部街道</label></div>
+        <div class="layer-switches"><label><input id="layer-districts" type="checkbox" checked>地区</label><label><input id="layer-buildings" type="checkbox" checked>街区密度</label><label><input id="layer-facilities" type="checkbox" checked>主要施設</label><label><input id="layer-elevation" type="checkbox">標高</label><label><input id="layer-sightlines" type="checkbox" checked>レベルデザイン（視線・圧縮/解放・避難/近道）</label><label><input id="layer-world" type="checkbox">外部街道</label></div>
         <label class="full-label">NPCの生活導線<select id="npc-flow"><option value="">すべての生活</option></select></label>
         <div id="flow-note" class="note"></div>
       </section>
