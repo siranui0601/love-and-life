@@ -72,7 +72,8 @@ for(const [id,name,x,floodClosed,widthM] of [['west_bridge','西河岸の低橋'
 function edge(from,to,name,cls='secondary',options={}) {
  const widths={primary:20,ceremonial:22,secondary:11,alley:5,service:8,stairs:4,roof:4,world:18};
  const id=options.id||`${from}__${to}`,points=[N(from).position,...(options.via||[]),N(to).position];
- const out={id,from,to,name,class:cls,widthM:widths[cls]||10,points,reason:options.reason||'地区の日常動線と街区境界に沿う。',...options};delete out.via;edges.push(out);return out;
+ const roles={primary:'critical-logistics',ceremonial:'orientation-ceremonial',secondary:'optional-life',service:'service-logistics',alley:'desire-path',stairs:'desire-shortcut',roof:'desire-shortcut',world:'world-connector'};
+ const out={id,from,to,name,class:cls,designRole:options.designRole||roles[cls]||'optional-life',widthM:widths[cls]||10,points,reason:options.reason||'地区の日常動線と街区境界に沿う。',...options};delete out.via;edges.push(out);return out;
 }
 const chain=(ids,name,cls,options)=>{for(let i=1;i<ids.length;i++)edge(ids[i-1],ids[i],name,cls,options);};
 chain(['west_gate','west_inside','stable','coach_court','west_cross','market_west','market'],'西門の交易大通り','primary',{reason:'交易荷車→駅馬車転回庭→中央市場。門の圧縮から広場へ。'});
@@ -132,6 +133,19 @@ const encounterStates={
 };
 const viewpoints=[{id:'west_castle',name:'西門から王城の高塔',position:N('west_inside').position,target:'castle',corridorWidthM:34,intent:'大通りの空隙から北の高塔を断続視認。'},{id:'south_castle',name:'南大橋から王城',position:N('south_bridge_north').position,target:'castle',corridorWidthM:42,intent:'橋の解放部から坂上の王城を視認。'},{id:'ajin_tower',name:'亜人街から宮廷魔術塔',position:N('ajin').position,target:'mage_tower',corridorWidthM:28,intent:'南東地区で第二の垂直軸を得る。'}];
 const sightCorridors=viewpoints.map(v=>({id:v.id,points:[v.position,N(v.target).position],widthM:v.corridorWidthM,target:v.target,intent:v.intent}));
+const levelDesignBeats=[
+ {id:'beat_west_throat',type:'compression',nodeId:'west_inside',name:'西門の圧縮',intent:'18m門を抜けた直後は城壁と検問で視界を絞り、駅馬車庭へ抜けた瞬間に開放する。'},
+ {id:'beat_coach_release',type:'release',nodeId:'coach_court',name:'駅馬車転回庭の解放',intent:'旅人・荷車・宿泊客が方向を選び直す最初の都市node。'},
+ {id:'beat_market_release',type:'release',nodeId:'market',name:'中央市場の大解放',intent:'複数地区と大通りが集束し、音・人流・視界の密度が最大になる認知上の中心。'},
+ {id:'beat_south_prospect',type:'prospect',nodeId:'south_bridge_north',name:'南大橋の眺望',intent:'水面の開放と高台の王城を同時に見せ、都市全体の高低差を一度で理解させる。'},
+ {id:'beat_royal_reveal',type:'reveal',nodeId:'royal_approach',name:'王城の再提示',intent:'市場の雑踏から坂へ折れた時、建物の切れ目越しに王城が再び正面化する。'},
+ {id:'beat_royal_gate',type:'social-gate',nodeId:'royal_gate',name:'王城の社会ゲート',intent:'敵レベルではなく身分・許可・関係性で進入可否が変わる政治的chokepoint。'},
+ {id:'beat_lower_refuge',type:'refuge',nodeId:'lower_court',name:'下層の共同井戸',intent:'狭い生活路の中に小さな滞留余地を置き、宿・孤児院・裏路地へ分岐する局所的refuge。'},
+ {id:'beat_roof_desire',type:'desire-path',nodeId:'roof_landing',name:'低屋根の近道',intent:'正規大通りを外れて地形と建物を読み、短い高低差を使って回り込む徒歩者のdesire path。'},
+ {id:'beat_ajin_choice',type:'decision',nodeId:'ajin',name:'亜人街の分岐核',intent:'東門・市場・下層へ別々に逃げられ、平時の生活とT16避難の両方を支える。'},
+ {id:'beat_quay_weather',type:'hazard-edge',nodeId:'warehouse',name:'河岸の天候edge',intent:'平時は最短の荷役路だが、増水時は低橋閉鎖によって高橋側へ人流を押し戻す。'},
+ {id:'beat_east_reveal',type:'reveal',nodeId:'east_bend',name:'東門の塔リビール',intent:'森側から入城後の折れで宮廷魔術塔を見せ、王城が見えにくい南東でも方角を回復させる。'}
+].map(b=>({...b,position:N(b.nodeId).position,source:'deep-research-application'}));
 
 // Shared deterministic greybox/collider footprints. A regular parcelling lattice is
 // jittered inside district boundaries, then carved by streets, plazas and water.
@@ -147,4 +161,4 @@ for(let x=21.18;x<23.92;x+=.041)for(let y=20.13;y<22.94;y+=.041){const p=[x+(rnd
 // Facility masses sit north of their exact anchor; the anchor remains the door.
 for(const f of facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE'))buildings.push({id:`building_${f.id}`,facilityId:f.id,position:f.buildingPosition,widthM:f.footprintM[0],depthM:f.footprintM[1],heightM:f.heightM,district:f.district,color:districts.find(d=>d.id===f.district)?.color});
 
-export const CAPITAL={version:'capital-vertical-slice-v1',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,buildings,contextWaterways:waterways,sourceNotes:['PDFのcoreと非門ランドマーク座標を保持。門だけ城壁へ最小距離投影。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。']};
+export const CAPITAL={version:'capital-vertical-slice-v1',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,buildings,contextWaterways:waterways,sourceNotes:['PDFのcoreと非門ランドマーク座標を保持。門だけ城壁へ最小距離投影。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};

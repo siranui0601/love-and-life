@@ -108,6 +108,7 @@ function renderWater(){
  }
 }
 const roadColours={primary:'#a56c38',ceremonial:'#c49a45',secondary:'#817c67',service:'#787665',alley:'#6c6960',stairs:'#6d5f78',roof:'#6d5f78',world:'#6f875b'};
+const roleLabels={'critical-logistics':'物流主動線','orientation-ceremonial':'方向づけ・儀礼軸','optional-life':'生活回遊路','service-logistics':'荷役・業務路','desire-path':'裏路地の近道','desire-shortcut':'高低差ショートカット','world-connector':'広域接続'};
 function renderRoads(){
  const s=state(),closures=new Map(stateClosures(s).map(c=>[c.edgeId,c.reason]));
  for(const e of CAPITAL.edges){
@@ -116,7 +117,7 @@ function renderRoads(){
   const p=el('path',{d:pathD(e.points),fill:'none',stroke:closed?'#b74f45':roadColours[e.class]||'#817c67',
    'stroke-width':Math.max(1.5,metresPx(e.widthM)),'stroke-linecap':'round','stroke-linejoin':'round',
    'stroke-dasharray':closed?'5 5':'none','data-edge':e.id},layers.roads);
-  title(p,e.name+(closed?' — 通行制限 '+closures.get(e.id):''));
+  title(p,e.name+' / '+(roleLabels[e.designRole]||e.designRole)+(closed?' — 通行制限 '+closures.get(e.id):''));
  }
  for(const c of CAPITAL.worldConnections){
   const p=el('path',{d:pathD(c.path),fill:'none',stroke:'#6f875b','stroke-width':3,'stroke-dasharray':'10 7','stroke-linecap':'round'},layers.world);
@@ -134,17 +135,21 @@ function renderWalls(){
  }
 }
 function renderBeats(){
- const releases=CAPITAL.nodes.filter(n=>n.kind==='plaza'),compressions=CAPITAL.nodes.filter(n=>n.kind==='gate'||n.kind==='checkpoint'||n.kind==='bridge-end');
- for(const n of releases){
-  const [x,y]=project(n.position);el('circle',{cx:x,cy:y,r:11,fill:'none',stroke:'#d69b3d','stroke-width':2,'stroke-dasharray':'3 3'},layers.beats);
- }
- for(const n of compressions){
-  const [x,y]=project(n.position);el('rect',{x:x-7,y:y-7,width:14,height:14,fill:'none',stroke:'#765c76','stroke-width':2,transform:'rotate(45 '+x+' '+y+')'},layers.beats);
- }
+ const beatColours={compression:'#765c76',release:'#d69b3d',prospect:'#497d83',refuge:'#5f7d63','desire-path':'#8b6e9b','social-gate':'#9d5550',decision:'#ae7d38','hazard-edge':'#b05f4d',reveal:'#8f783e'};
  for(const c of CAPITAL.sightCorridors||[]){
   const a=project(c.points[0]),b=project(c.points[1]),wide=Math.max(5,metresPx(c.widthM));
   el('path',{d:'M'+a[0]+','+a[1]+'L'+b[0]+','+b[1],stroke:'#d8c07a','stroke-width':wide,'stroke-opacity':.16,'stroke-linecap':'round',fill:'none'},layers.beats);
   const line=el('path',{d:'M'+a[0]+','+a[1]+'L'+b[0]+','+b[1],stroke:'#897340','stroke-width':1.4,'stroke-dasharray':'4 7',fill:'none'},layers.beats);title(line,c.intent);
+ }
+ for(const beat of CAPITAL.levelDesignBeats||[]){
+  const [x,y]=project(beat.position),colour=beatColours[beat.type]||'#6b6960';
+  const angular=['compression','social-gate','hazard-edge','decision'].includes(beat.type);
+  const marker=angular
+   ?el('rect',{x:x-7,y:y-7,width:14,height:14,fill:'#fff8df','fill-opacity':.82,stroke:colour,'stroke-width':2.4,transform:'rotate(45 '+x+' '+y+')'},layers.beats)
+   :el('circle',{cx:x,cy:y,r:8,fill:'#fff8df','fill-opacity':.82,stroke:colour,'stroke-width':2.4},layers.beats);
+  title(marker,beat.name+' — '+beat.intent);
+  activate(marker,()=>inspect(beat.name,'LEVEL DESIGN / '+beat.type,
+   '<p>'+beat.intent+'</p><p><strong>設計原則：</strong>'+beat.type+'</p><p class="note">Deep Researchを王都topologyへ適用した制作側の設計beat。正本の固有施設設定ではない。</p>'),beat.name);
  }
 }
 function renderFacilities(){
@@ -203,7 +208,7 @@ function updateRoutes(){
  if(!alternatives.length){host.innerHTML='<p class="note">この条件では徒歩経路がありません。通行許可・増水・事件状態を確認してください。</p>';selectedRoute=null;return;}
  alternatives.forEach((route,i)=>{
   const b=document.createElement('button');b.className='route-card';b.type='button';b.setAttribute('aria-pressed',i===0?'true':'false');
-  const m=route.metrics;b.innerHTML='<span class="route-title">'+(i===0?'主要経路':'代替経路 '+i)+'</span><div class="route-metrics"><strong>'+fmt(m.distanceM/1000,2)+' km</strong><small>徒歩 '+fmt(m.minutes)+'分 / 上り '+fmt(m.ascentM)+'m</small></div><p>'+route.edges.map(e=>e.name).filter((v,j,a)=>a.indexOf(v)===j).join(' → ')+'</p>';
+  const m=route.metrics,roles=route.edges.map(e=>roleLabels[e.designRole]||e.designRole).filter((v,j,a)=>a.indexOf(v)===j);b.innerHTML='<span class="route-title">'+(i===0?'主要経路':'代替経路 '+i)+'</span><div class="route-metrics"><strong>'+fmt(m.distanceM/1000,2)+' km</strong><small>徒歩 '+fmt(m.minutes)+'分 / 上り '+fmt(m.ascentM)+'m</small></div><div class="route-character">'+roles.join(' / ')+'</div><p>'+route.edges.map(e=>e.name).filter((v,j,a)=>a.indexOf(v)===j).join(' → ')+'</p>';
   b.onclick=()=>{host.querySelectorAll('.route-card').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');selectedRoute=route;renderSelectedRoute();};
   host.append(b);
  });
@@ -400,7 +405,7 @@ function mount3D(){
  updateState();
  scene.onBeforeRenderObservable.add(()=>{
   if(!walk)return;
-  const fast=pressed.has('ShiftLeft')||pressed.has('ShiftRight'),step=(fast?10:5.2)*engine.getDeltaTime()/1000,forward=walk.getForwardRay().direction.clone();forward.y=0;forward.normalize();
+  const fast=pressed.has('ShiftLeft')||pressed.has('ShiftRight'),step=(fast?4.5:CAPITAL.walkingSpeedMps)*engine.getDeltaTime()/1000,forward=walk.getForwardRay().direction.clone();forward.y=0;forward.normalize();
   const right=V(forward.z,0,-forward.x),move=V(0,0,0);
   if(pressed.has('KeyW')||pressed.has('ArrowUp'))move.addInPlace(forward);
   if(pressed.has('KeyS')||pressed.has('ArrowDown'))move.subtractInPlace(forward);
@@ -408,7 +413,7 @@ function mount3D(){
   if(pressed.has('KeyA')||pressed.has('ArrowLeft'))move.subtractInPlace(right);
   if(move.lengthSquared()>0)walk.cameraDirection.addInPlace(move.normalize().scale(step));
   const [wx,wy]=fromLocal([walk.position.x,walk.position.z]),district=CAPITAL.districts.find(d=>pointInPolygon([wx,wy],d.polygon)),landmarks=['castle','mage_tower','market'].map(id=>nodeById(id)).sort((a,b)=>distance([wx,wy],a.position)-distance([wx,wy],b.position));
-  document.getElementById('telemetry').textContent='徒歩 · '+(district?.name||'城門外')+' · 標高 '+fmt(elevationAt(wx,wy),1)+'m · 近い目印 '+landmarks[0].name+' '+fmt(distance([wx,wy],landmarks[0].position))+'m'+(fast?' · 走行':'');
+  document.getElementById('telemetry').textContent=(fast?'走行 4.5m/s':'徒歩 '+CAPITAL.walkingSpeedMps+'m/s')+' · '+(district?.name||'城門外')+' · 標高 '+fmt(elevationAt(wx,wy),1)+'m · 近い目印 '+landmarks[0].name+' '+fmt(distance([wx,wy],landmarks[0].position))+'m';
  });
  engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
  mountStage='render-loop';

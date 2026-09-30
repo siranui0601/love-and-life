@@ -114,3 +114,32 @@ test('compression/release rhythm is encoded as gates/checkpoints feeding plazas 
  assert.ok(CAPITAL.edges.some(e=>e.class==='stairs'));
  assert.ok(CAPITAL.edges.some(e=>e.class==='ceremonial'));
 });
+
+
+test('gate-to-market alternatives are spatially different, not cosmetic branches that immediately rejoin',()=>{
+ const jaccard=(a,b)=>{const A=new Set(a.edgeIds),B=new Set(b.edgeIds),union=new Set([...A,...B]);return [...A].filter(x=>B.has(x)).length/union.size;};
+ for(const gate of ['west_gate','south_gate','east_gate']){
+  const routes=findAlternatives(gate,'market',{access:'public'},CAPITAL,2);
+  assert.equal(routes.length,2);
+  assert.ok(jaccard(routes[0],routes[1])<.75,gate+' alternatives share too much topology');
+  assert.notEqual(routes[0].edges[0].designRole,undefined);
+ }
+});
+
+test('Deep Research spatial principles exist as inspectable beats rather than prose-only guidance',()=>{
+ const types=new Set(CAPITAL.levelDesignBeats.map(b=>b.type));
+ for(const required of ['compression','release','prospect','refuge','desire-path','social-gate','decision','hazard-edge','reveal'])
+  assert.ok(types.has(required),'missing '+required);
+ for(const beat of CAPITAL.levelDesignBeats){
+  assert.ok(node(beat.nodeId),'beat must resolve to a physical node: '+beat.id);
+  assert.deepEqual(beat.position,node(beat.nodeId).position);
+  assert.equal(beat.source,'deep-research-application');
+  assert.ok(beat.intent.length>12);
+ }
+});
+
+test('street hierarchy carries semantic traversal roles for logistics, daily life, shortcuts and ceremonial orientation',()=>{
+ const roles=new Set(CAPITAL.edges.map(e=>e.designRole));
+ for(const required of ['critical-logistics','orientation-ceremonial','optional-life','service-logistics','desire-path','desire-shortcut','world-connector'])
+  assert.ok(roles.has(required),'missing '+required);
+});
