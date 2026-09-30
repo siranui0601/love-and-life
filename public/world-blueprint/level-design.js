@@ -112,10 +112,15 @@ export function advanceDragonEcology(s,hours,{surfaceWater='scarce',prey='scarce
  if(s.life==='dead'||hours===0)return {...s};
  const wildPrey=prey==='abundant'?.082:prey==='some'?.044:prey==='scarce'?.016:0;
  const wildWater=surfaceWater==='abundant'?.16:surfaceWater==='scarce'?.022:0;
- const nutrition=clamp(s.nutrition+hours*(wildPrey-.10-(t13Escalated?.015:0)));
- const hydration=clamp(s.hydration+hours*(wildWater-.13-(t13Escalated?.025:0)));
- const deficient=(nutrition<=0?1:0)+(hydration<=0?1:0);
- const vitality=clamp(s.vitality-hours*deficient*.23);
+ const nutritionRate=wildPrey-.10-(t13Escalated?.015:0);
+ const hydrationRate=wildWater-.13-(t13Escalated?.025:0);
+ const nutrition=clamp(s.nutrition+hours*nutritionRate);
+ const hydration=clamp(s.hydration+hours*hydrationRate);
+ // Deficiency damage is integrated only AFTER each reserve actually crosses
+ // zero. One 100-hour update must have the same result as 100 hourly ticks.
+ const hungryHours=nutritionRate<0?Math.max(0,hours-s.nutrition/(-nutritionRate)):s.nutrition<=0?hours:0;
+ const thirstyHours=hydrationRate<0?Math.max(0,hours-s.hydration/(-hydrationRate)):s.hydration<=0?hours:0;
+ const vitality=clamp(s.vitality-(hungryHours+thirstyHours)*.23);
  return {...s,life:vitality>0?'alive':'dead',nutrition,hydration,vitality,
   elapsedWorldHours:s.elapsedWorldHours+hours};
 }
