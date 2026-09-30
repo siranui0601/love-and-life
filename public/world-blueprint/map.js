@@ -3,6 +3,7 @@ import {
  landUse,settlements,places,waterways,routes,alternatePaths,hazards,coast,
  landAreaKm2,seaAreaKm2,exportBlueprint
 } from './geography.js';
+import {levelZones,waterDragon} from './level-design.js';
 
 const NS='http://www.w3.org/2000/svg',W=REFERENCE.width,H=REFERENCE.height;
 const svg=document.getElementById('map'),inspector=document.getElementById('inspection');
@@ -40,7 +41,7 @@ gradient('desert-grad',['#e5ca96','#cfa472','#ae845c']);
 const clip=el('clipPath',{id:'land-mask'},defs);
 el('path',{d:polygon(mainland)},clip);
 const layers={};
-for(const name of ['sea','land','biomes','texture','mountains','forest','landuse','farms','rivers','roads','city-zones','architecture','hazards','hits','labels'])
+for(const name of ['sea','land','biomes','texture','mountains','forest','landuse','farms','rivers','roads','city-zones','architecture','hazards','level-design','ecology','hits','labels'])
  layers[name]=el('g',{'data-layer':name});
 for(const name of ['biomes','texture','mountains','forest','landuse','farms','rivers'])layers[name].setAttribute('clip-path','url(#land-mask)');
 for(const name of ['texture','mountains','forest','farms','architecture','labels'])layers[name].setAttribute('pointer-events','none');
@@ -263,7 +264,7 @@ for(const s of settlements){
  for(let y=y1+5;y<y2-3;y+=spacing)for(let x=x1+4;x<x2-3;x+=spacing){
   const xx=x+(rand(n*3+37)-.5)*spacing*.5,yy=y+(rand(n*7+44)-.5)*spacing*.5;
   if(!pointInPolygon(wr(xx,yy),s.points)){n++;continue;}
-  if(s.id==='temple'&&n%3===0){n++;continue;}
+  if(s.id==='temple'&&n%4!==0){n++;continue;}
   let ww=5+rand(n+11)*5,hh=3+rand(n+24)*5;
   if(s.id==='elf'){ww=3+rand(n)*4;hh=2+rand(n+25)*3;}
   roof(fp(xx),fp(yy),fp(ww),fp(hh),colours[(n%2)+2],group);n++;
@@ -310,13 +311,13 @@ roof(1115,134,35,28,'#b69582',layers.architecture);
 walls(by('crime'),'#927b66');
 for(const [x,y] of [[109,754],[131,733],[160,743],[187,776]])tower(x,y,7,19,'#625454',layers.architecture);
 scenicPath('M81 789H116V803H76Z',{fill:'#8b674e',stroke:'#d8be97','stroke-width':1.5},layers.architecture);
-for(const [x,y,w,h] of [[489,740,36,42],[548,711,32,56],[615,746,38,41],[645,784,30,34]]){
+for(const [x,y,w,h] of [[531,749,19,25],[556,730,23,29],[589,749,23,27],[611,784,20,21]]){
  scenicPath('M'+(x-w/2)+','+y+'v'+(-h)+'h'+w+'v'+h+' M'+(x-w/2)+','+(y-h)+'l'+(w/2)+',-9l'+(w/2)+',9',
   {stroke:'#c6b69a','stroke-width':5,fill:'none'},layers.architecture);
  for(const off of [-w*.28,w*.28])scenicPath('M'+(x+off)+','+(y-h+8)+'v'+(h-7),
   {stroke:'#f4e7c8','stroke-width':2},layers.architecture);
 }
-scenicPath('M470 807Q528 767 576 770T678 792',
+scenicPath('M510 788Q551 762 568 774T630 792',
  {stroke:'#c9b394','stroke-width':7,'stroke-dasharray':'14 9',fill:'none'},layers.architecture);
 for(const [x,y] of [[579,897],[602,908],[589,923]])roof(x,y,13,9,'#b57755',layers.architecture);
 for(const [x,y] of [[560,588],[580,574],[602,604],[575,625]])roof(x,y,16,10,'#b77c58',layers.architecture);
@@ -333,26 +334,85 @@ for(const danger of hazards){
   stroke:danger.color,'stroke-width':1.7,'stroke-dasharray':'4 8'},layers.hazards);
  hit(n,danger.name,'危険・通行条件','<p>'+danger.description+'</p>');
 }
+
+// A single living water-dragon in the south-eastern dried basin.
+// It is NOT a T-coded incident, NPC quest pin or an unlocked fast-travel node.
+for(const zone of levelZones){
+ const shape=scenicPath(polygon(zone.points),{fill:zone.color,'fill-opacity':.10,
+  stroke:zone.color,'stroke-width':2.4,'stroke-dasharray':'9 6'},layers['level-design']);
+ hit(shape,zone.name,'探索負荷・地形の読み取り（レベル固定なし）',
+  '<p><strong>事前に読める手掛かり：</strong>'+zone.reading+'</p>'+
+  '<p><strong>複数の対応：</strong>'+zone.choices+'</p>'+
+  (zone.links?.length?'<p>既存事件との接点：'+zone.links.join(' / ')+'</p>':'')+
+  (zone.note?'<p class="note">'+zone.note+'</p>':''));
+}
+// Old offshoot of the eastern river: a former wetland is now a cracked
+// intermittent riverbed, making the dragon's presence physically legible.
+scenicPath('M1305 635C1373 704 1344 746 1315 790S1232 849 1226 887',
+ {fill:'none',stroke:'#e2ca9c','stroke-width':13,opacity:.64,'stroke-linecap':'round'},layers.ecology);
+scenicPath('M1305 635C1373 704 1344 746 1315 790S1232 849 1226 887',
+ {fill:'none',stroke:'#719193','stroke-width':3,'stroke-dasharray':'9 8',opacity:.48},layers.ecology);
+el('ellipse',{cx:1235,cy:886,rx:96,ry:48,transform:'rotate(-9 1235 886)',
+ fill:'#c6b18e',stroke:'#927a59','stroke-width':1.8,opacity:.9},layers.ecology);
+el('ellipse',{cx:1214,cy:910,rx:43,ry:15,transform:'rotate(-12 1214 910)',
+ fill:'#729ca4',stroke:'#d8cc9d','stroke-width':2,opacity:.79},layers.ecology);
+for(const crack of [
+ 'M1176 854L1187 869L1173 883M1187 869L1198 860',
+ 'M1260 925L1276 938L1270 952M1276 938L1292 928',
+ 'M1310 856L1320 870L1338 864M1320 870L1317 890',
+ 'M1229 941L1245 949L1239 959'
+])scenicPath(crack,{fill:'none',stroke:'#8b7256','stroke-width':1.5,opacity:.65},layers.ecology);
+// Coiled serpentine body: distinct enough to recognize the dragon at map scale.
+const body='M1177 909C1162 880 1185 865 1203 866C1221 868 1219 892 1238 892C1259 891 1253 858 1275 853C1290 849 1306 866 1298 882';
+scenicPath(body,{fill:'none',stroke:'#294d59','stroke-width':21,'stroke-linecap':'round','stroke-linejoin':'round'},layers.ecology);
+scenicPath(body,{fill:'none',stroke:'#5ba4a9','stroke-width':14,'stroke-linecap':'round','stroke-linejoin':'round'},layers.ecology);
+scenicPath(body,{fill:'none',stroke:'#b3dbcd','stroke-width':3.5,opacity:.8,'stroke-linecap':'round'},layers.ecology);
+scenicPath('M1177 908L1158 911L1168 899Z',{fill:'#4b9b9f',stroke:'#294d59','stroke-width':1.8},layers.ecology);
+for(const [x,y,rotation] of [[1190,865,-9],[1203,865,14],[1222,880,36],[1241,889,68],[1260,858,7],[1283,854,19]]){
+ const g=el('g',{transform:'translate('+x+' '+y+') rotate('+rotation+')'},layers.ecology);
+ scenicPath('M-5 4L0 -11L7 4Z',{fill:'#7bc4c5',stroke:'#315f6a','stroke-width':1.2},g);
+}
+scenicPath('M1290 875Q1307 868 1318 878L1304 891L1289 887Z',
+ {fill:'#6cabb0',stroke:'#294954','stroke-width':2},layers.ecology);
+for(const path of ['M1293 873L1291 864L1302 872','M1302 875L1310 862L1312 879'])
+ scenicPath(path,{fill:'none',stroke:'#bad9ce','stroke-width':2.8,'stroke-linejoin':'round'},layers.ecology);
+el('circle',{cx:1309,cy:879,r:1.9,fill:'#e0c476',stroke:'#293e43','stroke-width':.8},layers.ecology);
+scenicPath('M1312 887Q1306 890 1301 889',{fill:'none',stroke:'#3b5254','stroke-width':1},layers.ecology);
+for(const [x,y] of [[1165,895],[1192,920],[1274,900],[1315,908]]){
+ scenicPath('M'+(x-7)+','+y+'q7,-4 14,0',{fill:'none',stroke:'#c7ded5','stroke-width':1.8,opacity:.61},layers.ecology);
+}
+const dragonHit=el('ellipse',{cx:1236,cy:883,rx:112,ry:66,fill:'transparent',
+ 'data-ecology':waterDragon.id},layers.ecology);
+hit(dragonHit,waterDragon.name,'固有生物 / 任意の出会い・トラブルではない',
+ '<p><strong>場所：</strong>'+waterDragon.habitat+'</p>'+
+ '<p>魚と水が足りず衰弱している。無視してもT番号の事件は発生せず、生き延びられなければこの一個体が死ぬだけ。</p>'+
+ '<p><strong>給餌・世話：</strong>大量の魚と水、回復時間、複数回の接触から信頼を得る。</p>'+
+ '<p><strong>力による服従：</strong>致死を避けて降伏させる。ただし服従後も栄養と水が必要。</p>'+
+ '<p><strong>騎乗：</strong>回復してから。河川・沿岸・開けた土地で高速移動。水分消耗、山稜・地下・世界樹の迷いという制限は残る。</p>'+
+ '<p><strong>因果の提案：</strong>T13減水と餌不足、T18避難、T19伝令に影響し得る。ただしどれも自動解決にはならない。</p>'+
+ '<p class="note">これは地図上の設計プレビュー。実ゲームのNPC生存タイマー・戦闘・騎乗処理はまだ接続していない。</p>');
+
 function label(name,x,y,type='town',width=0){
- const g=el('g',{'class':'map-label '+type},layers.labels),size=type==='terrain'?15:type==='minor'?11:17;
+ const g=el('g',{'class':'map-label '+type},layers.labels),size=type==='terrain'?15:type==='minor'?11:type==='ecology'?15:17;
  const w=width||Math.max(78,name.length*size+18);
- if(type==='town')el('rect',{x:x-w/2-2,y:y-18,width:w+4,height:28,rx:4,
-  fill:'#1e2928',stroke:'#c4a16b','stroke-width':1.6,opacity:.97},g);
+ if(type==='town'||type==='ecology')el('rect',{x:x-w/2-2,y:y-18,width:w+4,height:28,rx:4,
+  fill:type==='ecology'?'#244d55':'#1e2928',stroke:type==='ecology'?'#a4d4c7':'#c4a16b','stroke-width':1.6,opacity:.97},g);
  const t=el('text',{x,y,'font-size':size,'font-weight':700,'text-anchor':'middle',
-  fill:type==='town'?'#f7e8cc':type==='terrain'?'#284435':'#ffe2b2',
+  fill:type==='ecology'?'#d5f0e4':type==='town'?'#f7e8cc':type==='terrain'?'#284435':'#ffe2b2',
   stroke:type==='terrain'?'#d7ceaa':'none','stroke-width':.4,'paint-order':'stroke'},g);
  t.textContent=name;
 }
 for(const [n,x,y] of [
  ['交易都市',236,455],['王都',766,473],['黒嶺連合領',1183,166],['犯罪都市',181,798],
  ['北陵要塞',665,139],['ドワーフ洞窟',444,275],['田園の村',656,621],
- ['古代神殿',637,771],['辺境の村',665,930],['エルフの隠れ里',1363,443]
+ ['古代神殿',664,786],['辺境の村',665,930],['エルフの隠れ里',1363,443]
 ])label(n,x,y);
 for(const [n,x,y] of [
  ['北の山脈',660,246],['黒の山脈',1051,70],['緑の平原',508,367],
  ['翡翠の森',1047,538],['乾きの高原',1029,816],['黄昏の荒野',1069,1023],
  ['碧の海',57,611],['夕凪の海',299,989],['東の森海',1344,663]
 ])label(n,x,y,'terrain');
+label(waterDragon.name,1250,956,'ecology',127);
 for(const [n,x,y] of [['R06',457,431],['R12',634,548],['R13',881,424],['R14',1181,425],['R08',96,604],['R09',621,851],['R07',369,587]])
  label(n,x,y,'minor',42);
 
@@ -370,7 +430,7 @@ for(const [key,names] of [
  ['biomes',['biomes','texture','mountains','forest']],
  ['water',['rivers']],['roads',['roads']],
  ['activity',['landuse','farms']],['cities',['city-zones','architecture']],
- ['hazards',['hazards']],['labels',['labels']]
+ ['hazards',['hazards']],['level-design',['level-design']],['ecology',['ecology']],['labels',['labels']]
 ]){
  const input=document.getElementById('show-'+key);if(!input)continue;
  const toggle=()=>names.forEach(n=>layers[n].style.display=input.checked?'':'none');
@@ -441,9 +501,9 @@ fullButton?.addEventListener('click',()=>{
  requestAnimationFrame(scaleBar);
 });
 document.getElementById('export').onclick=()=>{
- const blob=new Blob([JSON.stringify(exportBlueprint(),null,2)],{type:'application/json'});
+ const blob=new Blob([JSON.stringify({...exportBlueprint(),levelZones,optionalEcology:[waterDragon]},null,2)],{type:'application/json'});
  const url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='world-blueprint-reference-rebuild.json';a.click();
+ a.href=url;a.download='world-blueprint-with-ecology.json';a.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 window.addEventListener('resize',scaleBar);apply();
