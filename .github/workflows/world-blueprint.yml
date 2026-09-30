@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "public/world-blueprint/**"
-      - "test/world-blueprint.test.mjs"
+      - "test/world-blueprint*.test.mjs"
       - ".github/workflows/world-blueprint.yml"
   workflow_dispatch:
 
@@ -23,9 +23,10 @@ jobs:
       - name: Syntax
         run: |
           node --check public/world-blueprint/geography.js
+          node --check public/world-blueprint/level-design.js
           node --check public/world-blueprint/map.js
       - name: Metric geometry and topological contracts
-        run: node --test test/world-blueprint.test.mjs
+        run: node --test test/world-blueprint.test.mjs test/world-blueprint-ecology.test.mjs
       - name: Ensure standalone page assets exist
         run: |
           test -f public/world-blueprint/index.html
