@@ -1,0 +1,9 @@
+const {chromium}=require('C:/Users/inaba/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async()=>{const b=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true,args:['--enable-webgl','--use-angle=swiftshader','--enable-unsafe-swiftshader']});const p=await b.newPage({viewport:{width:1440,height:1000}});p.on('pageerror',e=>console.log('ERROR',e.message));await p.goto('https://siranui.jp/capital-review/');await p.locator('#view-3d').click();await p.waitForTimeout(2000);console.log('LOADING',await p.locator('#scene-loading').textContent());
+console.log(await p.evaluate(()=>({engines:BABYLON.Engine.Instances.length,meshes:BABYLON.Engine.Instances[0]?.scenes[0]?.meshes.length})));
+const pairs=[['west_gate','market'],['south_gate','market'],['east_gate','market'],['market','castle'],['market','inn'],['market','ajin'],['ajin','east_gate'],['inn','castle']];
+await p.locator('#access').selectOption('permitted');
+for(const [from,to] of pairs){await p.locator('#route-from').selectOption(from);await p.locator('#route-to').selectOption(to);await p.locator('#walk-start').click();
+console.log('START',from,to,await p.locator('#telemetry').textContent());await p.keyboard.down('w');await p.waitForTimeout(2200);await p.keyboard.up('w');
+console.log('WALK',await p.evaluate(()=>{const c=BABYLON.Engine.Instances[0].scenes[0].activeCamera;return {position:c.position.asArray(),direction:c.getForwardRay().direction.asArray()}}));await p.screenshot({path:'C:/Users/inaba/capital-pass-3/baseline-'+from+'-'+to+'.png'});await p.locator('#walk-stop').click();}
+await p.goto('https://siranui.jp/world-blueprint/');console.log('WORLD',await p.title(),await p.locator('#forest-area').textContent());await b.close();})().catch(e=>{console.error(e);process.exit(1)});
