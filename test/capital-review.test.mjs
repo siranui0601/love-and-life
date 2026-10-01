@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CAPITAL,pointInPolygon,polygonArea,distanceToLine} from '../public/capital-review/capital-data.js';
+import {CAPITAL,pointInPolygon,polygonArea,distanceToLine,distance,elevationAt} from '../public/capital-review/capital-data.js';
 import {findAlternatives,edgeAvailability,normalizeState,pathMetrics,stateClosures} from '../public/capital-review/capital-routing.js';
 
 const facilityIds=new Set(CAPITAL.facilities.map(f=>f.id));
@@ -142,4 +142,89 @@ test('street hierarchy carries semantic traversal roles for logistics, daily lif
  const roles=new Set(CAPITAL.edges.map(e=>e.designRole));
  for(const required of ['critical-logistics','orientation-ceremonial','optional-life','service-logistics','desire-path','desire-shortcut','world-connector'])
   assert.ok(roles.has(required),'missing '+required);
+});
+
+// Regression + physical acceptance: graph connectivity alone missed the old geometry mutation.
+import {pathPolyline,shortestPath} from '../public/capital-review/capital-routing.js';
+import {sampleLine,moveWalker,activeBarriers,edgeHeightAt,surfaceAt,landmarkVisibility,obstacleAt} from '../public/capital-review/capital-spatial.js';
+import {trafficPlans,trafficAgents} from '../public/capital-review/capital-traffic.js';
+const majorPairs=[['west_gate','market'],['south_gate','market'],['east_gate','market'],['market','castle'],['market','lower_court'],['market','ajin'],['ajin','east_gate'],['inn','castle']];
+function assertPhysicalRoute(path,state){
+ assert.ok(path,'route missing');const ps=sampleLine(pathPolyline(path),3),barriers=activeBarriers(state);
+ for(let i=1;i<ps.length;i++){
+  const a=ps[i-1],b=ps[i],result=moveWalker(a,[(b[0]-a[0])*1000,(b[1]-a[1])*1000],state,{barriers});
+  assert.equal(result.blocked,null,'physical route blocked: '+result.blocked+' near '+b.join(','));
+ }
+}
+test('repeated 2D/NPC/state rendering cannot mutate roads or change metrics',()=>{
+ const before=JSON.stringify(CAPITAL.edges),expected=majorPairs.map(pair=>findAlternatives(...pair,{access:'permitted'},CAPITAL,1)[0].metrics);
+ for(let pass=0;pass<4;pass++){
+  for(const pair of majorPairs)for(const p of findAlternatives(...pair,{access:'permitted'},CAPITAL,3))pathPolyline(p);
+  for(const hour of [7,12,18])trafficAgents(trafficPlans({hour}),pass*100);
+ }
+ assert.equal(JSON.stringify(CAPITAL.edges),before);
+ assert.deepEqual(majorPairs.map(pair=>findAlternatives(...pair,{access:'permitted'},CAPITAL,1)[0].metrics),expected);
+ assert.ok(expected[0].distanceM>1200&&expected[0].distanceM<1250);
+});
+test('reverse routes measure uphill/downhill in travel order and include slopes between endpoints',()=>{
+ const path=shortestPath('market','castle',{access:'permitted'}),reverse={...path,nodes:[...path.nodes].reverse(),edges:[...path.edges].reverse()};
+ const up=pathMetrics(path),down=pathMetrics(reverse);
+ assert.ok(up.ascentM>60,'sample the hill crest, not just endpoint differences');
+ assert.ok(Math.abs(up.ascentM-down.descentM)<1e-7);
+ assert.ok(Math.abs(up.descentM-down.ascentM)<1e-7);
+ assert.ok(up.walkSeconds>down.walkSeconds);
+});
+test('every rendered road including facility doors, roof deck and world connections is physically traversable',()=>{
+ const state={access:'permitted'};
+ for(const e of CAPITAL.edges)assertPhysicalRoute({nodes:[e.from,e.to],edges:[e],edgeIds:[e.id]},state);
+});
+test('eight requested routes physically connect at eye height, rather than merely passing graph tests',()=>{
+ for(const pair of majorPairs)assertPhysicalRoute(shortestPath(...pair,{access:'permitted'}),{access:'permitted'});
+});
+test('public city services stay connected under all 16 simultaneous incident combinations and flood',()=>{
+ for(const weather of ['clear','flood'])for(let mask=0;mask<16;mask++){
+  const state={weather,access:'public',events:Object.fromEntries(['T10','T11','T16','T17'].map((id,i)=>[id,mask&(1<<i)?'active':'idle']))};
+  for(const facility of CAPITAL.facilities.filter(f=>!f.gateTag&&f.id!=='LOC_CAP_BIG_STORE'))assert.ok(shortestPath('market',facility.nodeId,state),weather+' mask '+mask+' '+facility.id);
+ }
+ const combined={weather:'flood',events:{T10:'active',T11:'active',T16:'active',T17:'active'}};
+ assertPhysicalRoute(shortestPath('market','orphanage',combined),combined);
+});
+test('bridges and roof routes have continuous real height, and river/closures prevent crossing',()=>{
+ const bridge=CAPITAL.bridges.find(b=>b.id==='south_bridge'),e=edge('south_bridge');
+ assert.ok(edgeHeightAt(e,bridge.position)>surfaceAt(node('south_quay').position).heightM+2);
+ const roof=CAPITAL.edges.find(e=>e.class==='roof');assert.ok(roof,'roof must exist as a physical surface');
+ assert.ok(edgeHeightAt(roof,roof.points[0])>elevationAt(...roof.points[0])+4);
+ const low=CAPITAL.bridges.find(b=>b.id==='west_bridge');assert.equal(obstacleAt(low.position,{weather:'flood'}),'closure:west_bridge');
+ const river=CAPITAL.rivers[0];assert.equal(obstacleAt([22.1,21.08],{}),'river');
+ const crossing=CAPITAL.bridges.find(b=>b.outside);assert.ok(crossing,'R06 needs a real exterior bridge');
+});
+test('landmarks are physically visible at reserved viewpoints and intermittently hidden along streets',()=>{
+ for(const v of CAPITAL.viewpoints)assert.equal(landmarkVisibility(v.position,v.target).visible,true,v.id);
+ for(const from of ['west_gate','south_gate','east_gate']){
+  const samples=sampleLine(pathPolyline(shortestPath(from,'market')),40),visible=samples.map(p=>landmarkVisibility(p,'castle').visible);
+  assert.ok(visible.includes(true)&&visible.includes(false),from+' must have conceal/reveal, not a permanently exposed castle');
+ }
+});
+test('street frontage encloses roads while negative spaces retain their authored footprints',()=>{
+ assert.ok(CAPITAL.buildings.filter(b=>b.frontageEdgeId).length>300);
+ for(const space of CAPITAL.negativeSpaces)for(const b of CAPITAL.buildings.filter(b=>!b.facilityId))
+  assert.ok(distance(b.position,space.position)>=space.radiusM+Math.hypot(b.widthM,b.depthM)/2,space.id+' invaded by '+b.id);
+});
+test('traffic changes with time, reflects at endpoints without warps and reroutes across incidents',()=>{
+ const morning=trafficPlans({hour:7}),noon=trafficPlans({hour:12}),evening=trafficPlans({hour:18});
+ assert.ok(morning.find(p=>p.id==='coach').count>noon.find(p=>p.id==='coach').count);
+ assert.ok(evening.find(p=>p.id==='guest').count>noon.find(p=>p.id==='guest').count);
+ for(const hour of [7,12,18]){
+  const plans=trafficPlans({hour}),a=trafficAgents(plans,300),b=trafficAgents(plans,300.1);
+  for(let i=0;i<a.length;i++)assert.ok(distance(a[i].position,b[i].position)<.15,'no endpoint teleport');
+ }
+ const evacuation=trafficPlans({events:{T16:'active'}});assert.ok(evacuation.filter(p=>p.oneWay).length>=3);
+ for(const p of evacuation.filter(p=>p.oneWay)){assert.equal(p.from,'ajin');assert.ok(p.route);assert.equal(p.route.edgeIds.includes('ajin_east__ajin'),false);}
+ const flood=trafficPlans({weather:'flood'});for(const p of flood)assert.ok(!p.route?.edgeIds.includes('west_bridge'));
+});
+test('state barriers span the full actual road width and manual movement cannot bypass a social boundary',()=>{
+ const closures=activeBarriers({events:{T11:'active'},access:'permitted'}),b=closures.find(b=>b.edgeId==='royal_gate__castle_court');
+ assert.ok(b.widthM>edge(b.edgeId).widthM);
+ const start=[22.568,22.025],result=moveWalker(start,[0,10],{access:'public'});
+ assert.ok(result.blocked,'public access must not slip through a district edge');
 });

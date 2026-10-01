@@ -1,5 +1,7 @@
 import {CAPITAL,toLocal,fromLocal,elevationAt,pointInPolygon,distance} from './capital-data.js';
 import {findAlternatives,pathPolyline,stateClosures,normalizeState} from './capital-routing.js';
+import {mountCapitalScene} from './capital-scene.js';
+import {trafficPlans,trafficPressure} from './capital-traffic.js';
 
 const SVG='http://www.w3.org/2000/svg',W=1100,H=900;
 const svg=document.getElementById('capital-map'),inspection=document.getElementById('inspection');
@@ -23,7 +25,7 @@ const el=(tag,attrs={},parent=svg)=>{
  parent.append(n);return n;
 };
 const layers={};
-for(const id of ['base','envelope','districts','elevation','buildings','river','roads','world','walls','beats','closures','flows','route','facilities','labels']){
+for(const id of ['base','envelope','districts','elevation','spaces','buildings','river','roads','world','walls','beats','closures','flows','route','facilities','labels']){
  layers[id]=el('g',{'data-layer':id});
 }
 function title(node,text){const t=document.createElementNS(SVG,'title');t.textContent=text;node.append(t);}
@@ -69,7 +71,7 @@ function renderBase(){
   const p=el('path',{d:polyD(d.polygon),fill:d.color,'fill-opacity':.45,stroke:'#6d746e','stroke-width':1.1},layers.districts);
   title(p,d.name+' — '+d.identity);
   activate(p,()=>inspect(d.name,'DISTRICT / '+d.ground,
-   '<p>'+d.identity+'</p><p><strong>街路幅の基準：</strong>'+d.streetWidthM+'m　<strong>建築密度：</strong>'+Math.round(d.density*100)+'%</p>'+
+   '<p>'+d.identity+'</p><p><strong>街路幅の基準：</strong>'+d.streetWidthM+'m　<strong>街区配置の密度係数：</strong>'+Math.round(d.density*100)+'%</p>'+
    '<p><strong>生活：</strong>'+d.npcJobs.join('・')+'</p><p><strong>状態：</strong>'+d.risk+'</p>'),d.name);
  }
 }
@@ -90,11 +92,17 @@ function renderElevation(){
   }
  }
 }
+function renderSpaces(){
+ for(const space of CAPITAL.negativeSpaces){
+  const [x,y]=project(space.position),c=el('circle',{cx:x,cy:y,r:metresPx(space.radiusM),fill:space.kind==='garden'?'#76976b':'#fbf1d3',stroke:'#887c61','stroke-width':.8},layers.spaces);
+  title(c,space.name+' — '+space.value);
+ }
+}
 function renderBuildings(){
  for(const b of CAPITAL.buildings){
   if(b.facilityId)continue;
   const [x,y]=project(b.position),w=Math.max(2,metresPx(b.widthM)),h=Math.max(2,metresPx(b.depthM));
-  el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,rx:.7,fill:b.color,stroke:'#5a5b52','stroke-width':.45,'fill-opacity':.72},layers.buildings);
+  el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,rx:.7,transform:'rotate('+((b.rotationRad||0)*180/Math.PI)+' '+x+' '+y+')',fill:b.color,stroke:'#5a5b52','stroke-width':.45,'fill-opacity':.72},layers.buildings);
  }
 }
 function renderWater(){
@@ -187,15 +195,16 @@ function renderClosures(){
 function drawPolyline(layer,pts,attrs){if(!pts?.length)return null;return el('path',{d:pathD(pts),fill:'none',...attrs},layer);}
 function renderNpcFlow(){
  layers.flows.replaceChildren();
- const chosen=document.getElementById('npc-flow').value,flows=chosen?CAPITAL.npcFlows.filter(f=>f.id===chosen):CAPITAL.npcFlows;
- for(const flow of flows){
-  const s=state();if(flow.access)s.access='permitted';
-  const route=findAlternatives(flow.from,flow.to,s,CAPITAL,1)[0];if(!route)continue;
-  const p=drawPolyline(layers.flows,pathPolyline(route),{stroke:'#9d6333','stroke-width':chosen?5:2.1,'stroke-opacity':chosen?.95:.28,'stroke-dasharray':chosen?'7 4':'3 7','stroke-linecap':'round'});
-  if(p)title(p,flow.name+' — '+flow.reason);
+ const chosen=document.getElementById('npc-flow').value,plans=trafficPlans(state()),pressure=trafficPressure(plans);
+ for(const e of CAPITAL.edges){const count=pressure.get(e.id)||0;if(count<7)continue;
+  const p=drawPolyline(layers.flows,e.points,{stroke:'#bd633b','stroke-width':Math.min(13,3+count/2),'stroke-opacity':.22,'stroke-linecap':'round'});if(p)title(p,'共有道路の交通負荷：'+count+'（レビュー代理人数）');
  }
- const f=CAPITAL.npcFlows.find(x=>x.id===chosen);
- document.getElementById('flow-note').textContent=f?f.reason:'商人・衛兵・役人・荷運び・住民などの生活導線を重ねています。';
+ for(const plan of plans.filter(p=>!chosen||p.id===chosen)){
+  const p=drawPolyline(layers.flows,plan.points,{stroke:plan.oneWay?'#a45145':'#9d6333','stroke-width':chosen?5:2.1,'stroke-opacity':chosen?.95:.28,'stroke-dasharray':chosen?'7 4':'3 7','stroke-linecap':'round'});
+  if(p)title(p,plan.name+' ×'+plan.count+' — '+plan.purpose);
+ }
+ const selected=plans.find(p=>p.id===chosen),count=plans.reduce((n,p)=>n+(p.route?p.count:0),0);
+ document.getElementById('flow-note').textContent=selected?selected.flow.reason+' / '+selected.purpose+' / '+selected.count+'人':state().hour+'時：'+count+'人の代理NPC。濃い帯はプレイヤーと共有する混雑街路。時刻・事件・増水で経路が変わります。';
 }
 function clearDynamic(){
  for(const k of ['river','roads','world','closures','route','facilities','labels'])layers[k].replaceChildren();
@@ -209,10 +218,10 @@ function updateRoutes(){
  alternatives.forEach((route,i)=>{
   const b=document.createElement('button');b.className='route-card';b.type='button';b.setAttribute('aria-pressed',i===0?'true':'false');
   const m=route.metrics,roles=route.edges.map(e=>roleLabels[e.designRole]||e.designRole).filter((v,j,a)=>a.indexOf(v)===j);b.innerHTML='<span class="route-title">'+(i===0?'主要経路':'代替経路 '+i)+'</span><div class="route-metrics"><strong>'+fmt(m.distanceM/1000,2)+' km</strong><small>徒歩 '+fmt(m.minutes)+'分 / 上り '+fmt(m.ascentM)+'m</small></div><div class="route-character">'+roles.join(' / ')+'</div><p>'+route.edges.map(e=>e.name).filter((v,j,a)=>a.indexOf(v)===j).join(' → ')+'</p>';
-  b.onclick=()=>{host.querySelectorAll('.route-card').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');selectedRoute=route;renderSelectedRoute();};
+  b.onclick=()=>{host.querySelectorAll('.route-card').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');selectedRoute=route;renderSelectedRoute();scene3d?.routeChanged?.();};
   host.append(b);
  });
- selectedRoute=alternatives[0];renderSelectedRoute();
+ selectedRoute=alternatives[0];renderSelectedRoute();scene3d?.routeChanged?.();
 }
 function renderSelectedRoute(){
  layers.route.replaceChildren();if(!selectedRoute)return;
@@ -221,7 +230,7 @@ function renderSelectedRoute(){
 function renderState(){
  clearDynamic();renderWater();renderRoads();renderClosures();renderFacilities();
  setLayer('world',layerVisible('world'));setLayer('buildings',layerVisible('buildings'));setLayer('districts',layerVisible('districts'));
- setLayer('elevation',layerVisible('elevation'));setLayer('beats',layerVisible('beats'));setLayer('facilities',layerVisible('facilities'));
+ setLayer('elevation',layerVisible('elevation'));setLayer('beats',document.getElementById('layer-sightlines').checked);setLayer('facilities',layerVisible('facilities'));
  updateRoutes();renderNpcFlow();renderStateNotes();scene3d?.updateState();
 }
 function renderStateNotes(){
@@ -241,7 +250,7 @@ function initControls(){
  document.getElementById('core-metric').textContent=CAPITAL.core.areaKm2.toFixed(2)+' km²';
  document.getElementById('envelope-metric').textContent=CAPITAL.activityEnvelope.areaKm2.toFixed(2)+' km²';
  document.getElementById('silhouette-metric').textContent=CAPITAL.atlasSilhouette.areaKm2.toFixed(2)+' km²';
- const choices=['west_gate','south_gate','east_gate','market','castle','mage_tower','office','orphanage','ajin','inn','stable'];
+ const choices=['west_gate','south_gate','east_gate','market','castle','mage_tower','office','orphanage','ajin','inn','stable','lower_court','south_cross','roof_stair','roof_landing','quay_refuge','world_R06','world_R11','world_R12','world_R13'];
  for(const id of choices){
   const n=nodeById(id);if(!n)continue;
   for(const select of [document.getElementById('route-from'),document.getElementById('route-to')]){
@@ -282,7 +291,7 @@ function initMapPan(){
  document.getElementById('reset-map').onclick=()=>fit(CAPITAL.core.polygon,52);document.getElementById('envelope-map').onclick=()=>fit(CAPITAL.activityEnvelope.polygon,24);
 }
 function renderAll(){
- renderBase();renderElevation();renderBuildings();renderBeats();initControls();renderState();initMapPan();fit(CAPITAL.core.polygon,52);
+ renderBase();renderElevation();renderSpaces();renderBuildings();renderBeats();initControls();renderState();initMapPan();fit(CAPITAL.core.polygon,52);
  inspect('中央市場','MAJOR NODE','<p>交易・買物・噂・地区間移動が交差する解放空間。門から市場へは意味の違う複数経路を持つ。</p>');
 }
 
@@ -294,137 +303,9 @@ function switchTab(which){
 tabs.map.onclick=()=>switchTab('map');tabs.scene.onclick=()=>switchTab('scene');
 
 function mount3D(){
- const B=globalThis.BABYLON,canvas=document.getElementById('greybox'),loading=document.getElementById('scene-loading');
- let mountStage='bootstrap';
- try {
- if(!B){loading.textContent='Babylon.jsを読み込めませんでした。';return {resize(){},updateState(){}};}
- mountStage='babylon-symbols';
- const {Engine,Scene,Vector3,Color3,Color4,HemisphericLight,DirectionalLight,ArcRotateCamera,UniversalCamera,MeshBuilder,Mesh,VertexData,StandardMaterial}=B;
- const V=(x,y,z)=>new Vector3(x,y,z),engine=new Engine(canvas,true,{antialias:true,adaptToDeviceRatio:true}),scene=new Scene(engine);
- scene.clearColor=new Color4(.68,.79,.84,1);scene.collisionsEnabled=true;scene.gravity=V(0,-.32,0);
- const hemi=new HemisphericLight('sky',V(0,1,0),scene);hemi.intensity=.85;hemi.groundColor=new Color3(.32,.34,.31);
- const sun=new DirectionalLight('sun',V(-.5,-1,.35),scene);sun.intensity=1.05;
- const mats=new Map(),mat=(key,hex,alpha=1)=>{if(mats.has(key))return mats.get(key);const m=new StandardMaterial(key,scene);m.diffuseColor=Color3.FromHexString(hex);m.specularColor=Color3.Black();m.alpha=alpha;mats.set(key,m);return m;};
- const stone=mat('stone','#b8b3a4'),wallMat=mat('wall','#77736b'),roadMat=mat('road','#8f7658'),ceremonialMat=mat('ceremonial','#b99a58'),waterMat=mat('water','#3f8ca0',.92),closureMat=mat('closure','#b9433f',.72),gold=mat('gold','#d1ae55'),roof=mat('roof','#66504a'),marketMat=mat('market','#c9a35a');
- mountStage='terrain';
- const coreB=bbox(CAPITAL.core.polygon),margin=.14,minX=coreB.minX-margin,maxX=coreB.maxX+margin,minY=coreB.minY-margin,maxY=coreB.maxY+margin,nx=64,nz=64;
- const positions=[],indices=[],normals=[],uvs=[];
- for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){
-  const wx=minX+(maxX-minX)*ix/nx,wy=minY+(maxY-minY)*iz/nz,[lx,lz]=toLocal([wx,wy]);
-  positions.push(lx,elevationAt(wx,wy),lz);uvs.push(ix/nx,iz/nz);
- }
- for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){const a=z*(nx+1)+x,b=a+1,c=a+nx+1,d=c+1;indices.push(a,c,b,b,c,d);}
- VertexData.ComputeNormals(positions,indices,normals);const vd=new VertexData();Object.assign(vd,{positions,indices,normals,uvs});
- const terrain=new Mesh('capital-terrain',scene);vd.applyToMesh(terrain);terrain.material=mat('ground','#9ca17a');terrain.checkCollisions=true;terrain.isPickable=false;
- function strip(name,pts,width,material,yOffset=.16){
-  const left=[],right=[];
-  for(let i=0;i<pts.length;i++){
-   const prev=pts[Math.max(0,i-1)],next=pts[Math.min(pts.length-1,i+1)],[x,z]=toLocal(pts[i]),[px,pz]=toLocal(prev),[nx2,nz2]=toLocal(next);
-   let dx=nx2-px,dz=nz2-pz,len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const ox=-dz*width/2,oz=dx*width/2,y=elevationAt(...pts[i])+yOffset;
-   left.push(V(x+ox,y,z+oz));right.push(V(x-ox,y,z-oz));
-  }
-  const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],closeArray:false,closePath:false,sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
- }
- mountStage='roads';
- for(const e of CAPITAL.edges.filter(e=>e.class!=='world'))strip('road:'+e.id,e.points,Math.max(3,e.widthM),e.class==='ceremonial'?ceremonialMat:roadMat,.28);
- strip('river',CAPITAL.rivers[0].points,CAPITAL.rivers[0].widthM,waterMat,.36);
- function segmentBox(name,a,b,width,height,material){
-  const [ax,az]=toLocal(a),[bx,bz]=toLocal(b),dx=bx-ax,dz=bz-az,len=Math.hypot(dx,dz),mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],y=elevationAt(...mid);
-  const m=MeshBuilder.CreateBox(name,{width:len,height,depth:width},scene);m.position=V((ax+bx)/2,y+height/2,(az+bz)/2);m.rotation.y=-Math.atan2(dz,dx);m.material=material;m.checkCollisions=true;m.isPickable=false;return m;
- }
- mountStage='walls';
- for(const w of CAPITAL.walls)segmentBox(w.id,w.points[0],w.points[1],w.widthM,w.heightM,wallMat);
- for(const b of CAPITAL.bridges){const m=segmentBox('bridge:'+b.id,b.points[0],b.points[1],b.widthM,1.1,stone);m.position.y=b.deckHeightM;}
- mountStage='district-buildings';
- const districtMeshes=new Map();
- for(const d of CAPITAL.districts){
-  const parts=[];
-  for(const b of CAPITAL.buildings.filter(x=>x.district===d.id&&!x.facilityId)){
-   const [x,z]=toLocal(b.position),y=elevationAt(...b.position),m=MeshBuilder.CreateBox('parcel',{width:b.widthM,height:b.heightM,depth:b.depthM},scene);
-   m.position=V(x,y+b.heightM/2,z);m.material=mat('d:'+d.id,d.color);m.isPickable=false;parts.push(m);
-  }
-  if(parts.length){const merged=Mesh.MergeMeshes(parts,true,true,undefined,false,true);merged.name='district-mass:'+d.id;merged.material=mat('d:'+d.id,d.color);merged.checkCollisions=true;districtMeshes.set(d.id,merged);}
- }
- function tower(x,z,y,h,r,material){
-  const shaft=MeshBuilder.CreateCylinder('tower',{diameter:r*2,height:h,tessellation:8},scene);shaft.position=V(x,y+h/2,z);shaft.material=material;shaft.checkCollisions=true;
-  const cap=MeshBuilder.CreateCylinder('spire',{diameterTop:0,diameterBottom:r*2.5,height:r*2.2,tessellation:8},scene);cap.position=V(x,y+h+r*1.1,z);cap.material=roof;return shaft;
- }
- mountStage='facilities';
- for(const f of CAPITAL.facilities.filter(x=>x.footprintM[0]&&x.id!=='LOC_CAP_BIG_STORE')){
-  const [x,z]=toLocal(f.buildingPosition),y=elevationAt(...f.buildingPosition);
-  if(f.id==='LOC_CAP_CASTLE'){
-   const keep=MeshBuilder.CreateBox('王城',{width:150,height:62,depth:118},scene);keep.position=V(x,y+31,z);keep.material=stone;keep.checkCollisions=true;
-   for(const [ox,oz] of [[-62,-46],[62,-46],[-62,46],[62,46]])tower(x+ox,z+oz,y,82,10,stone);
-   tower(x,z,y+19,108,13,stone);
-   const crown=MeshBuilder.CreateCylinder('王城主塔冠',{diameterTop:0,diameterBottom:34,height:34,tessellation:8},scene);crown.position=V(x,y+144,z);crown.material=roof;
-  }else if(f.id==='LOC_CAP_MAGE_TOWER'){
-   tower(x,z,y,118,17,mat('mage','#777e9e'));tower(x,z,y+80,58,8.5,mat('mage','#777e9e'));
-  }else{
-   const m=MeshBuilder.CreateBox(f.id,{width:f.footprintM[0],height:f.heightM,depth:f.footprintM[1]},scene);m.position=V(x,y+f.heightM/2,z);m.material=stone;m.checkCollisions=true;
-  }
- }
- mountStage='market-and-gates';
- const market=nodeById('market'),[mx,mz]=toLocal(market.position),my=elevationAt(...market.position);
- const plaza=MeshBuilder.CreateCylinder('market-plaza',{diameter:175,height:.55,tessellation:48},scene);plaza.position=V(mx,my+.35,mz);plaza.material=marketMat;
- for(const g of CAPITAL.gates){
-  const [x,z]=toLocal(g.position),y=elevationAt(...g.position);tower(x-11,z,y,24,5,stone);tower(x+11,z,y,24,5,stone);
- }
- mountStage='closures';
- const closureMeshes=new Map();
- const closable=new Set([...Object.values(CAPITAL.encounterStates).flatMap(e=>e.blockedEdgeIds),...CAPITAL.bridges.filter(b=>b.floodClosed).map(b=>b.id)]);
- for(const id of closable){
-  const e=CAPITAL.edges.find(x=>x.id===id);if(!e)continue;const a=e.points[0],b=e.points.at(-1),mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],[x,z]=toLocal(mid),y=elevationAt(...mid);
-  const barrier=MeshBuilder.CreateBox('closure:'+id,{width:12,height:3,depth:2},scene);barrier.position=V(x,y+1.5,z);barrier.material=closureMat;barrier.checkCollisions=true;barrier.setEnabled(false);closureMeshes.set(id,barrier);
- }
- mountStage='camera';
- const castleNode=nodeById('castle'),[cx,cz]=toLocal(castleNode.position),cy=elevationAt(...castleNode.position);
- const target=V((mx+cx)*.5,(my+cy)*.5+30,(mz+cz)*.5),orbit=new ArcRotateCamera('capital-orbit',Math.PI/2,.82,2450,target,scene);orbit.minZ=.5;orbit.lowerRadiusLimit=180;orbit.upperRadiusLimit=4800;orbit.wheelPrecision=5;orbit.panningSensibility=850;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
- let walk=null;const pressed=new Set();
- const keydown=e=>{if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code)){pressed.add(e.code);if(walk)e.preventDefault();}};
- const keyup=e=>pressed.delete(e.code);window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);
- function startWalk(){
-  if(walk){walk.dispose();walk=null;}
-  const requested=document.getElementById('route-from').value;
-  const innerGate={west_gate:'west_inside',south_gate:'south_inside',east_gate:'east_bend'};
-  const start=nodeById(innerGate[requested]||requested)||market,[x,z]=toLocal(start.position),y=elevationAt(...start.position);
-  const destination=nodeById(document.getElementById('route-to').value)||market,[tx,tz]=toLocal(destination.position),ty=elevationAt(...destination.position);
-  orbit.detachControl();walk=new UniversalCamera('walker',V(x,y+2.0,z),scene);walk.minZ=.12;walk.inertia=.25;walk.angularSensibility=3300;walk.checkCollisions=true;walk.applyGravity=true;walk.ellipsoid=V(.48,.9,.48);walk.ellipsoidOffset=V(0,.9,0);walk.keysUp=[];walk.keysDown=[];walk.keysLeft=[];walk.keysRight=[];walk.setTarget(V(tx,ty+2,tz));walk.attachControl(canvas,true);scene.activeCamera=walk;document.body.classList.add('walking-capital');loading.hidden=true;
- }
- function stopWalk(){if(walk){walk.detachControl();walk.dispose();walk=null;}scene.activeCamera=orbit;orbit.attachControl(canvas,true);document.body.classList.remove('walking-capital');}
- document.getElementById('walk-start').onclick=startWalk;document.getElementById('walk-stop').onclick=stopWalk;
- document.getElementById('focus-castle').onclick=()=>{stopWalk();const n=nodeById('castle'),[x,z]=toLocal(n.position);orbit.setTarget(V(x,elevationAt(...n.position)+35,z));orbit.radius=900;};
- for(const button of document.querySelectorAll('[data-walk]')){
-  const map={ArrowUp:'ArrowUp',ArrowDown:'ArrowDown',ArrowLeft:'ArrowLeft',ArrowRight:'ArrowRight'},code=map[button.dataset.walk]||button.dataset.walk;
-  button.onpointerdown=e=>{pressed.add(code);button.setPointerCapture(e.pointerId);e.preventDefault();};button.onpointerup=button.onpointercancel=()=>pressed.delete(code);button.onlostpointercapture=()=>pressed.delete(code);
- }
- function updateState(){
-  const s=state(),closed=new Set(stateClosures(s).map(x=>x.edgeId));for(const [id,m] of closureMeshes)m.setEnabled(closed.has(id));
-  scene.fogEnabled=s.weather==='fog';scene.fogMode=Scene.FOGMODE_EXP2;scene.fogDensity=.00048;scene.fogColor=new Color3(.68,.72,.70);
-  scene.clearColor=s.hour>=20||s.hour<6?new Color4(.07,.10,.15,1):s.weather==='rain'?new Color4(.45,.55,.58,1):new Color4(.68,.79,.84,1);
- }
- updateState();
- scene.onBeforeRenderObservable.add(()=>{
-  if(!walk)return;
-  const fast=pressed.has('ShiftLeft')||pressed.has('ShiftRight'),step=(fast?4.5:CAPITAL.walkingSpeedMps)*engine.getDeltaTime()/1000,forward=walk.getForwardRay().direction.clone();forward.y=0;forward.normalize();
-  const right=V(forward.z,0,-forward.x),move=V(0,0,0);
-  if(pressed.has('KeyW')||pressed.has('ArrowUp'))move.addInPlace(forward);
-  if(pressed.has('KeyS')||pressed.has('ArrowDown'))move.subtractInPlace(forward);
-  if(pressed.has('KeyD')||pressed.has('ArrowRight'))move.addInPlace(right);
-  if(pressed.has('KeyA')||pressed.has('ArrowLeft'))move.subtractInPlace(right);
-  if(move.lengthSquared()>0)walk.cameraDirection.addInPlace(move.normalize().scale(step));
-  const [wx,wy]=fromLocal([walk.position.x,walk.position.z]),district=CAPITAL.districts.find(d=>pointInPolygon([wx,wy],d.polygon)),landmarks=['castle','mage_tower','market'].map(id=>nodeById(id)).sort((a,b)=>distance([wx,wy],a.position)-distance([wx,wy],b.position));
-  document.getElementById('telemetry').textContent=(fast?'走行 4.5m/s':'徒歩 '+CAPITAL.walkingSpeedMps+'m/s')+' · '+(district?.name||'城門外')+' · 標高 '+fmt(elevationAt(wx,wy),1)+'m · 近い目印 '+landmarks[0].name+' '+fmt(distance([wx,wy],landmarks[0].position))+'m';
- });
- engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
- mountStage='render-loop';
- loading.hidden=true;
- return {resize(){engine.resize();},updateState,dispose(){window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);engine.dispose();}};
- } catch (error) {
-  console.error('Capital 3D mount failed at '+mountStage,error);
-  loading.hidden=false;
-  loading.textContent='3D初期化エラー ['+mountStage+']：'+(error?.message||String(error));
-  return {resize(){},updateState(){}};
- }
+ const loading=document.getElementById('scene-loading');
+ try{return mountCapitalScene(state,()=>selectedRoute);}
+ catch(error){console.error('Capital 3D',error);loading.hidden=false;loading.textContent='3D表示を開始できません：'+error.message;return {resize(){},updateState(){}};}
 }
 
 document.getElementById('export').onclick=()=>{

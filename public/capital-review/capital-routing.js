@@ -1,4 +1,5 @@
-import {CAPITAL,elevationAt,distance} from './capital-data.js';
+import {CAPITAL,distance} from './capital-data.js';
+import {sampleLine,edgeHeightAt} from './capital-surfaces.js';
 
 export const DEFAULT_CITY_STATE=Object.freeze({
  weather:'clear',
@@ -93,10 +94,12 @@ export function shortestPath(from,to,inputState={},capital=CAPITAL,banned=new Se
 export function pathMetrics(path,capital=CAPITAL){
  if(!path)return null;
  let distanceM=0,ascentM=0,descentM=0;
- for(const edge of path.edges){
+ for(let edgeIndex=0;edgeIndex<path.edges.length;edgeIndex++){
+  const edge=path.edges[edgeIndex];
+  const points=sampleLine(path.nodes[edgeIndex]===edge.from?edge.points:[...edge.points].reverse(),8);
   distanceM+=polylineLengthM(edge.points);
-  for(let i=1;i<edge.points.length;i++){
-   const a=elevationAt(...edge.points[i-1]),b=elevationAt(...edge.points[i]);
+  for(let i=1;i<points.length;i++){
+   const a=edgeHeightAt(edge,points[i-1]),b=edgeHeightAt(edge,points[i]);
    const delta=b-a;if(delta>0)ascentM+=delta;else descentM-=delta;
   }
  }
@@ -132,7 +135,7 @@ export function pathPolyline(path){
  const out=[];
  for(let i=0;i<path.edges.length;i++){
   const edge=path.edges[i],forward=path.nodes[i]===edge.from;
-  const pts=forward?edge.points:[...edge.points].reverse();
+  const pts=forward?[...edge.points]:[...edge.points].reverse();
   if(i)pts.shift();out.push(...pts);
  }
  return out;

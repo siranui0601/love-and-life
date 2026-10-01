@@ -1,0 +1,41 @@
+import {CAPITAL,distance,nearestOnSegment,distanceToLine,elevationAt,terrainBaseAt} from './capital-data.js';
+export function sampleLine(points,spacingM=8){
+ const out=[points[0]];
+ for(let i=1;i<points.length;i++){
+  const a=points[i-1],b=points[i],steps=Math.max(1,Math.ceil(distance(a,b)/spacingM));
+  for(let j=1;j<=steps;j++)out.push([a[0]+(b[0]-a[0])*j/steps,a[1]+(b[1]-a[1])*j/steps]);
+ }
+ return out;
+}
+export function locateOnLine(points,metres){
+ let remaining=Math.max(0,metres);
+ for(let i=1;i<points.length;i++){
+  const a=points[i-1],b=points[i],len=distance(a,b);
+  if(remaining<=len||i===points.length-1){const t=Math.min(1,remaining/(len||1));return {position:[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],direction:[b[0]-a[0],b[1]-a[1]],segment:i-1,t};}
+  remaining-=len;
+ }
+ return {position:points[0],direction:[0,1],segment:0,t:0};
+}
+export function edgeHeightAt(edge,position){
+ if(edge.bridgeId){
+  const bridge=CAPITAL.bridges.find(b=>b.id===edge.bridgeId),a=edge.points[0],b=edge.points.at(-1),total=distance(a,b),travel=distance(a,nearestOnSegment(position,a,b));
+  const rise=Math.min(1,travel/28,(total-travel)/28);
+  // Both ends meet their approach exactly; the deck clears the water in the middle.
+  return terrainBaseAt(...position)+.28+Math.max(0,rise)*(bridge.deckHeightM-terrainBaseAt(...bridge.position));
+ }
+ if(edge.surfaceOffsetsM){
+  const a=edge.points[0],b=edge.points.at(-1),t=distance(a,nearestOnSegment(position,a,b))/(distance(a,b)||1);
+  return elevationAt(...position)+.28+edge.surfaceOffsetsM[0]*(1-t)+edge.surfaceOffsetsM[1]*t;
+ }
+ return elevationAt(...position)+.28;
+}
+export function surfaceAt(position){
+ let best=null,min=Infinity;
+ for(const e of CAPITAL.edges){
+  const d=distanceToLine(position,e.points);
+  if(d<=e.widthM/2+.15&&d<min){best=e;min=d;}
+ }
+ let heightM=best?edgeHeightAt(best,position):elevationAt(...position);
+ if(!best?.bridgeId&&!best?.surfaceOffsetsM&&CAPITAL.negativeSpaces.some(s=>distance(position,s.position)<=s.radiusM))heightM=Math.max(heightM,elevationAt(...position)+.3);
+ return {heightM,edgeId:best?.id||null,edge:best};
+}

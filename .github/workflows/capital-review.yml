@@ -5,6 +5,7 @@ on:
     paths:
       - "public/capital-review/**"
       - "test/capital-review.test.mjs"
+      - "tools/trpg-world/**"
       - ".github/workflows/capital-review.yml"
       - "public/world-blueprint/geography.js"
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - "public/capital-review/**"
       - "test/capital-review.test.mjs"
+      - "tools/trpg-world/**"
       - ".github/workflows/capital-review.yml"
       - "public/world-blueprint/geography.js"
 
@@ -25,8 +27,6 @@ jobs:
           node-version: 22
       - name: Syntax check
         run: |
-          node --check public/capital-review/capital-data.js
-          node --check public/capital-review/capital-routing.js
-          node --check public/capital-review/review.js
+          for file in public/capital-review/*.js tools/trpg-world/*.mjs; do node --check "$file"; done
       - name: Capital spatial contracts
-        run: node --test test/capital-review.test.mjs
+        run: node --test test/capital-review.test.mjs test/world-blueprint.test.mjs test/world-blueprint-ecology.test.mjs
