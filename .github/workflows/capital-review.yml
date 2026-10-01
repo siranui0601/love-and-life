@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "public/capital-review/**"
-      - "test/capital-review.test.mjs"
+      - "test/capital-*.test.mjs"
       - "tools/trpg-world/**"
       - ".github/workflows/capital-review.yml"
       - "public/world-blueprint/geography.js"
@@ -12,7 +12,7 @@ on:
     branches: [main]
     paths:
       - "public/capital-review/**"
-      - "test/capital-review.test.mjs"
+      - "test/capital-*.test.mjs"
       - "tools/trpg-world/**"
       - ".github/workflows/capital-review.yml"
       - "public/world-blueprint/geography.js"

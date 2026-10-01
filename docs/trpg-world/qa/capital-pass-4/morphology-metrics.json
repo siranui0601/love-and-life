@@ -1,0 +1,14 @@
+{
+  "buildings": 3482,
+  "frontages": 1255,
+  "blocks": 48,
+  "courts": 61,
+  "suburbs": 56,
+  "roofCoverage": 0.34593539881519114,
+  "heights": {
+    "lower_court": 14.766960444087994,
+    "market": 27.524923879124938,
+    "office": 48.456146262667595,
+    "castle": 140.7416398033767
+  }
+}

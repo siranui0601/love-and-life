@@ -13,7 +13,7 @@ test('dense core has substantial roof coverage and a finer grain in lower neighb
  const avg=id=>{const bs=ordinary.filter(b=>b.district===id);return bs.reduce((n,b)=>n+b.widthM*b.depthM,0)/bs.length;};
  assert.ok(avg('lower')<avg('noble'));
  assert.ok(ordinary.filter(b=>b.frontageEdgeId).length>700);
- assert.ok(ordinary.every(b=>b.roofHeightM>=4));
+ assert.ok(ordinary.every(b=>b.roofHeightM>=4||(b.lowRoofFabric&&b.heightM<5)));
 });
 test('small block loops and protected courts create choices beyond principal streets',()=>{
  assert.ok(CAPITAL.urbanBlocks.length>=20);

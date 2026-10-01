@@ -23,6 +23,9 @@ try{
  await page.evaluate(()=>window.__capitalAudit.pauseRealTime());
  const invalidGround=await page.evaluate(async()=>{const {CAPITAL}=await import('/capital-review/capital-data.js');const names=new Set(['core-ground',...CAPITAL.negativeSpaces.map(s=>s.id)]);return BABYLON.Engine.Instances[0].scenes[0].meshes.filter(m=>names.has(m.name)).filter(m=>{const n=m.getVerticesData('normal');return !n||n.some(v=>!Number.isFinite(v))||n.filter((_,i)=>i%3===1).reduce((a,b)=>a+b,0)<=0;}).map(m=>m.name);});
  if(invalidGround.length)throw new Error('Invalid ground-facing normals: '+invalidGround.join(','));
+ const badRoadVertices=await page.evaluate(async()=>{const {CAPITAL,fromLocal}=await import('/capital-review/capital-data.js'),{edgeHeightAt}=await import('/capital-review/capital-surfaces.js'),scene=BABYLON.Engine.Instances[0].scenes[0],bad=[];
+  for(const e of CAPITAL.edges){const mesh=scene.getMeshByName('road:'+e.id),positions=mesh?.getVerticesData('position');if(!positions){bad.push(e.id+':missing');continue;}for(let i=0;i<positions.length;i+=3*53){const p=fromLocal([positions[i],positions[i+2]]),expected=edgeHeightAt(e,p);if(Math.abs(positions[i+1]-expected)>.001){bad.push(e.id);break;}}}return bad;});
+ if(badRoadVertices.length)throw Error('Street ribbon diverges from physical cross slope: '+badRoadVertices.join(','));report.roadSurfacesMatch=true;
  await page.screenshot({path:path.join(output,'overview.png')});
  for(const [name,angle]of [['south',Math.PI/2],['west',Math.PI],['east',0]]){await page.evaluate(a=>window.__capitalAudit.overview(a),angle);await page.screenshot({path:path.join(output,'overview-'+name+'.png')});}
  await page.locator('#route-from').selectOption('west_gate');await page.locator('#route-to').selectOption('market');await page.locator('#walk-route').click();

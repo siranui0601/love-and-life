@@ -362,6 +362,11 @@ for(const e of edges.filter(e=>e.class==='world'&&!e.bridgeId))for(let j=1;j<e.p
   suburbBuildings.push({id:'suburban_'+suburbBuildings.length,position:p,widthM,depthM,heightM:6+rnd()*6,roofHeightM:3+rnd()*3,rotationRad:Math.atan2(dy,dx),district:'outside',color:'#b6a58c',outside:true});
  }
 }
+// This short roof seam belongs to genuinely low houses, so reaching the deck
+// gives a different prospect instead of another corridor between tall walls.
+const lowRoofRoute=edges.find(e=>e.class==='roof');
+for(const b of buildings.filter(b=>!b.facilityId&&!b.royalPart))if(distanceToLine(b.position,lowRoofRoute.points)<45){b.heightM=3.3;b.roofHeightM=1;b.lowRoofFabric=true;}
+
 buildings.push(...suburbBuildings);
 buildings.push(...royalParts);
 // Facility masses sit north of their exact anchor; the anchor remains the door.
