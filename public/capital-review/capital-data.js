@@ -107,6 +107,79 @@ for(const [id,gateId,name,index,via] of [
  ['R13','east_gate','森方面',1,[[24.22,21.52]]],
 ]) { const route=routes.find(r=>r.id===id),joinPoint=route.path[index],nodeId=`world_${id}`;node(nodeId,name,joinPoint,'outside','world');const path=[N(gateId).position,...via,joinPoint];worldConnections.push({id,nodeId,gateId,name,path,joinPoint,atlasPath:route.path,hours:route.hours,status:'local-connector-proposal'});edge(gateId,nodeId,name,'world',{id:`connector_${id}`,via,reason:`既存${id}の折れ点へ同一座標で接続。以遠は従来atlas街道。`}); }
 
+// Approach facilities through their anchored south doors rather than through their masses.
+for(const [id,via] of [
+ ['lower_west__orphanage',[[21.61,20.73]]],
+ ['office__office_north',[[23.13,21.58],[23.13,21.84]]],
+ ['apothecary__market_west',[[22.15,21.32],[22.15,21.45]]],
+]) {const e=edges.find(e=>e.id===id);e.points=[N(e.from).position,...via,N(e.to).position];}
+// The R06 approach crosses the real distributary. A structural high bridge is required;
+// it is a proposed road structure, not a thirteenth canonical facility.
+const r06=edges.find(e=>e.id==='connector_R06'),ra=r06.points[1],rb=r06.points[2];
+let crossing;
+for(let i=1;i<rivers[0].points.length;i++){
+ const a=rivers[0].points[i-1],b=rivers[0].points[i],rx=rb[0]-ra[0],ry=rb[1]-ra[1],sx=b[0]-a[0],sy=b[1]-a[1],den=rx*sy-ry*sx;
+ if(!den)continue;const t=((a[0]-ra[0])*sy-(a[1]-ra[1])*sx)/den,u=((a[0]-ra[0])*ry-(a[1]-ra[1])*rx)/den;
+ if(t>=0&&t<=1&&u>=0&&u<=1){crossing=[ra[0]+rx*t,ra[1]+ry*t];break;}
+}
+if(crossing){
+ const len=distance(ra,rb),dx=(rb[0]-ra[0])/len,dy=(rb[1]-ra[1])/len,ends=[[-55,55].map(v=>[crossing[0]+dx*v,crossing[1]+dy*v])][0],id='approach_R06_bridge';
+ const b={id,position:crossing,points:ends,widthM:18,lengthM:110,deckHeightM:terrainBaseAt(...crossing)+2.8,floodClosed:false,reason:'西門外のR06街道が支流水路を跨ぐ高橋（設計提案）',outside:true};bridges.push(b);
+ node(id+'_north','西門外高橋の北詰',ends[0],'outside','bridge-end');node(id+'_south','西門外高橋の南詰',ends[1],'outside','bridge-end');
+ edges.splice(edges.indexOf(r06),1);
+ edge('west_gate',id+'_north','R06 西門外の街道','world',{id:'connector_R06',via:[ra]});
+ edge(id+'_north',id+'_south',b.reason,'world',{id,bridgeId:id,widthM:18});
+ edge(id+'_south','world_R06','R06 交易街道の合流','world',{id:'connector_R06_outside',via:[rb]});
+}
+
+// Meso loops: quiet information courts and a river terrace, not faster copies of the avenue.
+for(const args of [
+ ['market_back','市場裏の搬入口',[22.10,21.57],'market','junction'],
+ ['stall_court','露店裏の小庭',[22.23,21.60],'market','plaza'],
+ ['market_reveal','市場の屋根切れ',[22.34,21.60],'market','junction'],
+ ['clerk_court','文書路の中庭',[23.37,21.67],'administration','plaza'],
+ ['clerk_turn','行政街路の折れ',[23.18,21.71],'administration','junction'],
+ ['quay_refuge','河岸段丘の休み場',[22.48,20.98],'quay','plaza'],
+ ['bank_turn','荷役路の石段',[22.38,20.94],'quay','stairs'],
+]) node(...args);
+chain(['market_west','market_back','stall_court','market_reveal','royal_approach'],'露店裏の聞き込み回遊','alley',{value:'情報・NPC接触・王城の再発見',reason:'買物主動線を外れ、搬入口から小庭と屋根の切れ目へ。時間短縮を保証しない。'});
+chain(['east_cross','clerk_court','clerk_turn','office_north'],'文書中庭の静かな回遊','secondary',{widthM:7,value:'静かな歩行・公務坂の別進入',reason:'東の荷車大通りを離れて中庭を折れ、公務坂へ上る。'});
+chain(['south_quay','bank_turn','quay_refuge','warehouse'],'河岸段丘の見晴らし路','stairs',{widthM:4,value:'景観・荷役混雑回避',reason:'荷車道より高い河岸段丘。徒歩専用で、増水時の低橋とは別の眺望路。'});
+for(const e of edges.filter(e=>e.name==='下層の階段と低屋根歩廊')){
+ e.class=e.from==='roof_stair'?'roof':'stairs';e.value='河岸の見晴らし・荷車回避';
+ e.surfaceOffsetsM=e.from==='lower_court'?[0,4.5]:e.from==='roof_stair'?[4.5,4.5]:[4.5,0];
+}
+const negativeSpaces=[
+ ['market',88,'market','市場の開放','噂・買物・人流の再分配'],
+ ['coach_court',42,'court','駅馬車転回庭','朝の到着・荷車待機'],
+ ['royal_approach',40,'court','坂下の選択広場','王城を再提示・許可の判断'],
+ ['castle_court',48,'court','王城前庭','儀礼と公務路の合流'],
+ ['mage_court',30,'court','塔の観測庭','調査の迂回と眺望'],
+ ['lower_court',24,'well','共同井戸','庇と狭い生活路に囲まれた休息'],
+ ['ajin',34,'court','共有庭','避難先を選び直す'],
+ ['stall_court',17,'court','露店裏の小庭','店裏の聞き込み'],
+ ['clerk_court',20,'garden','文書中庭','荷車道から離れた静けさ'],
+ ['quay_refuge',18,'terrace','河岸段丘','水面と市街を読む'],
+].map(([nodeId,radiusM,kind,name,value])=>({id:'space_'+nodeId,nodeId,position:N(nodeId).position,radiusM,kind,name,value}));
+// Visual/traffic profiles are design proposals, never new canonical cultures or facilities.
+const districtProfiles={
+ castle:{paving:'#aaa795',roof:'#687489',vegetation:3,noise:'儀礼・足音',traffic:'衛兵と公務',light:'#efdca5'},
+ noble:{paving:'#a6ab96',roof:'#6c767d',vegetation:5,noise:'庭木・静かな生活',traffic:'徒歩中心',light:'#f2dda6'},
+ mage:{paving:'#8f96a4',roof:'#555d7d',vegetation:2,noise:'風・研究勤務',traffic:'受付と警備',light:'#b8c6ec'},
+ administration:{paving:'#9b9f97',roof:'#747779',vegetation:2,noise:'文書運搬・公務',traffic:'朝の役人',light:'#eadbb3'},
+ market:{paving:'#ae956c',roof:'#875a40',vegetation:1,noise:'売り声・荷車',traffic:'昼の混在',light:'#f4cd86'},
+ west:{paving:'#9e8968',roof:'#77664e',vegetation:1,noise:'車輪・到着客',traffic:'朝の駅馬車',light:'#e2bf88'},
+ lower:{paving:'#88745e',roof:'#695344',vegetation:1,noise:'生活・井戸',traffic:'徒歩と夕方の帰宅',light:'#d7b276'},
+ ajin:{paving:'#9f876b',roof:'#735a4a',vegetation:2,noise:'仕事と共有庭',traffic:'職人・住民の回遊',light:'#e8c08e'},
+ quay:{paving:'#8a9390',roof:'#636b69',vegetation:1,noise:'水・荷役',traffic:'荷運び・増水時迂回',light:'#c8d8c4'},
+};
+for(const d of districts)Object.assign(d,{profile:districtProfiles[d.id]});
+const outskirts=[
+ {id:'west_approach',gateId:'west_gate',position:[20.94,21.54],kind:'produce-yard',radiusM:55,name:'西門外の荷待ち庭'},
+ {id:'south_fields',gateId:'south_gate',position:[22.22,19.88],kind:'farmland',radiusM:110,name:'南門外の畑と農道'},
+ {id:'east_approach',gateId:'east_gate',position:[24.14,21.54],kind:'roadside',radiusM:50,name:'森街道の荷車待機場'},
+];
+
 const facilityDefs=[
  ['LOC_CAP_CASTLE','castle',[130,105],55,'royal'],['LOC_CAP_MAGE_TOWER','mage_tower',[38,38],98,'mage'],['LOC_CAP_MARKET','market',[0,0],0],['LOC_CAP_OFFICE','office',[60,42],25],['LOC_CAP_ORPHANAGE','orphanage',[38,28],13],['LOC_CAP_AJIN_QUARTER','ajin',[0,0],0],['LOC_CAP_LOWER_INN','inn',[26,22],13],['LOC_CAP_NEWSPAPER','newspaper',[22,16],12],['LOC_CAP_STABLE','stable',[60,35],12],['LOC_CAP_WEAPON_SHOP','weapon',[22,17],12],['LOC_CAP_APOTHECARY','apothecary',[20,16],11],['LOC_CAP_BIG_STORE','orphanage',[38,28],13],
 ];
@@ -150,7 +223,8 @@ const levelDesignBeats=[
 // Shared deterministic greybox/collider footprints. A regular parcelling lattice is
 // jittered inside district boundaries, then carved by streets, plazas and water.
 const buildings=[];let seed=20261001;const rnd=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
-const plazaRadii={market:100,castle:110,mage_tower:52,stable:62,office:60,orphanage:42,ajin:48,inn:32,noble_square:55,royal_approach:58,coach_court:48};
+const plazaRadii=Object.fromEntries(negativeSpaces.map(s=>[s.nodeId,s.radiusM]));
+Object.assign(plazaRadii,{market:100,castle:110,mage_tower:52,stable:62,office:60,orphanage:42,ajin:48,inn:32,noble_square:55,royal_approach:58,coach_court:48});
 for(let x=21.18;x<23.92;x+=.041)for(let y=20.13;y<22.94;y+=.041){const p=[x+(rnd()-.5)*.009,y+(rnd()-.5)*.009];if(!inside(p,corePolygon))continue;const d=districts.find(v=>inside(p,v.polygon));if(!d||rnd()>d.density)continue;const widthM=17+rnd()*12,depthM=17+rnd()*12,radius=Math.hypot(widthM,depthM)/2+4;
  if(distanceToLine(p,[...corePolygon,corePolygon[0]])<radius+8||distanceToLine(p,rivers[0].points)<radius+22)continue;
  if(edges.some(e=>distanceToLine(p,e.points)<radius+e.widthM/2+3))continue;
@@ -158,7 +232,45 @@ for(let x=21.18;x<23.92;x+=.041)for(let y=20.13;y<22.94;y+=.041){const p=[x+(rnd
  if(nodes.some(n=>distance(p,n.position)<radius+(plazaRadii[n.id]||12)))continue;
  buildings.push({id:`building_${buildings.length}`,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),district:d.id,color:d.color});
 }
+// Street-facing rows provide enclosure at eye height. Original jittered parcels become
+// the rear fabric; frontage follows curved paths rather than a global equal-spacing grid.
+const frontage=[];
+for(const e of edges.filter(e=>e.class!=='world'&&!e.bridgeId))for(let i=1;i<e.points.length;i++){
+ const a=e.points[i-1],b=e.points[i],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;
+ for(let along=22+rnd()*12;along<len-20;along+=24+rnd()*13)for(const side of [-1,1]){
+  const widthM=14+rnd()*9,depthM=13+rnd()*8,offset=e.widthM/2+depthM/2+3+rnd()*4;
+  const p=[a[0]+(dx*along-dy*offset*side)/1000,a[1]+(dy*along+dx*offset*side)/1000];
+  const d=districts.find(v=>inside(p,v.polygon)),radius=Math.hypot(widthM,depthM)/2+2;
+  if(!d||!inside(p,corePolygon)||rnd()>Math.min(.94,d.density+.23))continue;
+  if(distanceToLine(p,[...corePolygon,corePolygon[0]])<radius+8||distanceToLine(p,rivers[0].points)<radius+20)continue;
+  if(edges.some(other=>other!==e&&distanceToLine(p,other.points)<radius+other.widthM/2+2))continue;
+  if(sightCorridors.some(c=>distanceToLine(p,c.points)<radius+c.widthM/2))continue;
+  if(nodes.some(n=>distance(p,n.position)<radius+(plazaRadii[n.id]||12)))continue;
+  // Remove rear parcels that conflict with the authored street front.
+  if(frontage.some(q=>distance(p,q.position)<radius+Math.hypot(q.widthM,q.depthM)/2+2))continue;
+  for(let j=buildings.length-1;j>=0;j--)if(distance(p,buildings[j].position)<radius+Math.hypot(buildings[j].widthM,buildings[j].depthM)/2+2)buildings.splice(j,1);
+  frontage.push({id:'frontage_'+frontage.length,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:-Math.atan2(-dy,dx),district:d.id,color:d.color,frontageEdgeId:e.id});
+ }
+}
+buildings.push(...frontage);
 // Facility masses sit north of their exact anchor; the anchor remains the door.
 for(const f of facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE'))buildings.push({id:`building_${f.id}`,facilityId:f.id,position:f.buildingPosition,widthM:f.footprintM[0],depthM:f.footprintM[1],heightM:f.heightM,district:f.district,color:districts.find(d=>d.id===f.district)?.color});
 
-export const CAPITAL={version:'capital-vertical-slice-v1',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,buildings,contextWaterways:waterways,sourceNotes:['PDFのcoreと非門ランドマーク座標を保持。門だけ城壁へ最小距離投影。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
+const furnishings=[];
+function furnish(id,position,widthM,depthM,heightM,kind){
+ const radius=Math.hypot(widthM,depthM)/2+.5;
+ if(edges.some(e=>distanceToLine(position,e.points)<e.widthM/2+radius+1))return;
+ if(buildings.some(b=>distance(position,b.position)<radius+Math.hypot(b.widthM,b.depthM)/2))return;
+ furnishings.push({id,position,widthM,depthM,heightM,kind,color:kind==='stall'?'#ac7958':kind==='tree'?'#587353':'#a39c83'});
+}
+for(const space of negativeSpaces){
+ if(space.kind==='well')furnish('shared_well',[space.position[0]+.007,space.position[1]-.005],2.8,2.8,.9,'well');
+ if(space.kind==='market')for(let i=0;i<18;i++){const a=i/18*Math.PI*2;furnish('market_stall_'+i,[space.position[0]+Math.cos(a)*.058,space.position[1]+Math.sin(a)*.058],4,3,2.6,'stall');}
+ if(['court','garden'].includes(space.kind))for(let i=0;i<3;i++){const a=i*2.2;furnish(space.id+'_tree_'+i,[space.position[0]+Math.cos(a)*(space.radiusM-5)/1000,space.position[1]+Math.sin(a)*(space.radiusM-5)/1000],.6,.6,5,'tree');}
+}
+for(const o of outskirts)if(o.kind!=='farmland')for(let i=0;i<4;i++)furnish(o.id+'_shed_'+i,[o.position[0]+(i%2?1:-1)*(32+i*6)/1000,o.position[1]-Math.floor(i/2)*.025],12+i*2,11,6,'shed');
+
+export const CAPITAL={version:'capital-level-design-pass-3',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['PDFのcoreと非門ランドマーク座標を保持。門だけ城壁へ最小距離投影。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
+
+// Shared graph geometry is immutable. Renderers must copy when reversing/slicing paths.
+for(const e of edges){e.points.forEach(Object.freeze);Object.freeze(e.points);Object.freeze(e);}

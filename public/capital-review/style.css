@@ -27,3 +27,5 @@ code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em}
 #capital-map [data-layer="beats"] .map-hit{cursor:help}
 #capital-map [data-layer="beats"] .map-hit:hover,
 #capital-map [data-layer="beats"] .map-hit:focus{filter:brightness(1.18) drop-shadow(0 0 4px #f3cc7a)}
+
+.review-rate{display:flex;gap:5px;align-items:center;background:#fffdf2eb;padding:0 7px;border-radius:4px;font-size:10px}.review-rate select{width:105px;font-size:10px;min-height:30px;padding:3px;margin:0}.scene-tools{max-width:calc(100% - 28px)}
