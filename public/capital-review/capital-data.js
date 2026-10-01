@@ -208,6 +208,14 @@ for(const [i,e] of [...edges].entries()){
  }
 }
 
+// Wall maintenance and river labour produce distinct streets, rather than
+// interchangeable extra connections. Closed courts reward exploration, not speed.
+edge('west_inside','west_quay','西城壁沿いの見張り生活路','service',{widthM:5,via:[[21.22,21.35],[21.34,21.31]],designRole:'optional-life',value:'城壁・衛兵との接触、門内混雑回避'});
+edge('south_inside','lower_south','南城壁沿いの生活路','secondary',{widthM:5,via:[[22.09,20.23],[21.90,20.35],[22.00,20.44]],value:'周縁住宅・南門の方向回復'});
+edge('west_bridge_north','south_bridge_north','曲がる北河岸の荷役歩廊','service',{widthM:6,via:[[21.70,21.075],[21.93,21.155],[22.10,21.115]],value:'水面の景観・荷役接触、低橋閉鎖時の高橋接続'});
+for(const [from,id,p]of [['market_back','workshop_dead_end',[22.07,21.64]],['lower_west','lower_dead_end',[21.45,20.90]]]){node(id,'街区奥の袋小路中庭',p,N(from).district,'plaza');edge(from,id,'店裏・生活中庭への袋小路','alley',{widthM:4,value:'情報と住民への接触。通り抜け・時間短縮には使えない。'});}
+const nobleContour=edges.find(e=>e.id==='noble_square__noble_east');nobleContour.points=[N('noble_square').position,[22.04,22.31],[22.20,22.33],[22.32,22.29],N('noble_east').position];
+
 const negativeSpaces=[
  ['market',88,'market','市場の開放','噂・買物・人流の再分配'],
  ['coach_court',42,'court','駅馬車転回庭','朝の到着・荷車待機'],
@@ -221,6 +229,9 @@ const negativeSpaces=[
  ['clerk_court',20,'garden','文書中庭','荷車道から離れた静けさ'],
  ['quay_refuge',18,'terrace','河岸段丘','水面と市街を読む'],
 ].map(([nodeId,radiusM,kind,name,value])=>({id:'space_'+nodeId,nodeId,position:N(nodeId).position,radiusM,kind,name,value}));
+negativeSpaces.push(...urbanBlocks.map(b=>({id:'court_'+b.id,nodeId:nodes.find(n=>n.position===b.court).id,position:b.court,radiusM:b.radiusM,kind:'court',name:'街区内部の小庭',value:'幹線から離れた滞留と裏口の選択'})));
+for(const id of ['workshop_dead_end','lower_dead_end'])negativeSpaces.push({id:'space_'+id,nodeId:id,position:N(id).position,radiusM:7,kind:'court',name:'袋小路の中庭',value:'通り抜けない探索・住民との接触'});
+
 // Visual/traffic profiles are design proposals, never new canonical cultures or facilities.
 const districtProfiles={
  castle:{paving:'#aaa795',roof:'#687489',vegetation:3,noise:'儀礼・足音',traffic:'衛兵と公務',light:'#efdca5'},
@@ -243,7 +254,7 @@ const outskirts=[
 const facilityDefs=[
  ['LOC_CAP_CASTLE','castle',[310,190],88,'royal'],['LOC_CAP_MAGE_TOWER','mage_tower',[38,38],98,'mage'],['LOC_CAP_MARKET','market',[0,0],0],['LOC_CAP_OFFICE','office',[60,42],25],['LOC_CAP_ORPHANAGE','orphanage',[38,28],13],['LOC_CAP_AJIN_QUARTER','ajin',[0,0],0],['LOC_CAP_LOWER_INN','inn',[26,22],13],['LOC_CAP_NEWSPAPER','newspaper',[22,16],12],['LOC_CAP_STABLE','stable',[60,35],12],['LOC_CAP_WEAPON_SHOP','weapon',[22,17],12],['LOC_CAP_APOTHECARY','apothecary',[20,16],11],['LOC_CAP_BIG_STORE','orphanage',[38,28],13],
 ];
-const facilities=facilityDefs.map(([id,nodeId,footprintM,heightM,gateTag])=>{const n=N(nodeId);return {id,nodeId,name:id==='LOC_CAP_BIG_STORE'?'大店（白鈴孤児院用地・条件付き）':n.name,position:n.position,entrance:n.position,buildingPosition:[n.position[0],n.position[1]+(footprintM[1]/2+9)/1000],footprintM,heightM,district:n.district,gateTag,source:id==='LOC_CAP_WEAPON_SHOP'||id==='LOC_CAP_APOTHECARY'?'canonical-ID; proposed-position':id==='LOC_CAP_BIG_STORE'?'canonical conditional reuse of orphanage lot':'PDF anchor preserved',activeWhen:id==='LOC_CAP_BIG_STORE'?{event:'T10',state:'failed'}:id==='LOC_CAP_ORPHANAGE'?{unlessEvent:'T10',state:'failed'}:null};});
+const facilities=facilityDefs.map(([id,nodeId,footprintM,heightM,gateTag])=>{const n=N(nodeId);return {id,nodeId,name:id==='LOC_CAP_BIG_STORE'?'大店（白鈴孤児院用地・条件付き）':n.name,position:n.position,entrance:n.position,buildingPosition:[n.position[0],n.position[1]+(footprintM[1]/2+9)/1000],footprintM,heightM,district:n.district,gateTag,source:id==='LOC_CAP_WEAPON_SHOP'||id==='LOC_CAP_APOTHECARY'?'canonical-ID; proposed-position':id==='LOC_CAP_BIG_STORE'?'canonical conditional reuse of orphanage lot':id==='LOC_CAP_OFFICE'?'canonical-ID; upper-slope position proposed in pass 4':'PDF anchor inherited',activeWhen:id==='LOC_CAP_BIG_STORE'?{event:'T10',state:'failed'}:id==='LOC_CAP_ORPHANAGE'?{unlessEvent:'T10',state:'failed'}:null};});
 
 const npcFlows=[
  {id:'merchant',name:'商人',profession:'merchant',from:'world_R06',to:'market',reason:'交易都市の荷を中央市場へ運ぶ。'},
