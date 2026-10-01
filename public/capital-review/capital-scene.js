@@ -1,6 +1,7 @@
 import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,pointInPolygon} from './capital-data.js';
 import {pathPolyline,polylineLengthM} from './capital-routing.js';
 import {sampleLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
+import {advanceElapsed} from './capital-clock.js';
 import {trafficPlans,trafficAgents} from './capital-traffic.js';
 
 export function mountCapitalScene(getState,getRoute){
@@ -151,10 +152,10 @@ export function mountCapitalScene(getState,getRoute){
  document.getElementById('focus-castle').onclick=()=>{stopWalk();const n=byNode('castle'),[x,z]=toLocal(n.position);orbit.setTarget(V(x,elevationAt(...n.position)+40,z));orbit.radius=900;};
  for(const button of document.querySelectorAll('[data-walk]')){const code=button.dataset.walk;button.onpointerdown=e=>{guide=null;pressed.add(code);button.setPointerCapture(e.pointerId);e.preventDefault();};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>pressed.delete(code);}
  updateState();
- scene.onBeforeRenderObservable.add(()=>{const multiplier=guide?Number(document.getElementById('review-speed').value):1,dt=Math.min(.05,engine.getDeltaTime()/1000);advance(dt*multiplier);telemetryClock+=dt;if(telemetryClock>.5){refreshTraffic();updateTelemetry();telemetryClock=0;}});
+ scene.onBeforeRenderObservable.add(()=>{const multiplier=guide?Number(document.getElementById('review-speed').value):1,dt=document.hidden?0:engine.getDeltaTime()/1000;advanceElapsed(dt*multiplier,advance);telemetryClock+=dt;if(telemetryClock>.5){refreshTraffic();updateTelemetry();telemetryClock=0;}});
  engine.runRenderLoop(()=>{if(!document.getElementById('scene-panel').hidden)scene.render();});const resize=()=>engine.resize();window.addEventListener('resize',resize);loading.hidden=true;
  // Explicit diagnostic endpoint only on ?audit=1. Advances the SAME movement/collision
  // pipeline in small physical steps, never teleports cameras between sampled checkpoints.
  if(new URLSearchParams(location.search).has('audit'))globalThis.__capitalAudit={snapshot,advance(seconds){advance(seconds);refreshTraffic();updateTelemetry();scene.render();return snapshot();},visibility(){return feet?['castle','mage_tower'].map(id=>({id,...landmarkVisibility(feet,id)})):[];}};
- return {resize,updateState,routeChanged(){guide=null;},dispose(){disposed=true;window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clearKeys);window.removeEventListener('resize',resize);delete globalThis.__capitalAudit;engine.dispose();}};
+ return {resize,updateState,routeChanged(){guide=null;clearKeys();blocked=null;updateTelemetry();},dispose(){disposed=true;window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clearKeys);window.removeEventListener('resize',resize);delete globalThis.__capitalAudit;engine.dispose();}};
 }

@@ -214,7 +214,7 @@ function updateRoutes(){
  layers.route.replaceChildren();
  const from=document.getElementById('route-from').value,to=document.getElementById('route-to').value,host=document.getElementById('route-options');
  const alternatives=findAlternatives(from,to,state(),CAPITAL,3);host.replaceChildren();
- if(!alternatives.length){host.innerHTML='<p class="note">この条件では徒歩経路がありません。通行許可・増水・事件状態を確認してください。</p>';selectedRoute=null;return;}
+ if(!alternatives.length){host.innerHTML='<p class="note">この条件では徒歩経路がありません。通行許可・増水・事件状態を確認してください。</p>';selectedRoute=null;scene3d?.routeChanged?.();return;}
  alternatives.forEach((route,i)=>{
   const b=document.createElement('button');b.className='route-card';b.type='button';b.setAttribute('aria-pressed',i===0?'true':'false');
   const m=route.metrics,roles=route.edges.map(e=>roleLabels[e.designRole]||e.designRole).filter((v,j,a)=>a.indexOf(v)===j);b.innerHTML='<span class="route-title">'+(i===0?'主要経路':'代替経路 '+i)+'</span><div class="route-metrics"><strong>'+fmt(m.distanceM/1000,2)+' km</strong><small>徒歩 '+fmt(m.minutes)+'分 / 上り '+fmt(m.ascentM)+'m</small></div><div class="route-character">'+roles.join(' / ')+'</div><p>'+route.edges.map(e=>e.name).filter((v,j,a)=>a.indexOf(v)===j).join(' → ')+'</p>';
