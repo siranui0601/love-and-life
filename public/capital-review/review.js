@@ -71,7 +71,7 @@ function renderBase(){
   const p=el('path',{d:polyD(d.polygon),fill:d.color,'fill-opacity':.45,stroke:'#6d746e','stroke-width':1.1},layers.districts);
   title(p,d.name+' — '+d.identity);
   activate(p,()=>inspect(d.name,'DISTRICT / '+d.ground,
-   '<p>'+d.identity+'</p><p><strong>街路幅の基準：</strong>'+d.streetWidthM+'m　<strong>建築密度：</strong>'+Math.round(d.density*100)+'%</p>'+
+   '<p>'+d.identity+'</p><p><strong>街路幅の基準：</strong>'+d.streetWidthM+'m　<strong>街区配置の密度係数：</strong>'+Math.round(d.density*100)+'%</p>'+
    '<p><strong>生活：</strong>'+d.npcJobs.join('・')+'</p><p><strong>状態：</strong>'+d.risk+'</p>'),d.name);
  }
 }
@@ -221,7 +221,7 @@ function updateRoutes(){
   b.onclick=()=>{host.querySelectorAll('.route-card').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');selectedRoute=route;renderSelectedRoute();scene3d?.routeChanged?.();};
   host.append(b);
  });
- selectedRoute=alternatives[0];renderSelectedRoute();
+ selectedRoute=alternatives[0];renderSelectedRoute();scene3d?.routeChanged?.();
 }
 function renderSelectedRoute(){
  layers.route.replaceChildren();if(!selectedRoute)return;
@@ -230,7 +230,7 @@ function renderSelectedRoute(){
 function renderState(){
  clearDynamic();renderWater();renderRoads();renderClosures();renderFacilities();
  setLayer('world',layerVisible('world'));setLayer('buildings',layerVisible('buildings'));setLayer('districts',layerVisible('districts'));
- setLayer('elevation',layerVisible('elevation'));setLayer('beats',layerVisible('beats'));setLayer('facilities',layerVisible('facilities'));
+ setLayer('elevation',layerVisible('elevation'));setLayer('beats',document.getElementById('layer-sightlines').checked);setLayer('facilities',layerVisible('facilities'));
  updateRoutes();renderNpcFlow();renderStateNotes();scene3d?.updateState();
 }
 function renderStateNotes(){
@@ -250,7 +250,7 @@ function initControls(){
  document.getElementById('core-metric').textContent=CAPITAL.core.areaKm2.toFixed(2)+' km²';
  document.getElementById('envelope-metric').textContent=CAPITAL.activityEnvelope.areaKm2.toFixed(2)+' km²';
  document.getElementById('silhouette-metric').textContent=CAPITAL.atlasSilhouette.areaKm2.toFixed(2)+' km²';
- const choices=['west_gate','south_gate','east_gate','market','castle','mage_tower','office','orphanage','ajin','inn','stable','lower_court','roof_stair','roof_landing','quay_refuge','world_R06','world_R11','world_R12','world_R13'];
+ const choices=['west_gate','south_gate','east_gate','market','castle','mage_tower','office','orphanage','ajin','inn','stable','lower_court','south_cross','roof_stair','roof_landing','quay_refuge','world_R06','world_R11','world_R12','world_R13'];
  for(const id of choices){
   const n=nodeById(id);if(!n)continue;
   for(const select of [document.getElementById('route-from'),document.getElementById('route-to')]){

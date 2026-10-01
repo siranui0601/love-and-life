@@ -1,0 +1,6766 @@
+{
+  "url": "http://127.0.0.1:9893/capital-review/?audit=1",
+  "generatedAt": "2026-10-01T09:31:33.857Z",
+  "method": "Continuous eye-height walking with shared swept collision; diagnostic simulation time is accelerated, screenshots use the actual Babylon renderer.",
+  "routes": [
+    {
+      "from": "west_gate",
+      "to": "market",
+      "position": [
+        22.349999999999998,
+        21.45
+      ],
+      "heightM": 14.342993576432187,
+      "travelledM": 1221.6148556907604,
+      "simSeconds": 901.941299998998,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 7,
+      "routeDistanceM": 1221.6148556907578,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 17.28795042366415,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 17.15620935273411,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 127,
+          "height": 16.892259515950755,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 16.627888833209376,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 16.3639790316171,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 16.100094565684934,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 15.83404414672719,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 15.56978277531489,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 15.305996519762385,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 422,
+          "height": 15.062249261064434,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 464,
+          "height": 14.941895761300664,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 506,
+          "height": 14.922500655174176,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 548,
+          "height": 14.923263697927533,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 14.924212131134805,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 14.925378349023429,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 14.92679440219279,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.92849197469295,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.858422395546881,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.74824951613711,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.638427465320028,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.52875473883931,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.419204939032587,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.309743613085306,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.303986342707242,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.307529004595805,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1094,
+          "height": 14.311257805881409,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.33511300342489,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 14.339022849191466,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 14.342905353037896,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1222,
+          "height": 14.342993576432187,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "south_gate",
+      "to": "market",
+      "position": [
+        22.35,
+        21.449999999999996
+      ],
+      "heightM": 14.342993576432185,
+      "travelledM": 1379.1615449625633,
+      "simSeconds": 992.3536000001425,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 8,
+      "routeDistanceM": 1379.1615449625701,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.280000000002802,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.280000000007513,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 127,
+          "height": 14.280000000019962,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.280000000052222,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.28000000013444,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.280000000339527,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.280000000846412,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.280000002066588,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.28000000495039,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.280000011651692,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 464,
+          "height": 14.280000026983748,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 506,
+          "height": 14.280000061315103,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 548,
+          "height": 14.280000136897902,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 14.28000030538411,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 14.280000670623226,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 14.280001446855207,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.280003066803019,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.280006386472122,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.280013066235687,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.280026263601673,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.280051991167568,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.28010105872813,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 969,
+          "height": 17.080192988563425,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1011,
+          "height": 16.971585909189166,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1053,
+          "height": 14.280668154835404,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1095,
+          "height": 14.28121376954045,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.282166266486646,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 14.28379842936442,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 14.286531914350498,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 14.291031863941303,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 14.318338777896825,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 14.329955161739383,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1379,
+          "height": 14.342993576432185,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "east_gate",
+      "to": "market",
+      "position": [
+        22.35001756313771,
+        21.449999999999996
+      ],
+      "heightM": 14.342995178153569,
+      "travelledM": 1656.6789199948273,
+      "simSeconds": 1202.6778000004283,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 6,
+      "routeDistanceM": 1656.6964831325351,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 16.956451472788363,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 16.345479095962972,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 127,
+          "height": 15.735506999273145,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 15.124732900703737,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.663246293689511,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 15.09001148292137,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 15.520263048724866,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 15.949006719180217,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 16.377973441790463,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 16.808196161600936,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 464,
+          "height": 16.984131150357122,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 506,
+          "height": 17.129192169231736,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 548,
+          "height": 17.275477676051356,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 17.423321095025592,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 17.57249867998238,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 17.723354440270263,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 17.875997467561504,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 18.030497247245304,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 18.186871912222426,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 18.345382637434742,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 18.50534609034674,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 18.442700444342695,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 18.071878799233655,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1011,
+          "height": 17.699545463026602,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1053,
+          "height": 17.32589818502347,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1095,
+          "height": 16.95116861655783,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 16.57561050879644,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 16.199487383656443,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 15.823060506343706,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 15.44657790994492,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 15.070265086052343,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 14.693692641080574,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1389,
+          "height": 14.341044713887808,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1431,
+          "height": 14.339453375665823,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1473,
+          "height": 14.337285733913712,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1515,
+          "height": 14.334608211406195,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1558,
+          "height": 14.331500438951318,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1600,
+          "height": 14.348051330419812,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1642,
+          "height": 14.344354880173226,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1657,
+          "height": 14.342995178153569,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "market",
+      "to": "castle",
+      "position": [
+        22.7,
+        22.550000000000004
+      ],
+      "heightM": 82.41406595602217,
+      "travelledM": 1161.1468217139845,
+      "simSeconds": 842.0003999993794,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 5,
+      "routeDistanceM": 1161.1468217139895,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 15.679214110235737,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 17.01816620381949,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 127,
+          "height": 18.356761695264282,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 19.743135045250053,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 21.167952084534594,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 22.647454411089985,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 24.20221355942799,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 25.837280965118886,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 27.60785572250383,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 29.34651303797584,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 464,
+          "height": 31.201659506396812,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 506,
+          "height": 33.24506660228538,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 548,
+          "height": 35.47640337205769,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 37.913536734324715,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 40.60425224460474,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 43.74127204953685,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 47.12236967516214,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 50.730845622122644,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 54.51008272251783,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 58.40522633385831,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 62.35892463969293,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 66.24019625718786,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 69.94917234990109,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 73.42876546034208,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1053,
+          "height": 76.54903243189598,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1095,
+          "height": 79.22944052600576,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 81.40195393277939,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1161,
+          "height": 82.41406595602217,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "market",
+      "to": "lower_court",
+      "position": [
+        21.979999999999997,
+        20.730000000000008
+      ],
+      "heightM": 14.300000305168568,
+      "travelledM": 1137.1778529698993,
+      "simSeconds": 841.4517000012395,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 7,
+      "routeDistanceM": 1137.1778529699009,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.32657741451395,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.31620589588963,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 14.28971827634848,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.285731408054065,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.283313235059648,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.281880924889265,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.281046009336094,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.28057339660496,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 17.080309675334824,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 17.080164371304924,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.280085598152345,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.280043842693502,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 547,
+          "height": 14.280022107082122,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 589,
+          "height": 14.28001096140416,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 631,
+          "height": 14.280005339957833,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 673,
+          "height": 14.280002555914574,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 715,
+          "height": 14.280001201964694,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 757,
+          "height": 14.280000555359184,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 799,
+          "height": 14.280000252111742,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 841,
+          "height": 14.28000016635045,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 883,
+          "height": 14.2800001876016,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 925,
+          "height": 14.280000209196773,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.280000230730312,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.280000251577068,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.28000027122451,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1094,
+          "height": 14.280000289120114,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1136,
+          "height": 14.300000304732777,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.300000305168568,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "market",
+      "to": "ajin",
+      "position": [
+        23.1,
+        20.720000000000002
+      ],
+      "heightM": 14.300000751765857,
+      "travelledM": 1286.811786938951,
+      "simSeconds": 932.1223000001903,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 8,
+      "routeDistanceM": 1286.8117869389616,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.346780483794689,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.35032701057233,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 14.333564748089458,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.336406860535964,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.338760451669215,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.340559158210539,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.325972693930487,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.30818878577366,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.29696963284962,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.29004343212439,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.285840043222013,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 506,
+          "height": 14.283546617895047,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 548,
+          "height": 14.283238374563592,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 14.282924584676067,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 14.282612736862733,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 14.282308753727987,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.28201794818712,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.281254243760053,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.280710892933177,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.280396355984275,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 17.08020913491196,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 16.911911984666837,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.280061376797985,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.280040778617101,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.280026752907853,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1095,
+          "height": 14.280017330844572,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.280010563507984,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 14.280005149984989,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 14.280002465372082,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 14.300001161717592,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1287,
+          "height": 14.300000751765857,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "ajin",
+      "to": "east_gate",
+      "position": [
+        23.952494117647063,
+        21.552776470588235
+      ],
+      "heightM": 17.570457941267403,
+      "travelledM": 1350.4568095958105,
+      "simSeconds": 992.1391999998086,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 6,
+      "routeDistanceM": 1350.4568095958014,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.280000818209189,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.280000880193565,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 14.280000936465465,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.28000098522554,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.280001025097812,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.280001054721184,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.280001082638902,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.280001154134721,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.280001216237192,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.280001267111928,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.280001305127293,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.280001329055224,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 547,
+          "height": 16.977233907295744,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 589,
+          "height": 17.080004233147577,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 14.28000835771611,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 14.280016211578683,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.280030926876444,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.28005790124981,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.280106500906552,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.280185987357108,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.280240945992587,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.28030754374575,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.280386934074093,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.280479854903605,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.280586578016592,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1094,
+          "height": 14.28070678042498,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.280839663371754,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 14.280982967811187,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 14.55333774933257,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 15.531667718846332,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 16.509998116961647,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 17.488324253339368,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1350,
+          "height": 17.570457941267403,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "inn",
+      "to": "castle",
+      "position": [
+        22.7,
+        22.55
+      ],
+      "heightM": 82.41406595602204,
+      "travelledM": 2769.0108240948016,
+      "simSeconds": 1983.9800000002363,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 12,
+      "routeDistanceM": 2769.010824094803,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.280000013006367,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.280000020351157,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 127,
+          "height": 14.280000031451218,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.28000004800662,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.280000072373584,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.280000107840639,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.280000158846514,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.280000230704573,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.280000359531911,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.280000677243944,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.280001256174502,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.280002298340703,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 548,
+          "height": 14.280004139789316,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 14.280007347201023,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 14.280012848293765,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 14.280022138533312,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.280034276942626,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.280035518687523,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.280036408637658,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.280036921063274,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.280037039594367,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.28003676042263,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.280036092504654,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.280035057084708,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.280033684035109,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1095,
+          "height": 14.28003858225843,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.28007558169968,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 16.529371892900993,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 17.080275052206723,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 14.61728452964799,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 14.280935229964305,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 14.28168381856426,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1389,
+          "height": 14.282975487257774,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1431,
+          "height": 14.28516303307529,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1473,
+          "height": 14.288784007800825,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1515,
+          "height": 14.294697145011437,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1557,
+          "height": 14.32418386481516,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1599,
+          "height": 14.339135500711599,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1642,
+          "height": 15.4030643092802,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1684,
+          "height": 16.73887276838453,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1726,
+          "height": 18.072916160348864,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1768,
+          "height": 19.452860571481093,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1810,
+          "height": 20.868814118830937,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1852,
+          "height": 22.33374354161329,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1894,
+          "height": 23.8638022197193,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1936,
+          "height": 25.478485045689983,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1978,
+          "height": 27.223478613029474,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2020,
+          "height": 28.966724611385857,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2062,
+          "height": 30.78520435629489,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2104,
+          "height": 32.789105660539505,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2146,
+          "height": 34.97922858769398,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2189,
+          "height": 37.372479301909,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2231,
+          "height": 39.97953263463189,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 2273,
+          "height": 43.05049193273316,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2315,
+          "height": 46.38298798388426,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 2357,
+          "height": 49.94159375774063,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 2399,
+          "height": 53.68746645204453,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2441,
+          "height": 57.563733614370385,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 2483,
+          "height": 61.516423623048034,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2525,
+          "height": 65.41713378432955,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2567,
+          "height": 69.18742476176678,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 2609,
+          "height": 72.70470867533501,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2651,
+          "height": 75.90917897609184,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 2693,
+          "height": 78.69538230760682,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2736,
+          "height": 80.9814151344944,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2769,
+          "height": 82.41406595602204,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "lower_court",
+      "to": "south_cross",
+      "position": [
+        22.28,
+        20.64
+      ],
+      "heightM": 14.280000157705274,
+      "travelledM": 313.2091952673172,
+      "simSeconds": 240.8101999993325,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 2,
+      "routeDistanceM": 313.2091952673171,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.280000289552977,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.280000271678334,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 14.280000252066626,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.280000231239278,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.280000209767588,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.280000188154293,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.280000166671918,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 313,
+          "height": 14.280000157705274,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "west_gate",
+      "to": "world_R06",
+      "position": [
+        20.983424999999997,
+        20.022099
+      ],
+      "heightM": 14.28,
+      "travelledM": 1899.3809491897662,
+      "simSeconds": 1383.096399999617,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 6,
+      "routeDistanceM": 1899.380949189747,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 17.42933113570903,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 17.440300177164573,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 17.45127410343009,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 17.46224961175796,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 17.47322154053963,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 16.970721958336664,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 15.634432486582531,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.304629486527874,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.280001665280084,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.280000947430405,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.280000528946088,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.280000290454915,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 547,
+          "height": 14.280000156606418,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 15.120284529937518,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 17.080000043276275,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 16.032127575277592,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.28000001113794,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.280000005505482,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.280000002674083,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.280000001274685,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.280000000597788,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.280000000275114,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.280000000124573,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.280000000055427,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.280000000024232,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1095,
+          "height": 14.280000000010396,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1137,
+          "height": 14.280000000004389,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1179,
+          "height": 14.28000000000182,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 14.280000000000742,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 14.280000000000296,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 14.280000000000117,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 14.280000000000044,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1389,
+          "height": 14.280000000000017,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1431,
+          "height": 14.280000000000006,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1473,
+          "height": 14.280000000000001,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1515,
+          "height": 14.280000000000001,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1557,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1600,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1642,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1684,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1726,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1768,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1810,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1852,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1894,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1899,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "south_gate",
+      "to": "world_R12",
+      "position": [
+        21.845303999999995,
+        19.325966999999995
+      ],
+      "heightM": 14.28,
+      "travelledM": 924.3936686066412,
+      "simSeconds": 661.6922999999521,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 3,
+      "routeDistanceM": 924.3936686066324,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.280000000000376,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.280000000000138,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 127,
+          "height": 14.280000000000049,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.280000000000017,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.280000000000005,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.280000000000001,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 547,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 590,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 632,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 674,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 924,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "east_gate",
+      "to": "world_R13",
+      "position": [
+        25.226518999999996,
+        21.116022000000005
+      ],
+      "heightM": 14.280000000003366,
+      "travelledM": 1354.0702292040362,
+      "simSeconds": 991.9889999999994,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 3,
+      "routeDistanceM": 1354.070229204048,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 17.40549762912047,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 17.241544859323692,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 17.077699514611826,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 168,
+          "height": 16.913532287977905,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 16.74970071018107,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 16.58604747618015,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 16.21756570598099,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 15.716155414466547,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 15.214836768678428,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.713869209564805,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.280009601199257,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.280005356889461,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 547,
+          "height": 14.280002955044505,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 589,
+          "height": 14.2800016091887,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 631,
+          "height": 14.280000866780231,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 673,
+          "height": 14.280000461462418,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 715,
+          "height": 14.280000242822538,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.280000126118708,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.280000064812654,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.280000032900372,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.280000016521061,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.280000008199748,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.28000000401649,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.280000001946817,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.280000000932663,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1094,
+          "height": 14.280000000441616,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1136,
+          "height": 14.280000000206675,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1178,
+          "height": 14.280000000095598,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1221,
+          "height": 14.280000000043648,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1263,
+          "height": 14.280000000019728,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 14.280000000008817,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 14.280000000003888,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1354,
+          "height": 14.280000000003366,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "south_gate",
+      "to": "world_R11",
+      "position": [
+        24.39779,
+        19.59116
+      ],
+      "heightM": 14.28,
+      "travelledM": 2271.4740416197214,
+      "simSeconds": 1623.34200000119,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 4,
+      "routeDistanceM": 2271.474041619764,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 14.280000000000419,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 14.280000000000168,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 14.280000000000067,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 14.280000000000026,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 14.28000000000001,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 253,
+          "height": 14.280000000000003,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 295,
+          "height": 14.280000000000001,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 337,
+          "height": 14.280000000000001,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 379,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 421,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 463,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 505,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 547,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 589,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 631,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 673,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 716,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 758,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 800,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 842,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 884,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 926,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 968,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1010,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1052,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1094,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1136,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1178,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1220,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1262,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1305,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1347,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1389,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1431,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1473,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1515,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1557,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1599,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1641,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1683,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1725,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1768,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1810,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1852,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1894,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1936,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 1978,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2020,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2062,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2104,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2146,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2188,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2231,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 2271,
+          "height": 14.28,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "from": "lower_court",
+      "to": "roof_landing",
+      "position": [
+        22.160000000000004,
+        20.840000000000003
+      ],
+      "heightM": 18.780004322706695,
+      "travelledM": 229.82178886988643,
+      "simSeconds": 180.55200000000002,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 3,
+      "routeDistanceM": 229.82178886988416,
+      "agentCount": 31,
+      "visibility": [
+        {
+          "metres": 42,
+          "height": 16.03907145005588,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 84,
+          "height": 17.792202100762324,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 126,
+          "height": 18.78000223337633,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 169,
+          "height": 18.780002945643407,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              false
+            ]
+          ]
+        },
+        {
+          "metres": 211,
+          "height": 18.780003844556923,
+          "visible": [
+            [
+              "castle",
+              false
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        },
+        {
+          "metres": 230,
+          "height": 18.780004322706695,
+          "visible": [
+            [
+              "castle",
+              true
+            ],
+            [
+              "mage_tower",
+              true
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "states": [
+    {
+      "id": "flood",
+      "position": [
+        22.55,
+        20.47
+      ],
+      "heightM": 14.280000008179178,
+      "travelledM": 2355.4070843187606,
+      "simSeconds": 1682.9999999999984,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 11,
+      "routeDistanceM": 2355.4070843187405,
+      "agentCount": 31
+    },
+    {
+      "id": "T16",
+      "position": [
+        22.35,
+        21.450000000000003
+      ],
+      "heightM": 14.342993576432303,
+      "travelledM": 1286.811786938968,
+      "simSeconds": 931.5235999994273,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 8,
+      "routeDistanceM": 1286.8117869389616,
+      "agentCount": 31
+    },
+    {
+      "id": "T11",
+      "position": [
+        22.7,
+        22.55
+      ],
+      "heightM": 82.41406595602204,
+      "travelledM": 2031.7908218350387,
+      "simSeconds": 1472.6499999999985,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 8,
+      "routeDistanceM": 2031.7908218350829,
+      "agentCount": 31
+    },
+    {
+      "id": "T17",
+      "position": [
+        23.25,
+        22.35
+      ],
+      "heightM": 53.438846560767814,
+      "travelledM": 1077.8648341808046,
+      "simSeconds": 781.2249999999997,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 6,
+      "routeDistanceM": 1077.864834180812,
+      "agentCount": 31
+    },
+    {
+      "id": "T10",
+      "position": [
+        23.08,
+        21.579999999999995
+      ],
+      "heightM": 18.598568564420027,
+      "travelledM": 2343.6534843291056,
+      "simSeconds": 1682.8205000007135,
+      "blocked": null,
+      "complete": true,
+      "guideIndex": 12,
+      "routeDistanceM": 2343.6534843290647,
+      "agentCount": 31
+    },
+    {
+      "hour": "7",
+      "agentCount": 35
+    },
+    {
+      "hour": "12",
+      "agentCount": 31
+    },
+    {
+      "hour": "18",
+      "agentCount": 21
+    }
+  ],
+  "errors": [],
+  "mobile": {
+    "width": 390,
+    "telemetry": "自由歩行 · 城門外 · 1m · 標高 17.4m · 視線が通る目印 王城・宮廷魔術塔"
+  },
+  "worldTitle": "世界地理・2D設計図 | TRPG（仮）"
+}

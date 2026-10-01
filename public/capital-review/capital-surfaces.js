@@ -35,5 +35,7 @@ export function surfaceAt(position){
   const d=distanceToLine(position,e.points);
   if(d<=e.widthM/2+.15&&d<min){best=e;min=d;}
  }
- return {heightM:best?edgeHeightAt(best,position):elevationAt(...position),edgeId:best?.id||null,edge:best};
+ let heightM=best?edgeHeightAt(best,position):elevationAt(...position);
+ if(!best?.bridgeId&&!best?.surfaceOffsetsM&&CAPITAL.negativeSpaces.some(s=>distance(position,s.position)<=s.radiusM))heightM=Math.max(heightM,elevationAt(...position)+.3);
+ return {heightM,edgeId:best?.id||null,edge:best};
 }

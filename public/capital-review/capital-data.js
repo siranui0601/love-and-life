@@ -73,7 +73,9 @@ function edge(from,to,name,cls='secondary',options={}) {
  const widths={primary:20,ceremonial:22,secondary:11,alley:5,service:8,stairs:4,roof:4,world:18};
  const id=options.id||`${from}__${to}`,points=[N(from).position,...(options.via||[]),N(to).position];
  const roles={primary:'critical-logistics',ceremonial:'orientation-ceremonial',secondary:'optional-life',service:'service-logistics',alley:'desire-path',stairs:'desire-shortcut',roof:'desire-shortcut',world:'world-connector'};
- const out={id,from,to,name,class:cls,designRole:options.designRole||roles[cls]||'optional-life',widthM:widths[cls]||10,points,reason:options.reason||'地区の日常動線と街区境界に沿う。',...options};delete out.via;edges.push(out);return out;
+ const localWidths={lower:6,ajin:9,quay:8,west:10,market:11,administration:12,noble:15,castle:14,mage:10};
+ const streetWidth=cls==='secondary'?(localWidths[N(from).district]||11):(widths[cls]||10);
+ const out={id,from,to,name,class:cls,designRole:options.designRole||roles[cls]||'optional-life',widthM:streetWidth,points,reason:options.reason||'地区の日常動線と街区境界に沿う。',...options};delete out.via;edges.push(out);return out;
 }
 const chain=(ids,name,cls,options)=>{for(let i=1;i<ids.length;i++)edge(ids[i-1],ids[i],name,cls,options);};
 chain(['west_gate','west_inside','stable','coach_court','west_cross','market_west','market'],'西門の交易大通り','primary',{reason:'交易荷車→駅馬車転回庭→中央市場。門の圧縮から広場へ。'});
@@ -142,6 +144,7 @@ for(const args of [
  ['quay_refuge','河岸段丘の休み場',[22.48,20.98],'quay','plaza'],
  ['bank_turn','荷役路の石段',[22.38,20.94],'quay','stairs'],
 ]) node(...args);
+chain(['orphanage','lower_south'],'孤児院南側の生活避難路','alley',{via:[[21.74,20.61],[21.98,20.55]],value:'増水とT10封鎖が重なる時の生活アクセス',reason:'低橋と北の行政封鎖を避ける、同じ都市内の徒歩生活路。'});
 chain(['market_west','market_back','stall_court','market_reveal','royal_approach'],'露店裏の聞き込み回遊','alley',{value:'情報・NPC接触・王城の再発見',reason:'買物主動線を外れ、搬入口から小庭と屋根の切れ目へ。時間短縮を保証しない。'});
 chain(['east_cross','clerk_court','clerk_turn','office_north'],'文書中庭の静かな回遊','secondary',{widthM:7,value:'静かな歩行・公務坂の別進入',reason:'東の荷車大通りを離れて中庭を折れ、公務坂へ上る。'});
 chain(['south_quay','bank_turn','quay_refuge','warehouse'],'河岸段丘の見晴らし路','stairs',{widthM:4,value:'景観・荷役混雑回避',reason:'荷車道より高い河岸段丘。徒歩専用で、増水時の低橋とは別の眺望路。'});
@@ -158,6 +161,7 @@ const negativeSpaces=[
  ['lower_court',24,'well','共同井戸','庇と狭い生活路に囲まれた休息'],
  ['ajin',34,'court','共有庭','避難先を選び直す'],
  ['stall_court',17,'court','露店裏の小庭','店裏の聞き込み'],
+ ['noble_square',48,'garden','貴族街の庭園余地','公務路と住民の静かな回遊'],
  ['clerk_court',20,'garden','文書中庭','荷車道から離れた静けさ'],
  ['quay_refuge',18,'terrace','河岸段丘','水面と市街を読む'],
 ].map(([nodeId,radiusM,kind,name,value])=>({id:'space_'+nodeId,nodeId,position:N(nodeId).position,radiusM,kind,name,value}));
@@ -225,12 +229,24 @@ const levelDesignBeats=[
 const buildings=[];let seed=20261001;const rnd=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
 const plazaRadii=Object.fromEntries(negativeSpaces.map(s=>[s.nodeId,s.radiusM]));
 Object.assign(plazaRadii,{market:100,castle:110,mage_tower:52,stable:62,office:60,orphanage:42,ajin:48,inn:32,noble_square:55,royal_approach:58,coach_court:48});
-for(let x=21.18;x<23.92;x+=.041)for(let y=20.13;y<22.94;y+=.041){const p=[x+(rnd()-.5)*.009,y+(rnd()-.5)*.009];if(!inside(p,corePolygon))continue;const d=districts.find(v=>inside(p,v.polygon));if(!d||rnd()>d.density)continue;const widthM=17+rnd()*12,depthM=17+rnd()*12,radius=Math.hypot(widthM,depthM)/2+4;
+// Deterministic irregular rear fabric: variable parcel spacing within districts, no
+// global rectangular housing lattice. Street-front rows below set the readable edges.
+const occupied=new Map(),parcelCell=.06;
+const cellKey=(x,y)=>x+','+y;
+function neighbours(p){const cx=Math.floor(p[0]/parcelCell),cy=Math.floor(p[1]/parcelCell),out=[];for(let x=cx-1;x<=cx+1;x++)for(let y=cy-1;y<=cy+1;y++)out.push(...(occupied.get(cellKey(x,y))||[]));return out;}
+for(let attempt=0;attempt<40000;attempt++){
+ const p=[21.18+rnd()*2.74,20.13+rnd()*2.81];if(!inside(p,corePolygon))continue;
+ const d=districts.find(v=>inside(p,v.polygon));if(!d||rnd()>d.density)continue;
+ const widthM=15+rnd()*18,depthM=13+rnd()*19,radius=Math.hypot(widthM,depthM)/2+3;
+ if(neighbours(p).some(b=>distance(p,b.position)<radius+Math.hypot(b.widthM,b.depthM)/2+2))continue;
  if(distanceToLine(p,[...corePolygon,corePolygon[0]])<radius+8||distanceToLine(p,rivers[0].points)<radius+22)continue;
  if(edges.some(e=>distanceToLine(p,e.points)<radius+e.widthM/2+3))continue;
  if(sightCorridors.some(c=>distanceToLine(p,c.points)<radius+c.widthM/2))continue;
  if(nodes.some(n=>distance(p,n.position)<radius+(plazaRadii[n.id]||12)))continue;
- buildings.push({id:`building_${buildings.length}`,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),district:d.id,color:d.color});
+ const nearest=edges.filter(e=>e.class!=='world').reduce((best,e)=>distanceToLine(p,e.points)<best.distance?{edge:e,distance:distanceToLine(p,e.points)}:best,{edge:null,distance:Infinity});
+ const line=nearest.edge?.points,dx=line?line.at(-1)[0]-line[0][0]:1,dy=line?line.at(-1)[1]-line[0][1]:0;
+ const building={id:`building_${buildings.length}`,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:Math.atan2(dy,dx)+(rnd()-.5)*.24,district:d.id,color:d.color};
+ buildings.push(building);const k=cellKey(Math.floor(p[0]/parcelCell),Math.floor(p[1]/parcelCell));if(!occupied.has(k))occupied.set(k,[]);occupied.get(k).push(building);
 }
 // Street-facing rows provide enclosure at eye height. Original jittered parcels become
 // the rear fabric; frontage follows curved paths rather than a global equal-spacing grid.
