@@ -1,0 +1,59 @@
+Updating 85416dfe..1daa8a0a
+Fast-forward
+ .github/workflows/capital-review.yml               |     6 +-
+ .../CAPITAL-URBAN-MORPHOLOGY-PASS-4-2026-10-02.md  |    84 +
+ .../CAPITAL-VERTICAL-SLICE-2026-10-01.md           |     2 +
+ .../qa/capital-pass-3/production/verify-public.mjs |     4 +-
+ .../qa/capital-pass-4/before-overview.png          |   Bin 0 -> 341709 bytes
+ .../qa/capital-pass-4/browser-audit.json           | 12693 +++++++++++++++++++
+ .../qa/capital-pass-4/castle-approach.png          |   Bin 0 -> 144865 bytes
+ docs/trpg-world/qa/capital-pass-4/low-roof.png     |   Bin 0 -> 144316 bytes
+ .../qa/capital-pass-4/morphology-metrics.json      |    14 +
+ .../trpg-world/qa/capital-pass-4/overview-east.png |   Bin 0 -> 608622 bytes
+ .../qa/capital-pass-4/overview-south.png           |   Bin 0 -> 617828 bytes
+ .../trpg-world/qa/capital-pass-4/overview-west.png |   Bin 0 -> 527753 bytes
+ docs/trpg-world/qa/capital-pass-4/south-market.png |   Bin 0 -> 140800 bytes
+ docs/trpg-world/qa/capital-pass-4/topology.png     |   Bin 0 -> 642149 bytes
+ docs/trpg-world/qa/capital-pass-4/urban-form.png   |   Bin 0 -> 673887 bytes
+ docs/trpg-world/qa/capital-pass-4/west-market.png  |   Bin 0 -> 122551 bytes
+ public/capital-review/capital-clock.js             |     6 +
+ public/capital-review/capital-data.js              |   208 +-
+ public/capital-review/capital-routing.js           |    10 +-
+ public/capital-review/capital-scene.js             |    50 +-
+ public/capital-review/capital-spatial.js           |    10 +-
+ public/capital-review/capital-surfaces.js          |     7 +-
+ public/capital-review/index.html                   |     5 +-
+ public/capital-review/review.js                    |    32 +-
+ public/capital-review/style.css                    |     2 +
+ test/capital-clock.test.mjs                        |    21 +
+ test/capital-morphology.test.mjs                   |    33 +
+ test/capital-review.test.mjs                       |     2 +-
+ tools/trpg-world/audit-capital-browser.mjs         |    17 +-
+ tools/trpg-world/deploy-capital-vps.py             |    70 +
+ tools/trpg-world/verify-capital-public.mjs         |    20 +
+ 31 files changed, 13201 insertions(+), 95 deletions(-)
+ create mode 100644 docs/trpg-world/CAPITAL-URBAN-MORPHOLOGY-PASS-4-2026-10-02.md
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/before-overview.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/browser-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/castle-approach.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/low-roof.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/morphology-metrics.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/overview-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/overview-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/south-market.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/topology.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/urban-form.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-4/west-market.png
+ create mode 100644 public/capital-review/capital-clock.js
+ create mode 100644 test/capital-clock.test.mjs
+ create mode 100644 test/capital-morphology.test.mjs
+ create mode 100644 tools/trpg-world/deploy-capital-vps.py
+ create mode 100644 tools/trpg-world/verify-capital-public.mjs
+VPS HEAD 85416dfe8717b28e0c4f0fc38d4543cfe4d5d7ff ORIGIN MAIN 1daa8a0afe0054f0b3b65663704ab1fc626e3900
+DIRTY TRACKED ['public/TRPG/assets/manifest.json', 'public/TRPG/player-simulation-report.json', 'tools/trpg-sim/reports/player-latest.md']
+UNTRACKED FILES 102 INCOMING 31 OVERLAP 0
+DIRTY SHA256 fdb95a3f5b15cdca2cd95e4108bd43e6e6d8189945a9def3bfcb10719e4ffe21
+PRESERVED dirty work and untracked metadata
+FINAL HEAD 1daa8a0afe0054f0b3b65663704ab1fc626e3900
+STATIC ONLY: no process restart
