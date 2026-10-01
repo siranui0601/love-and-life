@@ -16,7 +16,7 @@ export function activeBarriers(input={}){return stateClosures(input).map(c=>({..
 // Oriented footprint, matching the exact rendered mass (including the larger castle).
 export function massFootprint(b){
  const castle=b.facilityId==='LOC_CAP_CASTLE';
- return {...b,widthM:castle?150:b.widthM,depthM:castle?118:b.depthM,heightM:castle?162:b.facilityId==='LOC_CAP_MAGE_TOWER'?157:b.heightM};
+ return {...b,widthM:b.widthM,depthM:b.depthM,heightM:castle?210:b.facilityId==='LOC_CAP_MAGE_TOWER'?157:b.royalPart?b.heightM+53:b.heightM+(b.roofHeightM||0)};
 }
 export function pointInMass(position,b,paddingM=0){
  const dx=(position[0]-b.position[0])*1000,dz=-(position[1]-b.position[1])*1000,angle=b.rotationRad||0;
@@ -33,9 +33,9 @@ export function obstacleAt(position,input={},radiusM=.48,barriers=activeBarriers
  for(const b of buckets.get(key(position))||[])if(pointInMass(position,b,radiusM))return 'mass:'+b.id;
  for(const w of CAPITAL.walls)if(distanceToLine(position,w.points)<w.widthM/2+radiusM)return 'wall:'+w.id;
  for(const b of barriers)if(distanceToLine(position,b.points)<1+radiusM)return 'closure:'+b.edgeId;
- const river=CAPITAL.rivers[0],waterWidth=state.weather==='flood'?river.highFlowWidthM:river.widthM;
+ 
  const crossing=CAPITAL.bridges.find(b=>distanceToLine(position,b.points)<=b.widthM/2-radiusM);
- if(distanceToLine(position,river.points)<waterWidth/2+radiusM&&!crossing)return 'river';
+ for(const river of CAPITAL.rivers){const waterWidth=state.weather==='flood'?river.highFlowWidthM:river.widthM;if(distanceToLine(position,river.points)<waterWidth/2+radiusM&&!crossing)return 'river';}
  return null;
 }
 export function moveWalker(from,deltaM,input={},options={}){
@@ -60,12 +60,12 @@ export function orientedRouteSamples(path,spacingM=8){
 export function landmarkVisibility(position,targetId,eyeHeightM=1.7){
  const f=CAPITAL.facilities.find(f=>f.nodeId===targetId),target=f?.buildingPosition||CAPITAL.nodes.find(n=>n.id===targetId)?.position;
  if(!target)return {visible:false,reason:'unknown-target'};
- const eyeY=surfaceAt(position).heightM+eyeHeightM,top=elevationAt(...target)+(targetId==='castle'?162:targetId==='mage_tower'?157:12);
+ const eyeY=surfaceAt(position).heightM+eyeHeightM,top=elevationAt(...target)+(targetId==='castle'?210:targetId==='mage_tower'?157:12);
  const ray=sampleLine([position,target],4),length=distance(position,target);
  for(const p of ray.slice(1,-3)){
   const y=eyeY+(top-eyeY)*distance(position,p)/(length||1);
   if(elevationAt(...p)>y)return {visible:false,reason:'terrain'};
-  for(const b of buckets.get(key(p))||[])if(b.facilityId!==f?.id&&pointInMass(p,b)&&elevationAt(...b.position)+b.heightM>y)return {visible:false,reason:b.id};
+  for(const b of buckets.get(key(p))||[])if(b.facilityId!==f?.id&&b.canonicalParent!==f?.id&&pointInMass(p,b)&&elevationAt(...b.position)+b.heightM>y)return {visible:false,reason:b.id};
  }
  return {visible:true,distanceM:length};
 }

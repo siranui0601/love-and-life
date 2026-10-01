@@ -96,7 +96,7 @@ test('authored sight corridors stay physically clear enough for cognitive-map la
  assert.ok(CAPITAL.sightCorridors.length>=3);
  for(const corridor of CAPITAL.sightCorridors){
   const target=node(corridor.target);assert.ok(target,'missing target '+corridor.target);
-  for(const b of CAPITAL.buildings.filter(x=>!x.facilityId)){
+  for(const b of CAPITAL.buildings.filter(x=>!x.facilityId&&!x.canonicalParent)){
    const radius=Math.hypot(b.widthM,b.depthM)/2;
    const clearance=distanceToLine(b.position,corridor.points);
    assert.ok(clearance>=radius+corridor.widthM/2-1e-6,

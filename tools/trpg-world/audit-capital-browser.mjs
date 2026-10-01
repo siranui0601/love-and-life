@@ -18,11 +18,17 @@ try{
  const before=await page.locator('#route-options').innerText();
  for(const hour of ['7','12','18','12'])await page.locator('#hour').selectOption(hour);
  const after=await page.locator('#route-options').innerText();if(before!==after)throw new Error('Repeated state rendering changed route metrics');
- await page.screenshot({path:path.join(output,'topology.png')});
+ await page.screenshot({path:path.join(output,'urban-form.png')});await page.locator('#topology-debug').click();await page.screenshot({path:path.join(output,'topology.png')});await page.locator('#urban-form').click();
  await page.locator('#view-3d').click();await page.waitForFunction(()=>!!window.__capitalAudit,{timeout:30000});
  const invalidGround=await page.evaluate(async()=>{const {CAPITAL}=await import('/capital-review/capital-data.js');const names=new Set(['core-ground',...CAPITAL.negativeSpaces.map(s=>s.id)]);return BABYLON.Engine.Instances[0].scenes[0].meshes.filter(m=>names.has(m.name)).filter(m=>{const n=m.getVerticesData('normal');return !n||n.some(v=>!Number.isFinite(v))||n.filter((_,i)=>i%3===1).reduce((a,b)=>a+b,0)<=0;}).map(m=>m.name);});
  if(invalidGround.length)throw new Error('Invalid ground-facing normals: '+invalidGround.join(','));
  await page.screenshot({path:path.join(output,'overview.png')});
+ for(const [name,angle]of [['south',Math.PI/2],['west',Math.PI],['east',0]]){await page.evaluate(a=>window.__capitalAudit.overview(a),angle);await page.screenshot({path:path.join(output,'overview-'+name+'.png')});}
+ await page.locator('#route-from').selectOption('west_gate');await page.locator('#route-to').selectOption('market');await page.locator('#walk-route').click();
+ const guidedBefore=await page.evaluate(()=>window.__capitalAudit.advance(5));await page.locator('#route-to').selectOption('castle');
+ const cancelled=await page.evaluate(()=>window.__capitalAudit.snapshot());const guidedAfter=await page.evaluate(()=>window.__capitalAudit.advance(10));
+ if(guidedAfter.travelledM!==cancelled.travelledM)throw Error('No-route selection failed to stop old guided walk');
+ report.invalidRouteStopsGuide=true;await page.locator('#walk-stop').click();
  const pairs=[['west_gate','market'],['south_gate','market'],['east_gate','market'],['market','castle'],['market','lower_court'],['market','ajin'],['ajin','east_gate'],['inn','castle'],['lower_court','south_cross'],['west_gate','world_R06'],['south_gate','world_R12'],['east_gate','world_R13'],['south_gate','world_R11'],['lower_court','roof_landing']];
  for(const [from,to]of pairs){
   await page.locator('#access').selectOption(to==='castle'?'permitted':'public');
