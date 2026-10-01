@@ -25,3 +25,9 @@ test('outskirts are sparse roadside buildings, with no copied wall-scale distric
  assert.ok(CAPITAL.suburbBuildings.every(b=>b.outside&&b.heightM<13));
  assert.ok(CAPITAL.suburbBuildings.length<CAPITAL.buildings.length/20);
 });
+
+test('physical streets have unique IDs and major alternatives diverge in physical distance',async()=>{
+ const {findAlternatives,routeOverlap}=await import('../public/capital-review/capital-routing.js');
+ assert.equal(new Set(CAPITAL.edges.map(e=>e.id)).size,CAPITAL.edges.length);
+ for(const gate of ['west_gate','south_gate','east_gate']){const paths=findAlternatives(gate,'market',{access:'public'});assert.ok(paths.length>=2);assert.ok(routeOverlap(paths[0],paths[1])<.74);}
+});

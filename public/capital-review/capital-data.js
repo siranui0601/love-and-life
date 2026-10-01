@@ -71,8 +71,8 @@ function clipContextPath(path){
 }
 for(const water of [westWater,eastWater])rivers.push({id:water.id,name:water.name,points:clipContextPath(water.path),sourcePath:water.path,widthM:(water.widthMeters[0]+water.widthMeters[1])/2,highFlowWidthM:water.widthMeters[1],normalWidthRangeM:water.widthMeters,context:true});
 const riverY=x=>{const p=rivers[0].points;for(let i=1;i<p.length;i++)if(x>=Math.min(p[i-1][0],p[i][0])&&x<=Math.max(p[i-1][0],p[i][0]))return p[i-1][1]+(p[i][1]-p[i-1][1])*(x-p[i-1][0])/(p[i][0]-p[i-1][0]);return 21.04;};
-const rawHill=(x,y)=>14+Math.max(0,y-21.45)*42+82*Math.exp(-((x-22.70)**2/.45+(y-22.64)**2/.28));
-const terraceDefs=[['castle_court',48,86],['noble_square',48,78],['royal_approach',40,65],['office',35,65]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:rawHill(...N(id).position)}));
+const rawHill=(x,y)=>14+15*Math.exp(-((x-22.35)**2/.9+(y-21.65)**2/.30))+Math.max(0,y-21.45)*42+82*Math.exp(-((x-22.70)**2/.45+(y-22.64)**2/.28));
+const terraceDefs=[['market',88,120],['castle_court',48,86],['noble_square',48,78],['royal_approach',40,65],['office',35,65]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:rawHill(...N(id).position)}));
 export function terrainBaseAt(x,y){let height=rawHill(x,y);for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);height=height*(1-smooth)+level*smooth;}return height;}
 
 export function elevationAt(x,y){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+16;cut=Math.max(cut,Math.max(0,1-d/bank)*(r.context?8:3));}return terrainBaseAt(x,y)-cut;}
@@ -185,7 +185,7 @@ chain(['east_cross','clerk_court','clerk_turn','office_north'],'文書中庭の�
 chain(['south_quay','bank_turn','quay_refuge','warehouse'],'河岸段丘の見晴らし路','stairs',{widthM:4,value:'景観・荷役混雑回避',reason:'荷車道より高い河岸段丘。徒歩専用で、増水時の低橋とは別の眺望路。'});
 for(const e of edges.filter(e=>e.name==='下層の階段と低屋根歩廊')){
  e.class=e.from==='roof_stair'?'roof':'stairs';e.value='河岸の見晴らし・荷車回避';
- e.surfaceOffsetsM=e.from==='lower_court'?[0,4.5]:e.from==='roof_stair'?[4.5,4.5]:[4.5,0];
+ e.surfaceOffsetsM=e.from==='lower_court'?[0,4.5]:e.from==='roof_stair'?[4.5,4.5]:[4.5,0];if(e.class==='stairs')e.surfaceRampM=12;
 }
 // Meso block boundaries: modest loops behind street walls, with courts and
 // occasional cul-de-sacs. Water, walls and social districts constrain every block.
@@ -290,6 +290,15 @@ const levelDesignBeats=[
  {id:'beat_quay_weather',type:'hazard-edge',nodeId:'warehouse',name:'河岸の天候edge',intent:'平時は最短の荷役路だが、増水時は低橋閉鎖によって高橋側へ人流を押し戻す。'},
  {id:'beat_east_reveal',type:'reveal',nodeId:'east_bend',name:'東門の塔リビール',intent:'森側から入城後の折れで宮廷魔術塔を見せ、王城が見えにくい南東でも方角を回復させる。'}
 ].map(b=>({...b,position:N(b.nodeId).position,source:'deep-research-application'}));
+
+// A physical street has one edge. Older chains repeated some shared segments
+// in opposite directions or under two classes; retain the dominant street role.
+const streetRanks={world:7,ceremonial:6,primary:5,secondary:4,service:3,stairs:2,roof:2,alley:1},physicalStreets=new Map(),usedEdgeIds=new Set();
+for(const e of [...edges]){const forward=e.from<e.to,ps=forward?e.points:[...e.points].reverse(),signature=ps.map(p=>p.map(v=>v.toFixed(6)).join(',')).join('|'),existing=physicalStreets.get(signature);
+ if(existing){const keep=(streetRanks[e.class]||0)>(streetRanks[existing.class]||0)?e:existing,remove=keep===e?existing:e;edges.splice(edges.indexOf(remove),1);physicalStreets.set(signature,keep);for(const b of urbanBlocks)if(b.frontageEdgeId===remove.id)b.frontageEdgeId=keep.id;}
+ else physicalStreets.set(signature,e);
+}
+for(const e of edges){if(usedEdgeIds.has(e.id))e.id+='__'+e.designRole;usedEdgeIds.add(e.id);}
 
 // Royal architecture is one canonical castle facility, composed of several
 // physical wings on successive elevations, not newly invented named facilities.

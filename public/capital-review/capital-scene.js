@@ -1,6 +1,6 @@
 import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,pointInPolygon} from './capital-data.js';
 import {pathPolyline,polylineLengthM} from './capital-routing.js';
-import {sampleLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
+import {sampleLine,locateOnLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
 import {advanceElapsed} from './capital-clock.js';
 import {trafficPlans,trafficAgents} from './capital-traffic.js';
 
@@ -36,6 +36,9 @@ export function mountCapitalScene(getState,getRoute){
  for(const e of CAPITAL.edges){
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
   strip('road:'+e.id,e.points,e.widthM,mat('road:'+color,color),p=>edgeHeightAt(e,p));
+  if(e.surfaceRampM){const total=polylineLengthM(e.points),up=e.surfaceOffsetsM[0]<e.surfaceOffsetsM[1],start=up?total-e.surfaceRampM:0,parts=[];
+   for(let step=0;step<27;step++){const a=locateOnLine(e.points,start+e.surfaceRampM*step/27).position,b=locateOnLine(e.points,start+e.surfaceRampM*(step+1)/27).position;parts.push(segmentBox('stair-tread',a,b,e.widthM,.12,stone,p=>edgeHeightAt(e,p)-.06));}merge(parts,'physical-stair:'+e.id,stone);
+  }
   if(e.class==='roof'){
    const ps=sampleLine(e.points,12),supports=[];for(let i=1;i<ps.length;i++)supports.push(segmentBox('low-roof-deck',ps[i-1],ps[i],e.widthM+1,.35,mat('low-roof','#655c52'),p=>edgeHeightAt(e,p)-.35));merge(supports,'low-roof-surface:'+e.id,mat('low-roof','#655c52'));
   }

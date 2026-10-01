@@ -1,4 +1,4 @@
-import {CAPITAL,distance} from './capital-data.js';
+import {CAPITAL,distance,distanceToLine} from './capital-data.js';
 import {sampleLine,edgeHeightAt} from './capital-surfaces.js';
 
 export const DEFAULT_CITY_STATE=Object.freeze({
@@ -107,6 +107,13 @@ export function pathMetrics(path,capital=CAPITAL){
  return {distanceM,ascentM,descentM,walkSeconds,minutes:walkSeconds/60};
 }
 
+// Compare shared physical distance, not merely the number of graph edges.
+// Splitting a short block detour into many edges cannot manufacture a major route.
+export function routeOverlap(a,b){
+ const fraction=(one,other)=>{const ps=sampleLine(pathPolyline(one),25),line=pathPolyline(other);let shared=0,total=0;for(let i=1;i<ps.length;i++){const length=distance(ps[i-1],ps[i]),mid=[(ps[i-1][0]+ps[i][0])/2,(ps[i-1][1]+ps[i][1])/2];total+=length;if(distanceToLine(mid,line)<35)shared+=length;}return total?shared/total:1;};
+ return Math.max(fraction(a,b),fraction(b,a));
+}
+
 const signature=path=>path?.edgeIds.slice().sort().join('|')||'';
 export function findAlternatives(from,to,inputState={},capital=CAPITAL,limit=3){
  const first=shortestPath(from,to,inputState,capital);
@@ -125,6 +132,7 @@ export function findAlternatives(from,to,inputState={},capital=CAPITAL,limit=3){
   candidates.sort((a,b)=>a.cost-b.cost);
   const next=candidates.shift(),sig=signature(next);
   if(seen.has(sig))continue;
+  if(found.some(path=>routeOverlap(path,next)>=.74)){seen.add(sig);continue;}
   found.push(next);seen.add(sig);searchBans(next);
  }
  return found.map((path,index)=>({...path,index,metrics:pathMetrics(path,capital)}));

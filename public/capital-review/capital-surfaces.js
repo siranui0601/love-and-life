@@ -25,7 +25,7 @@ export function edgeHeightAt(edge,position){
   return terrainBaseAt(...position)+.28+Math.max(0,rise)*(bridge.deckHeightM-terrainBaseAt(...bridge.position));
  }
  if(edge.surfaceOffsetsM){
-  const a=edge.points[0],b=edge.points.at(-1),t=distance(a,nearestOnSegment(position,a,b))/(distance(a,b)||1);
+  const a=edge.points[0],b=edge.points.at(-1),total=distance(a,b),travel=distance(a,nearestOnSegment(position,a,b));let t=travel/(total||1);if(edge.surfaceRampM)t=edge.surfaceOffsetsM[0]<edge.surfaceOffsetsM[1]?Math.max(0,(travel-total+edge.surfaceRampM)/edge.surfaceRampM):Math.min(1,travel/edge.surfaceRampM);
   return elevationAt(...position)+.28+edge.surfaceOffsetsM[0]*(1-t)+edge.surfaceOffsetsM[1]*t;
  }
  return elevationAt(...position)+.28;
