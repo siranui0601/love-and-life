@@ -29,3 +29,5 @@ code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em}
 #capital-map [data-layer="beats"] .map-hit:focus{filter:brightness(1.18) drop-shadow(0 0 4px #f3cc7a)}
 
 .review-rate{display:flex;gap:5px;align-items:center;background:#fffdf2eb;padding:0 7px;border-radius:4px;font-size:10px}.review-rate select{width:105px;font-size:10px;min-height:30px;padding:3px;margin:0}.scene-tools{max-width:calc(100% - 28px)}
+
+.map-modes{position:absolute;top:52px;left:14px;z-index:2;display:flex;gap:6px}.map-modes button{background:#f5f0e4;padding:8px 12px;font-size:12px;border:1px solid #817761}.map-modes button[aria-pressed=true]{background:#263d3b;color:#fff}.map-mode-note{position:absolute;bottom:44px;left:16px;right:16px;font-size:11px;background:#f5f0e4dc;padding:6px;pointer-events:none}

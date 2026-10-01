@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "public/capital-review/**"
-      - "test/capital-review.test.mjs"
+      - "test/capital-*.test.mjs"
       - "tools/trpg-world/**"
       - ".github/workflows/capital-review.yml"
       - "public/world-blueprint/geography.js"
@@ -12,7 +12,7 @@ on:
     branches: [main]
     paths:
       - "public/capital-review/**"
-      - "test/capital-review.test.mjs"
+      - "test/capital-*.test.mjs"
       - "tools/trpg-world/**"
       - ".github/workflows/capital-review.yml"
       - "public/world-blueprint/geography.js"
@@ -29,4 +29,4 @@ jobs:
         run: |
           for file in public/capital-review/*.js tools/trpg-world/*.mjs; do node --check "$file"; done
       - name: Capital spatial contracts
-        run: node --test test/capital-review.test.mjs test/world-blueprint.test.mjs test/world-blueprint-ecology.test.mjs
+        run: node --test test/capital-review.test.mjs test/capital-clock.test.mjs test/capital-morphology.test.mjs test/world-blueprint.test.mjs test/world-blueprint-ecology.test.mjs

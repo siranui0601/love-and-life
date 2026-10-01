@@ -25,7 +25,7 @@ const el=(tag,attrs={},parent=svg)=>{
  parent.append(n);return n;
 };
 const layers={};
-for(const id of ['base','envelope','districts','elevation','spaces','buildings','river','roads','world','walls','beats','closures','flows','route','facilities','labels']){
+for(const id of ['base','terrain','envelope','districts','elevation','spaces','buildings','river','roads','world','walls','beats','closures','flows','route','facilities','labels']){
  layers[id]=el('g',{'data-layer':id});
 }
 function title(node,text){const t=document.createElementNS(SVG,'title');t.textContent=text;node.append(t);}
@@ -76,7 +76,7 @@ function renderBase(){
  }
 }
 function renderElevation(){
- const b=bbox(CAPITAL.core.polygon),nx=36,ny=36,levels=[20,35,50,65,80,95];
+ const b=bbox(CAPITAL.core.polygon),nx=60,ny=60,levels=[20,35,50,65,80,95,110,125,140];
  for(const level of levels){
   for(let iy=0;iy<ny;iy++)for(let ix=0;ix<nx;ix++){
    const x0=b.minX+(b.maxX-b.minX)*ix/nx,x1=b.minX+(b.maxX-b.minX)*(ix+1)/nx;
@@ -92,20 +92,35 @@ function renderElevation(){
   }
  }
 }
+function renderHeightLabels(){for(const id of ['castle','royal_gate','noble_square','office','market','lower_court']){const n=nodeById(id),[x,y]=project(n.position),text=el('text',{x:x+8,y:y+13,fill:'#624f3c','font-size':9,'paint-order':'stroke',stroke:'#e9e5d6','stroke-width':2},layers.elevation);text.textContent=fmt(elevationAt(...n.position))+'m';}}
 function renderSpaces(){
  for(const space of CAPITAL.negativeSpaces){
   const [x,y]=project(space.position),c=el('circle',{cx:x,cy:y,r:metresPx(space.radiusM),fill:space.kind==='garden'?'#76976b':'#fbf1d3',stroke:'#887c61','stroke-width':.8},layers.spaces);
   title(c,space.name+' — '+space.value);
  }
 }
+function renderUrbanTerrain(){
+ const b=bbox(CAPITAL.activityEnvelope.polygon),step=.045;
+ for(let x=b.minX;x<b.maxX;x+=step)for(let y=b.minY;y<b.maxY;y+=step){const p=[x+step/2,y+step/2];if(!pointInPolygon(p,CAPITAL.activityEnvelope.polygon))continue;const h=elevationAt(...p),shade=Math.max(0,Math.min(1,h/150)),[px,py]=project([x,y+step]);
+  el('rect',{x:px,y:py,width:step*sx+.1,height:step*sy+.1,fill:'rgb('+Math.round(144+shade*54)+','+Math.round(156+shade*34)+','+Math.round(113+shade*51)+')'},layers.terrain);
+ }
+ for(const o of CAPITAL.outskirts){const [x,y]=project(o.position);el('rect',{x:x-metresPx(o.radiusM),y:y-metresPx(o.radiusM),width:metresPx(o.radiusM*2),height:metresPx(o.radiusM*2),fill:o.kind==='farmland'?'#b0a168':'#b5a180','fill-opacity':.6},layers.terrain);}
+}
+let urbanForm=true;
+function setMapMode(urban){urbanForm=urban;document.getElementById('urban-form').setAttribute('aria-pressed',String(urban));document.getElementById('topology-debug').setAttribute('aria-pressed',String(!urban));
+ setLayer('districts',!urban&&layerVisible('districts'));setLayer('beats',!urban&&layerVisible('sightlines'));setLayer('terrain',urban);setLayer('elevation',urban||layerVisible('elevation'));setLayer('world',urban||layerVisible('world'));setLayer('flows',!urban);setLayer('route',!urban);setLayer('closures',!urban);setLayer('facilities',!urban&&layerVisible('facilities'));
+ for(const n of layers.roads.children){const e=CAPITAL.edges.find(e=>e.id===n.dataset.edge);if(e){n.setAttribute('stroke',urban?'#b7aa8e':roadColours[e.class]||'#817c67');n.setAttribute('stroke-width',urban?metresPx(e.widthM):Math.max(1.5,metresPx(e.widthM)));}}
+ document.getElementById('map-mode-note').textContent=urban?'Urban Form View · 実寸の建築・街路幅・水系・城壁・標高。地区色と経路記号を除いた都市形態。':'Topology / Debug View · 接続・通行条件・地区・設計beatの監査用。';
+}
 function renderBuildings(){
  for(const b of CAPITAL.buildings){
-  if(b.facilityId)continue;
-  const [x,y]=project(b.position),w=Math.max(2,metresPx(b.widthM)),h=Math.max(2,metresPx(b.depthM));
-  el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,rx:.7,transform:'rotate('+((b.rotationRad||0)*180/Math.PI)+' '+x+' '+y+')',fill:b.color,stroke:'#5a5b52','stroke-width':.45,'fill-opacity':.72},layers.buildings);
+
+  const [x,y]=project(b.position),w=metresPx(b.widthM),h=metresPx(b.depthM);
+  el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,rx:.7,transform:'rotate('+((b.rotationRad||0)*180/Math.PI)+' '+x+' '+y+')',fill:districtById(b.district)?.profile.roof||'#6b6354',stroke:'#514d44','stroke-width':.25,'fill-opacity':.96},layers.buildings);
  }
 }
 function renderWater(){
+ for(const r of CAPITAL.rivers.filter(r=>r.context))el('path',{d:pathD(r.points),fill:'none',stroke:'#4f8f9c','stroke-width':metresPx(r.widthM),'stroke-linecap':'round'},layers.river);
  const r=CAPITAL.rivers[0],width=metresPx(document.getElementById('weather').value==='flood'?r.highFlowWidthM:r.widthM);
  el('path',{d:pathD(r.points),fill:'none',stroke:'#b6d1cf','stroke-width':width+5,'stroke-linecap':'round','stroke-linejoin':'round'},layers.river);
  const p=el('path',{d:pathD(r.points),fill:'none',stroke:'#4f8f9c','stroke-width':width,'stroke-linecap':'round','stroke-linejoin':'round'},layers.river);
@@ -214,7 +229,7 @@ function updateRoutes(){
  layers.route.replaceChildren();
  const from=document.getElementById('route-from').value,to=document.getElementById('route-to').value,host=document.getElementById('route-options');
  const alternatives=findAlternatives(from,to,state(),CAPITAL,3);host.replaceChildren();
- if(!alternatives.length){host.innerHTML='<p class="note">この条件では徒歩経路がありません。通行許可・増水・事件状態を確認してください。</p>';selectedRoute=null;return;}
+ if(!alternatives.length){host.innerHTML='<p class="note">この条件では徒歩経路がありません。通行許可・増水・事件状態を確認してください。</p>';selectedRoute=null;scene3d?.routeChanged?.();return;}
  alternatives.forEach((route,i)=>{
   const b=document.createElement('button');b.className='route-card';b.type='button';b.setAttribute('aria-pressed',i===0?'true':'false');
   const m=route.metrics,roles=route.edges.map(e=>roleLabels[e.designRole]||e.designRole).filter((v,j,a)=>a.indexOf(v)===j);b.innerHTML='<span class="route-title">'+(i===0?'主要経路':'代替経路 '+i)+'</span><div class="route-metrics"><strong>'+fmt(m.distanceM/1000,2)+' km</strong><small>徒歩 '+fmt(m.minutes)+'分 / 上り '+fmt(m.ascentM)+'m</small></div><div class="route-character">'+roles.join(' / ')+'</div><p>'+route.edges.map(e=>e.name).filter((v,j,a)=>a.indexOf(v)===j).join(' → ')+'</p>';
@@ -231,7 +246,7 @@ function renderState(){
  clearDynamic();renderWater();renderRoads();renderClosures();renderFacilities();
  setLayer('world',layerVisible('world'));setLayer('buildings',layerVisible('buildings'));setLayer('districts',layerVisible('districts'));
  setLayer('elevation',layerVisible('elevation'));setLayer('beats',document.getElementById('layer-sightlines').checked);setLayer('facilities',layerVisible('facilities'));
- updateRoutes();renderNpcFlow();renderStateNotes();scene3d?.updateState();
+ updateRoutes();renderNpcFlow();renderStateNotes();setMapMode(urbanForm);scene3d?.updateState();
 }
 function renderStateNotes(){
  const s=state(),notes=[];
@@ -291,7 +306,7 @@ function initMapPan(){
  document.getElementById('reset-map').onclick=()=>fit(CAPITAL.core.polygon,52);document.getElementById('envelope-map').onclick=()=>fit(CAPITAL.activityEnvelope.polygon,24);
 }
 function renderAll(){
- renderBase();renderElevation();renderSpaces();renderBuildings();renderBeats();initControls();renderState();initMapPan();fit(CAPITAL.core.polygon,52);
+ renderBase();renderUrbanTerrain();renderElevation();renderHeightLabels();renderSpaces();renderBuildings();renderWalls();renderBeats();initControls();renderState();initMapPan();fit(CAPITAL.core.polygon,52);
  inspect('中央市場','MAJOR NODE','<p>交易・買物・噂・地区間移動が交差する解放空間。門から市場へは意味の違う複数経路を持つ。</p>');
 }
 
@@ -313,4 +328,5 @@ document.getElementById('export').onclick=()=>{
 };
 window.addEventListener('resize',updateScale);
 window.addEventListener('pagehide',()=>scene3d?.dispose?.(),{once:true});
+document.getElementById('urban-form').onclick=()=>setMapMode(true);document.getElementById('topology-debug').onclick=()=>setMapMode(false);
 renderAll();

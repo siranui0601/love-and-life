@@ -21,13 +21,14 @@
     <section class="workspace" aria-label="王都の空間レビュー">
       <div class="toolbar">
         <div class="tabs" role="tablist" aria-label="レビュー表示">
-          <button id="view-map" role="tab" aria-selected="true" aria-controls="map-panel">01 設計図</button>
+          <button id="view-map" role="tab" aria-selected="true" aria-controls="map-panel">01 都市俯瞰</button>
           <button id="view-3d" role="tab" aria-selected="false" aria-controls="scene-panel">02 3D・歩行</button>
         </div>
         <div class="scale-summary"><b id="core-area">6.50</b> km² <span>中核市街 / 実寸 1:1</span></div>
       </div>
       <section id="map-panel" class="viewport" role="tabpanel" aria-labelledby="view-map">
         <svg id="capital-map" viewBox="0 0 1100 900" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="王都の地区・街路・河川・施設を示す地図。ドラッグで移動、ホイールで拡大。"></svg>
+        <div class="map-modes"><button id="urban-form" aria-pressed="true">Urban Form View</button><button id="topology-debug" aria-pressed="false">Topology / Debug View</button></div><p id="map-mode-note" class="map-mode-note"></p>
         <div class="map-tools"><button id="zoom-in" aria-label="地図を拡大">＋</button><button id="zoom-out" aria-label="地図を縮小">−</button><button id="reset-map">中核市街</button><button id="envelope-map">活動圏</button></div>
         <div class="north">N<span>↑</span></div>
         <div class="map-caption"><span id="map-scale"></span><span>南西原点 · x 東 / y 北 · km</span></div>
@@ -66,6 +67,6 @@
       <section class="panel spatial-panel"><p class="eyebrow">05 / THREE SCALES</p><dl><div><dt>中核市街</dt><dd id="core-metric"></dd></div><div><dt>活動圏</dt><dd id="envelope-metric"></dd></div><div><dt>atlasの輪郭</dt><dd id="silhouette-metric"></dd></div></dl><p class="note">48×36kmの暫定世界座標を継承。中核の実寸を圧縮せず、郊外と遠景の輪郭を分けて扱います。</p></section>
     </aside>
   </main>
-  <footer><p>実装レビュー / 地形・街路・衝突・生活導線の検証用 greybox</p><p>施設の正本：TRPGスプレッドシート（2026-10-01確認） · 座標・街区形状：設計提案</p><p>本編のセーブ・NPC AI・事件進行との接続は、共通IDと状態アダプターを通す次工程です。</p></footer>
+  <footer><p>実装レビュー / 地形・街路・衝突・生活導線の検証用 greybox</p><p>施設の正本：既存TRPGスプレッドシート対応IDを継承 · 座標・街区形状：設計提案</p><p>本編のセーブ・NPC AI・事件進行との接続は、共通IDと状態アダプターを通す次工程です。</p></footer>
 </body>
 </html>

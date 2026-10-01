@@ -1,6 +1,7 @@
 import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,pointInPolygon} from './capital-data.js';
 import {pathPolyline,polylineLengthM} from './capital-routing.js';
-import {sampleLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
+import {sampleLine,locateOnLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
+import {advanceElapsed} from './capital-clock.js';
 import {trafficPlans,trafficAgents} from './capital-traffic.js';
 
 export function mountCapitalScene(getState,getRoute){
@@ -15,26 +16,29 @@ export function mountCapitalScene(getState,getRoute){
  const byNode=id=>CAPITAL.nodes.find(n=>n.id===id);
  const bounds=points=>({minX:Math.min(...points.map(p=>p[0])),maxX:Math.max(...points.map(p=>p[0])),minY:Math.min(...points.map(p=>p[1])),maxY:Math.max(...points.map(p=>p[1]))});
  const core=bounds(CAPITAL.core.polygon),outer=bounds([...CAPITAL.activityEnvelope.polygon,...CAPITAL.worldConnections.flatMap(c=>c.path)]);
- for(const name of ['minX','minY'])outer[name]-=.2;for(const name of ['maxX','maxY'])outer[name]+=.2;
+ for(const name of ['minX','minY'])outer[name]-=.5;for(const name of ['maxX','maxY'])outer[name]+=.5;
  function ground(name,b,nx,nz){
   const positions=[],indices=[],normals=[],uvs=[];
   for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const wx=b.minX+(b.maxX-b.minX)*ix/nx,wy=b.minY+(b.maxY-b.minY)*iz/nz,[x,z]=toLocal([wx,wy]);positions.push(x,elevationAt(wx,wy),z);uvs.push(ix/nx,iz/nz);}
   for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){const a=z*(nx+1)+x,c=a+nx+1;indices.push(a,c,a+1,a+1,c,c+1);}
   VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat('ground','#939a78');mesh.isPickable=false;
  }
- ground('core-ground',core,256,256);
+ ground('core-ground',core,384,384);
  ground('west-ground',{...outer,maxX:core.minX},64,128);ground('east-ground',{...outer,minX:core.maxX},64,128);
  ground('south-ground',{minX:core.minX,maxX:core.maxX,minY:outer.minY,maxY:core.minY},128,64);ground('north-ground',{minX:core.minX,maxX:core.maxX,minY:core.maxY,maxY:outer.maxY},128,64);
  // Dense samples follow the same height function as feet; endpoint-only ribbons cut
  // through curved terrain and create phantom ramps/steps.
  function strip(name,points,width,material,heightAt){
   const ps=sampleLine(points,8),left=[],right=[];
-  for(let i=0;i<ps.length;i++){const prev=ps[Math.max(0,i-1)],next=ps[Math.min(ps.length-1,i+1)],[x,z]=toLocal(ps[i]);let dx=(next[0]-prev[0])*1000,dz=-(next[1]-prev[1])*1000,len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const y=heightAt(ps[i]);left.push(V(x-dz*width/2,y,z+dx*width/2));right.push(V(x+dz*width/2,y,z-dx*width/2));}
+  for(let i=0;i<ps.length;i++){const prev=ps[Math.max(0,i-1)],next=ps[Math.min(ps.length-1,i+1)],[x,z]=toLocal(ps[i]);let dx=(next[0]-prev[0])*1000,dz=-(next[1]-prev[1])*1000,len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const lx=x-dz*width/2,lz=z+dx*width/2,rx=x+dz*width/2,rz=z-dx*width/2,crossSlope=name.startsWith('road:')||name.startsWith('world_bridge_');left.push(V(lx,heightAt(crossSlope?fromLocal([lx,lz]):ps[i]),lz));right.push(V(rx,heightAt(crossSlope?fromLocal([rx,rz]):ps[i]),rz));}
   const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
  }
  for(const e of CAPITAL.edges){
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
   strip('road:'+e.id,e.points,e.widthM,mat('road:'+color,color),p=>edgeHeightAt(e,p));
+  if(e.surfaceRampM){const total=polylineLengthM(e.points),up=e.surfaceOffsetsM[0]<e.surfaceOffsetsM[1],start=up?total-e.surfaceRampM:0,parts=[];
+   for(let step=0;step<27;step++){const a=locateOnLine(e.points,start+e.surfaceRampM*step/27).position,b=locateOnLine(e.points,start+e.surfaceRampM*(step+1)/27).position;parts.push(segmentBox('stair-tread',a,b,e.widthM,.12,stone,p=>edgeHeightAt(e,p)-.06));}merge(parts,'physical-stair:'+e.id,stone);
+  }
   if(e.class==='roof'){
    const ps=sampleLine(e.points,12),supports=[];for(let i=1;i<ps.length;i++)supports.push(segmentBox('low-roof-deck',ps[i-1],ps[i],e.widthM+1,.35,mat('low-roof','#655c52'),p=>edgeHeightAt(e,p)-.35));merge(supports,'low-roof-surface:'+e.id,mat('low-roof','#655c52'));
   }
@@ -44,6 +48,14 @@ export function mountCapitalScene(getState,getRoute){
    merge(parts,'rails:'+e.id,stone);
   }
  }
+ // Fine river-bank terrain closes the coarse outer heightfield at the inherited
+ // macro river bends. It uses the same cut channel function as walking.
+ for(const r of CAPITAL.rivers){const ps=sampleLine(r.points,10),paths=[];
+  for(let ring=0;ring<=10;ring++){const off=(ring/10-.5)*(r.highFlowWidthM+45);paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.02,z);}));}
+  const bank=MeshBuilder.CreateRibbon('river-bank:'+r.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);bank.material=mat('bank','#939a78');bank.isPickable=false;
+ }
+ for(const b of CAPITAL.bridges.filter(b=>b.context)){const e=CAPITAL.edges.find(e=>e.id===b.edgeId);strip(b.id,b.points,b.widthM,stone,p=>edgeHeightAt(e,p));}
+ for(const r of CAPITAL.rivers.filter(r=>r.context))strip('context-water:'+r.id,r.points,r.widthM,mat('context-water','#407d89'),p=>terrainBaseAt(...p)-4);
  const river=CAPITAL.rivers[0],waterMat=mat('water','#407d89');
  const normalWater=strip('river-normal',river.points,river.widthM,waterMat,p=>terrainBaseAt(...p)-.9);
  const floodWater=strip('river-flood',river.points,river.highFlowWidthM,waterMat,p=>terrainBaseAt(...p)-.2);
@@ -55,12 +67,19 @@ export function mountCapitalScene(getState,getRoute){
  // Follow slopes instead of levelling each kilometre-long wall to its midpoint.
  for(const w of CAPITAL.walls){const ps=sampleLine(w.points,24),parts=[];for(let i=1;i<ps.length;i++)parts.push(segmentBox('wall',ps[i-1],ps[i],w.widthM,w.heightM,wallMat));merge(parts,w.id,wallMat);}
  function tower(name,x,z,y,h,r,material){const shaft=MeshBuilder.CreateCylinder(name,{diameter:r*2,height:h,tessellation:8},scene);shaft.position=V(x,y+h/2,z);shaft.material=material;const cap=MeshBuilder.CreateCylinder(name+':spire',{diameterTop:0,diameterBottom:r*2.5,height:r*2.2,tessellation:8},scene);cap.position=V(x,y+h+r*1.1,z);cap.material=roof;}
- for(const g of CAPITAL.gates){const [x,z]=toLocal(g.position),a=CAPITAL.core.polygon[g.wallIndex],b=CAPITAL.core.polygon[(g.wallIndex+1)%CAPITAL.core.polygon.length],dx=b[0]-a[0],dy=-(b[1]-a[1]),len=Math.hypot(dx,dy);for(const side of [-1,1])tower('gate:'+g.id,x+dx/len*14*side,z+dy/len*14*side,elevationAt(...g.position),24,4.5,stone);}
- for(const d of CAPITAL.districts){
+ for(const w of CAPITAL.walls){const ps=sampleLine(w.points,125);for(const p of ps.slice(1,-1)){const [x,z]=toLocal(p);tower('wall-tower',x,z,elevationAt(...p),22,5,stone);}}
+ for(const g of CAPITAL.gates){const [x,z]=toLocal(g.position),a=CAPITAL.core.polygon[g.wallIndex],b=CAPITAL.core.polygon[(g.wallIndex+1)%CAPITAL.core.polygon.length],dx=b[0]-a[0],dy=-(b[1]-a[1]),len=Math.hypot(dx,dy);for(const side of [-1,1])tower('gate:'+g.id,x+dx/len*16*side,z+dy/len*16*side,elevationAt(...g.position),34,7,stone);
+  const lintel=MeshBuilder.CreateBox('gate-vault:'+g.id,{width:32,height:5,depth:13},scene);lintel.position=V(x,elevationAt(...g.position)+24,z);lintel.rotation.y=-Math.atan2(dy,dx);lintel.material=stone;}
+ for(const d of [...CAPITAL.districts,{id:'outside',color:'#b6a58c',profile:{roof:'#76644f'}}]){
   const parts=[],roofs=[];
   for(const b of CAPITAL.buildings.filter(b=>b.district===d.id&&!b.facilityId)){
-   const [x,z]=toLocal(b.position),y=elevationAt(...b.position),m=MeshBuilder.CreateBox('parcel',{width:b.widthM,height:b.heightM,depth:b.depthM},scene);m.position=V(x,y+b.heightM/2,z);m.rotation.y=b.rotationRad||0;parts.push(m);
-   const cap=MeshBuilder.CreateBox('roof',{width:b.widthM+.6,height:.5,depth:b.depthM+.6},scene);cap.position=V(x,y+b.heightM+.25,z);cap.rotation.y=b.rotationRad||0;roofs.push(cap);
+   if(b.royalPart){const [rx,rz]=toLocal(b.position);for(const side of [-1,1])tower('royal-wing-tower:'+b.id,rx+side*(b.widthM/2-12),rz,elevationAt(...b.position),b.heightM+26,12,stone);}
+   const [x,z]=toLocal(b.position),y=elevationAt(...b.position),angle=b.rotationRad||0;
+   const base=Math.min(y,...[[-1,-1],[-1,1],[1,-1],[1,1]].map(([u,v])=>{const dx=u*b.widthM/2,dz=v*b.depthM/2;return elevationAt(b.position[0]+(dx*Math.cos(angle)+dz*Math.sin(angle))/1000,b.position[1]+(dx*Math.sin(angle)-dz*Math.cos(angle))/1000);}))-.5;
+   const bodyHeight=b.heightM+y-base,m=MeshBuilder.CreateBox('parcel',{width:b.widthM,height:bodyHeight,depth:b.depthM},scene);m.position=V(x,base+bodyHeight/2,z);m.rotation.y=b.rotationRad||0;parts.push(m);
+   const rw=(b.widthM+1)/2,rd=(b.depthM+1)/2,rh=b.roofHeightM||5;
+   const positions=[-rw,0,-rd,rw,0,-rd,rw,0,rd,-rw,0,rd,-rw,rh,0,rw,rh,0],indices=[0,1,5,0,5,4,3,4,5,3,5,2,0,4,3,1,2,5],normals=[];
+   VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals});const cap=new Mesh('pitched-roof',scene);data.applyToMesh(cap);cap.position=V(x,y+b.heightM,z);cap.rotation.y=b.rotationRad||0;roofs.push(cap);
   }
   merge(parts,'district-mass:'+d.id,mat('d:'+d.id,d.color));merge(roofs,'district-roofs:'+d.id,mat('roof:'+d.id,d.profile.roof));
  }
@@ -68,8 +87,9 @@ export function mountCapitalScene(getState,getRoute){
  for(const f of CAPITAL.facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE')){
   const [x,z]=toLocal(f.buildingPosition),y=elevationAt(...f.buildingPosition),size=massFootprint(CAPITAL.buildings.find(b=>b.facilityId===f.id));
   if(f.id==='LOC_CAP_CASTLE'){
-   const keep=MeshBuilder.CreateBox('castle-keep',{width:150,height:62,depth:118},scene);keep.position=V(x,y+31,z);keep.material=stone;
-   for(const [ox,oz]of[[-62,-46],[62,-46],[-62,46],[62,46]])tower('castle-tower',x+ox,z+oz,y,82,10,stone);tower('castle-primary',x,z,y+19,108,13,stone);
+   const keep=MeshBuilder.CreateBox('castle-keep',{width:size.widthM,height:88,depth:size.depthM},scene);keep.position=V(x,y+44,z);keep.material=stone;
+   const roofKeep=MeshBuilder.CreateCylinder('royal-keep-roof',{diameterTop:0,diameterBottom:225,height:36,tessellation:4},scene);roofKeep.scaling.x=1.5;roofKeep.scaling.z=.8;roofKeep.rotation.y=Math.PI/4;roofKeep.position=V(x,y+106,z);roofKeep.material=roof;
+   for(const [ox,oz]of[[-135,-78],[135,-78],[-135,78],[135,78],[-65,-78],[65,-78]])tower('castle-tower',x+ox,z+oz,y,110,13,stone);tower('castle-primary',x,z,y+60,100,20,stone);
   }else if(f.id==='LOC_CAP_MAGE_TOWER'){tower('mage-primary',x,z,y,118,17,mat('mage','#777e9e'));tower('mage-top',x,z,y+80,58,8.5,mat('mage','#777e9e'));}
   else{const m=MeshBuilder.CreateBox(f.id,{width:size.widthM,height:size.heightM,depth:size.depthM},scene);m.position=V(x,y+size.heightM/2,z);m.material=stone;if(f.id==='LOC_CAP_ORPHANAGE')parcelMeshes.push(m);}
  }
@@ -84,6 +104,7 @@ export function mountCapitalScene(getState,getRoute){
 
  }
  // A continuous suburb/road/farmland seam; no scene switch or invisible core border.
+ for(const e of CAPITAL.edges.filter(e=>e.class==='roof')){const ps=sampleLine(e.points,10),parts=[];for(let i=1;i<ps.length;i++)parts.push(segmentBox('roof-support-houses',ps[i-1],ps[i],e.widthM+3,3.8,mat('roof-support','#9d8875'),p=>elevationAt(...p)));merge(parts,'roof-support:'+e.id,mat('roof-support','#9d8875'));}
  for(const o of CAPITAL.outskirts){const [x,z]=toLocal(o.position),y=elevationAt(...o.position);
   if(o.kind==='farmland')for(let i=0;i<8;i++){const field=MeshBuilder.CreateBox('farm-strip',{width:90,height:.12,depth:9},scene);field.position=V(x-65,y+.1,z+i*12-48);field.material=mat('field:'+i%2,i%2?'#a89b61':'#9b925b');}
 
@@ -94,7 +115,8 @@ export function mountCapitalScene(getState,getRoute){
   else{const m=MeshBuilder.CreateBox(f.id,{width:f.widthM,height:f.heightM,depth:f.depthM},scene);m.position=V(x,y+f.heightM/2,z);m.material=mat('fixture:'+f.kind,f.color);}
  }
  const closures=new Map();for(const barrier of activeBarriers({access:'public',weather:'flood',events:{T10:'active',T11:'active',T16:'active',T17:'active'}})){const m=segmentBox('closure:'+barrier.edgeId,...barrier.points,2,barrier.heightM,closureMat,p=>surfaceAt(p).heightM);closures.set(barrier.edgeId,m);}
- const orbit=new ArcRotateCamera('capital-orbit',Math.PI/2,.82,2450,V(150,50,-500),scene);orbit.minZ=10;orbit.maxZ=18000;orbit.lowerRadiusLimit=80;orbit.upperRadiusLimit=9000;orbit.wheelPrecision=5;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
+ const orbit=new ArcRotateCamera('capital-orbit',Math.PI/2,1.02,3600,V(0,80,-380),scene);orbit.minZ=10;orbit.maxZ=18000;orbit.lowerRadiusLimit=80;orbit.upperRadiusLimit=9000;orbit.wheelPrecision=5;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
+ let auditPaused=false;let skipFrame=false;const resumeFrame=()=>{skipFrame=true;};document.addEventListener('visibilitychange',resumeFrame);
  let walk=null,feet=null,guide=null,travelledM=0,simSeconds=0,blocked=null,barriers=[],plans=[],agents=[],trafficClock=0,telemetryClock=0,disposed=false;
  const pressed=new Set(),agentMeshes=new Map(),telemetry=document.getElementById('telemetry');
  const keydown=e=>{if(!walk||e.target.closest('select,input,button'))return;if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','ShiftLeft','ShiftRight'].includes(e.code)){pressed.add(e.code);guide=null;e.preventDefault();}};
@@ -151,10 +173,10 @@ export function mountCapitalScene(getState,getRoute){
  document.getElementById('focus-castle').onclick=()=>{stopWalk();const n=byNode('castle'),[x,z]=toLocal(n.position);orbit.setTarget(V(x,elevationAt(...n.position)+40,z));orbit.radius=900;};
  for(const button of document.querySelectorAll('[data-walk]')){const code=button.dataset.walk;button.onpointerdown=e=>{guide=null;pressed.add(code);button.setPointerCapture(e.pointerId);e.preventDefault();};button.onpointerup=button.onpointercancel=button.onlostpointercapture=()=>pressed.delete(code);}
  updateState();
- scene.onBeforeRenderObservable.add(()=>{const multiplier=guide?Number(document.getElementById('review-speed').value):1,dt=Math.min(.05,engine.getDeltaTime()/1000);advance(dt*multiplier);telemetryClock+=dt;if(telemetryClock>.5){refreshTraffic();updateTelemetry();telemetryClock=0;}});
+ scene.onBeforeRenderObservable.add(()=>{const multiplier=guide?Number(document.getElementById('review-speed').value):1,dt=document.hidden||skipFrame||auditPaused?0:engine.getDeltaTime()/1000;skipFrame=false;advanceElapsed(dt*multiplier,advance);telemetryClock+=dt;if(telemetryClock>.5){refreshTraffic();updateTelemetry();telemetryClock=0;}});
  engine.runRenderLoop(()=>{if(!document.getElementById('scene-panel').hidden)scene.render();});const resize=()=>engine.resize();window.addEventListener('resize',resize);loading.hidden=true;
  // Explicit diagnostic endpoint only on ?audit=1. Advances the SAME movement/collision
  // pipeline in small physical steps, never teleports cameras between sampled checkpoints.
- if(new URLSearchParams(location.search).has('audit'))globalThis.__capitalAudit={snapshot,advance(seconds){advance(seconds);refreshTraffic();updateTelemetry();scene.render();return snapshot();},visibility(){return feet?['castle','mage_tower'].map(id=>({id,...landmarkVisibility(feet,id)})):[];}};
- return {resize,updateState,routeChanged(){guide=null;},dispose(){disposed=true;window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clearKeys);window.removeEventListener('resize',resize);delete globalThis.__capitalAudit;engine.dispose();}};
+ if(new URLSearchParams(location.search).has('audit'))globalThis.__capitalAudit={snapshot,pauseRealTime(paused=true){auditPaused=paused;resumeFrame();},frame(seconds){advanceElapsed(seconds,advance);refreshTraffic();updateTelemetry();scene.render();return snapshot();},overview(angle=Math.PI/2){stopWalk();orbit.alpha=angle;orbit.beta=1.02;orbit.radius=3600;orbit.setTarget(V(0,80,-380));scene.render();},advance(seconds){advance(seconds);refreshTraffic();updateTelemetry();scene.render();return snapshot();},visibility(){return feet?['castle','mage_tower'].map(id=>({id,...landmarkVisibility(feet,id)})):[];}};
+ return {resize(){resumeFrame();resize();},updateState,routeChanged(){guide=null;clearKeys();blocked=null;updateTelemetry();},dispose(){disposed=true;window.removeEventListener('keydown',keydown);window.removeEventListener('keyup',keyup);window.removeEventListener('blur',clearKeys);window.removeEventListener('resize',resize);document.removeEventListener('visibilitychange',resumeFrame);delete globalThis.__capitalAudit;engine.dispose();}};
 }

@@ -18,21 +18,32 @@ try{
  const before=await page.locator('#route-options').innerText();
  for(const hour of ['7','12','18','12'])await page.locator('#hour').selectOption(hour);
  const after=await page.locator('#route-options').innerText();if(before!==after)throw new Error('Repeated state rendering changed route metrics');
- await page.screenshot({path:path.join(output,'topology.png')});
+ await page.screenshot({path:path.join(output,'urban-form.png')});await page.locator('#topology-debug').click();await page.screenshot({path:path.join(output,'topology.png')});await page.locator('#urban-form').click();
  await page.locator('#view-3d').click();await page.waitForFunction(()=>!!window.__capitalAudit,{timeout:30000});
+ await page.evaluate(()=>window.__capitalAudit.pauseRealTime());
  const invalidGround=await page.evaluate(async()=>{const {CAPITAL}=await import('/capital-review/capital-data.js');const names=new Set(['core-ground',...CAPITAL.negativeSpaces.map(s=>s.id)]);return BABYLON.Engine.Instances[0].scenes[0].meshes.filter(m=>names.has(m.name)).filter(m=>{const n=m.getVerticesData('normal');return !n||n.some(v=>!Number.isFinite(v))||n.filter((_,i)=>i%3===1).reduce((a,b)=>a+b,0)<=0;}).map(m=>m.name);});
  if(invalidGround.length)throw new Error('Invalid ground-facing normals: '+invalidGround.join(','));
+ const badRoadVertices=await page.evaluate(async()=>{const {CAPITAL,fromLocal}=await import('/capital-review/capital-data.js'),{edgeHeightAt}=await import('/capital-review/capital-surfaces.js'),scene=BABYLON.Engine.Instances[0].scenes[0],bad=[];
+  for(const e of CAPITAL.edges){const mesh=scene.getMeshByName('road:'+e.id),positions=mesh?.getVerticesData('position');if(!positions){bad.push(e.id+':missing');continue;}for(let i=0;i<positions.length;i+=3*53){const p=fromLocal([positions[i],positions[i+2]]),expected=edgeHeightAt(e,p);if(Math.abs(positions[i+1]-expected)>.001){bad.push(e.id);break;}}}return bad;});
+ if(badRoadVertices.length)throw Error('Street ribbon diverges from physical cross slope: '+badRoadVertices.join(','));report.roadSurfacesMatch=true;
  await page.screenshot({path:path.join(output,'overview.png')});
+ for(const [name,angle]of [['south',Math.PI/2],['west',Math.PI],['east',0]]){await page.evaluate(a=>window.__capitalAudit.overview(a),angle);await page.screenshot({path:path.join(output,'overview-'+name+'.png')});}
+ await page.locator('#route-from').selectOption('west_gate');await page.locator('#route-to').selectOption('market');await page.locator('#walk-route').click();
+ const clockStart=await page.evaluate(()=>window.__capitalAudit.snapshot());let clockEnd;for(let i=0;i<10;i++)clockEnd=await page.evaluate(()=>window.__capitalAudit.frame(.1));report.lowFpsDistanceM=clockEnd.travelledM-clockStart.travelledM;if(Math.abs(report.lowFpsDistanceM-1.4)>.001)throw Error('10 FPS walking speed drift');
+ const guidedBefore=await page.evaluate(()=>window.__capitalAudit.advance(5));await page.locator('#route-to').selectOption('castle');
+ const cancelled=await page.evaluate(()=>window.__capitalAudit.snapshot());const guidedAfter=await page.evaluate(()=>window.__capitalAudit.advance(10));
+ if(guidedAfter.travelledM!==cancelled.travelledM)throw Error('No-route selection failed to stop old guided walk');
+ report.invalidRouteStopsGuide=true;await page.locator('#walk-stop').click();
  const pairs=[['west_gate','market'],['south_gate','market'],['east_gate','market'],['market','castle'],['market','lower_court'],['market','ajin'],['ajin','east_gate'],['inn','castle'],['lower_court','south_cross'],['west_gate','world_R06'],['south_gate','world_R12'],['east_gate','world_R13'],['south_gate','world_R11'],['lower_court','roof_landing']];
  for(const [from,to]of pairs){
   await page.locator('#access').selectOption(to==='castle'?'permitted':'public');
   await page.locator('#route-from').selectOption(from);await page.locator('#route-to').selectOption(to);
-  await page.locator('#walk-route').click();let snapshot,samples=[];
+  await page.locator('#walk-route').click();let snapshot,samples=[],captured=new Set();
   await page.screenshot({path:path.join(output,from+'-'+to+'-start.png')});
   for(let step=0;step<100;step++){
    snapshot=await page.evaluate(()=>window.__capitalAudit.advance(30));
    const visible=await page.evaluate(()=>window.__capitalAudit.visibility());samples.push({...snapshot,visible});
-   if(step===5)await page.screenshot({path:path.join(output,from+'-'+to+'-middle.png')});
+   for(const [label,fraction]of [['quarter',.25],['middle',.5],['three-quarter',.75]])if(!captured.has(label)&&snapshot.travelledM>=snapshot.routeDistanceM*fraction){captured.add(label);await page.screenshot({path:path.join(output,from+'-'+to+'-'+label+'.png')});}
    if(snapshot.blocked||snapshot.complete)break;
   }
   report.routes.push({from,to,...snapshot,samples});console.log('ROUTE',from,to,JSON.stringify(snapshot));
