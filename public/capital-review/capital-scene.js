@@ -48,6 +48,20 @@ export function mountCapitalScene(getState,getRoute){
    merge(parts,'rails:'+e.id,stone);
   }
  }
+ // Exposed retaining faces make the five benches readable in silhouette and
+ // at eye height. Gaps follow the same graded street cuts as the walking surface.
+ for(const face of CAPITAL.retainingFaces){const paths=[[],[]];let parts=[];
+  function flush(){if(paths[0].length>1){const m=MeshBuilder.CreateRibbon(face.id,{pathArray:paths.map(p=>[...p]),sideOrientation:Mesh.DOUBLESIDE},scene);m.material=mat('retaining','#b4ad94');m.isPickable=false;parts.push(m);}paths[0].length=0;paths[1].length=0;}
+  for(const p of face.points){const dx=p[0]-CAPITAL.hillCentre[0],dy=p[1]-CAPITAL.hillCentre[1],len=Math.hypot(dx,dy),a=[p[0]-dx/len*.009,p[1]-dy/len*.009],b=[p[0]+dx/len*.009,p[1]+dy/len*.009];
+   if(!pointInPolygon(p,CAPITAL.core.polygon)||elevationAt(...a)-elevationAt(...b)<7){flush();continue;}const [x,z]=toLocal(p);paths[0].push(V(x,elevationAt(...b),z));paths[1].push(V(x,elevationAt(...a),z));}
+  flush();merge(parts,face.id,mat('retaining','#b4ad94'));
+ }
+ // Cross-slope lanes show individual risers where their real grade climbs.
+ for(const e of CAPITAL.edges.filter(e=>e.fabric&&e.class==='stairs')){const ps=sampleLine(e.points,.8),left=[],right=[];
+  for(let i=0;i<ps.length;i++){const p=ps[i],a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=e.widthM/2/1000,height=edgeHeightAt(e,p)+.035;
+   for(const h of [i?edgeHeightAt(e,ps[i-1])+.035:height,height]){const [lx,lz]=toLocal([p[0]-dy/len*off,p[1]+dx/len*off]),[rx,rz]=toLocal([p[0]+dy/len*off,p[1]-dx/len*off]);left.push(V(lx,h,lz));right.push(V(rx,h,rz));}}
+  const m=MeshBuilder.CreateRibbon('terrace-stairs:'+e.id,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);m.material=stone;m.isPickable=false;
+ }
  // Fine river-bank terrain closes the coarse outer heightfield at the inherited
  // macro river bends. It uses the same cut channel function as walking.
  for(const r of CAPITAL.rivers){const ps=sampleLine(r.points,10),paths=[];
@@ -56,9 +70,10 @@ export function mountCapitalScene(getState,getRoute){
  }
  for(const b of CAPITAL.bridges.filter(b=>b.context)){const e=CAPITAL.edges.find(e=>e.id===b.edgeId);strip(b.id,b.points,b.widthM,stone,p=>edgeHeightAt(e,p));}
  for(const r of CAPITAL.rivers.filter(r=>r.context))strip('context-water:'+r.id,r.points,r.widthM,mat('context-water','#407d89'),p=>terrainBaseAt(...p)-4);
+ const quayParts=[];for(const r of CAPITAL.rivers.filter(r=>!r.context)){const ps=sampleLine(r.points,8);for(let i=1;i<ps.length;i++)for(const side of [-1,1]){const a=ps[i-1],b=ps[i],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=side*(r.highFlowWidthM/2+2)/1000,aa=[a[0]-dy/len*off,a[1]+dx/len*off],bb=[b[0]-dy/len*off,b[1]+dx/len*off];quayParts.push(segmentBox('quay-face',aa,bb,1.1,3.3,stone,p=>terrainBaseAt(...p)-4.5));}}merge(quayParts,'river-quay-faces',stone);
  const river=CAPITAL.rivers[0],waterMat=mat('water','#407d89');
- const normalWater=strip('river-normal',river.points,river.widthM,waterMat,p=>terrainBaseAt(...p)-.9);
- const floodWater=strip('river-flood',river.points,river.highFlowWidthM,waterMat,p=>terrainBaseAt(...p)-.2);
+ const normalWater=strip('river-normal',river.points,river.widthM,waterMat,p=>terrainBaseAt(...p)-1.6);
+ const floodWater=strip('river-flood',river.points,river.highFlowWidthM,waterMat,p=>terrainBaseAt(...p)-.8);
  function segmentBox(name,a,b,width,height,material,heightAt=elevationAtPosition){
   const [ax,az]=toLocal(a),[bx,bz]=toLocal(b),dx=bx-ax,dz=bz-az,mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];const mesh=MeshBuilder.CreateBox(name,{width:Math.hypot(dx,dz),height,depth:width},scene);mesh.position=V((ax+bx)/2,heightAt(mid)+height/2,(az+bz)/2);mesh.rotation.y=-Math.atan2(dz,dx);mesh.material=material;return mesh;
  }

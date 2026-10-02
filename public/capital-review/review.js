@@ -76,7 +76,7 @@ function renderBase(){
  }
 }
 function renderElevation(){
- const b=bbox(CAPITAL.core.polygon),nx=60,ny=60,levels=[20,35,50,65,80,95,110,125,140];
+ const b=bbox(CAPITAL.core.polygon),nx=60,ny=60,levels=[20,40,60,80,100,120,140,160,180,200,220,240];
  for(const level of levels){
   for(let iy=0;iy<ny;iy++)for(let ix=0;ix<nx;ix++){
    const x0=b.minX+(b.maxX-b.minX)*ix/nx,x1=b.minX+(b.maxX-b.minX)*(ix+1)/nx;
@@ -101,7 +101,7 @@ function renderSpaces(){
 }
 function renderUrbanTerrain(){
  const b=bbox(CAPITAL.activityEnvelope.polygon),step=.045;
- for(let x=b.minX;x<b.maxX;x+=step)for(let y=b.minY;y<b.maxY;y+=step){const p=[x+step/2,y+step/2];if(!pointInPolygon(p,CAPITAL.activityEnvelope.polygon))continue;const h=elevationAt(...p),shade=Math.max(0,Math.min(1,h/150)),[px,py]=project([x,y+step]);
+ for(let x=b.minX;x<b.maxX;x+=step)for(let y=b.minY;y<b.maxY;y+=step){const p=[x+step/2,y+step/2];if(!pointInPolygon(p,CAPITAL.activityEnvelope.polygon))continue;const h=elevationAt(...p),shade=Math.max(0,Math.min(1,h/250)),[px,py]=project([x,y+step]);
   el('rect',{x:px,y:py,width:step*sx+.1,height:step*sy+.1,fill:'rgb('+Math.round(144+shade*54)+','+Math.round(156+shade*34)+','+Math.round(113+shade*51)+')'},layers.terrain);
  }
  for(const o of CAPITAL.outskirts){const [x,y]=project(o.position);el('rect',{x:x-metresPx(o.radiusM),y:y-metresPx(o.radiusM),width:metresPx(o.radiusM*2),height:metresPx(o.radiusM*2),fill:o.kind==='farmland'?'#b0a168':'#b5a180','fill-opacity':.6},layers.terrain);}
@@ -148,6 +148,7 @@ function renderRoads(){
  }
 }
 function renderWalls(){
+ for(const face of CAPITAL.retainingFaces){el('path',{d:pathD(face.points.filter(p=>pointInPolygon(p,CAPITAL.core.polygon))),fill:'none',stroke:'#978b72','stroke-width':1.5,'stroke-opacity':.7},layers.elevation);}
  for(const w of CAPITAL.walls){
   el('path',{d:pathD(w.points),fill:'none',stroke:'#504f48','stroke-width':Math.max(2,metresPx(w.widthM)),'stroke-linecap':'square'},layers.walls);
  }

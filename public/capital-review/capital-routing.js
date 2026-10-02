@@ -9,6 +9,7 @@ export const DEFAULT_CITY_STATE=Object.freeze({
 });
 
 const restrictedDistricts=new Set(['castle','noble','mage']);
+const nodeMaps=new WeakMap();const nodesFor=capital=>{if(!nodeMaps.has(capital))nodeMaps.set(capital,new Map(capital.nodes.map(n=>[n.id,n])));return nodeMaps.get(capital);};
 const nodeById=()=>new Map(CAPITAL.nodes.map(n=>[n.id,n]));
 const edgeById=()=>new Map(CAPITAL.edges.map(e=>[e.id,e]));
 const bridgeById=()=>new Map(CAPITAL.bridges.map(b=>[b.id,b]));
@@ -29,7 +30,7 @@ export function polylineLengthM(points){
 }
 
 export function edgeAvailability(edge,inputState={},capital=CAPITAL){
- const state=normalizeState(inputState),nodes=new Map(capital.nodes.map(n=>[n.id,n]));
+ const state=normalizeState(inputState),nodes=nodesFor(capital);
  const a=nodes.get(edge.from),b=nodes.get(edge.to);
  if(!a||!b)return {open:false,reason:'missing-node'};
  if(state.weather==='flood'&&edge.bridgeId){
@@ -68,19 +69,12 @@ export function shortestPath(from,to,inputState={},capital=CAPITAL,banned=new Se
  if(from===to)return {nodes:[from],edgeIds:[],edges:[],cost:0};
  const graph=graphFor(inputState,capital,banned);
  if(!graph.has(from)||!graph.has(to))return null;
- const dist=new Map([...graph.keys()].map(k=>[k,Infinity])),prev=new Map(),unvisited=new Set(graph.keys());
- dist.set(from,0);
- while(unvisited.size){
-  let u=null,best=Infinity;
-  for(const key of unvisited){const d=dist.get(key);if(d<best){best=d;u=key;}}
-  if(u==null||best===Infinity)break;
-  unvisited.delete(u);
-  if(u===to)break;
-  for(const arc of graph.get(u)||[]){
-   if(!unvisited.has(arc.to))continue;
-   const next=best+arc.weight;
-   if(next<dist.get(arc.to)){dist.set(arc.to,next);prev.set(arc.to,{node:u,edge:arc.edge});}
-  }
+ const dist=new Map([[from,0]]),prev=new Map(),heap=[];
+ const push=entry=>{heap.push(entry);let i=heap.length-1;while(i){const p=(i-1)>>1;if(heap[p].cost<=entry.cost)break;heap[i]=heap[p];i=p;}heap[i]=entry;};
+ const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){let i=0;while(i*2+1<heap.length){let c=i*2+1;if(c+1<heap.length&&heap[c+1].cost<heap[c].cost)c++;if(heap[c].cost>=last.cost)break;heap[i]=heap[c];i=c;}heap[i]=last;}return top;};
+ push({id:from,cost:0});
+ while(heap.length){const {id:u,cost}=pop();if(cost!==dist.get(u))continue;if(u===to)break;
+  for(const arc of graph.get(u)||[]){const next=cost+arc.weight;if(next>=(dist.get(arc.to)??Infinity))continue;dist.set(arc.to,next);prev.set(arc.to,{node:u,edge:arc.edge});push({id:arc.to,cost:next});}
  }
  if(!prev.has(to))return null;
  const nodes=[to],edges=[];let cursor=to;
@@ -127,6 +121,13 @@ export function findAlternatives(from,to,inputState={},capital=CAPITAL,limit=3){
    candidates.push(alt);
   }
  };
+ // A dense mesh needs corridor-scale exclusions as well as individual-edge
+ // exclusions; one-edge bans otherwise only find the next immediate micro-loop.
+ const line=pathPolyline(first),start=line[0],end=line.at(-1);
+ for(const clearance of [60,130]){
+  const banned=new Set(capital.edges.filter(e=>!e.bridgeId&&e.points.every(p=>distance(p,start)>180&&distance(p,end)>180)&&e.points.some(p=>distanceToLine(p,line)<clearance)).map(e=>e.id));
+  const alt=shortestPath(from,to,inputState,capital,banned);if(alt)candidates.push(alt);
+ }
  searchBans(first);
  while(found.length<limit&&candidates.length){
   candidates.sort((a,b)=>a.cost-b.cost);
