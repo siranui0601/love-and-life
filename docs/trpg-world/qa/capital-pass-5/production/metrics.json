@@ -1,0 +1,36 @@
+{
+  "version": "capital-street-terrain-pass-5",
+  "buildings": 4009,
+  "ordinaryServiced": 3942,
+  "coreCoverage": 0.2816162362096352,
+  "edges": 1454,
+  "lanes": 850,
+  "heights": {
+    "castle": 246.01056647236356,
+    "market": 37.821992577038614,
+    "lower_court": 17.47237853414037,
+    "royal_gate": 126.86047493388364,
+    "office": 112.1154817682357,
+    "noble_square": 122.1053919232578
+  },
+  "walkingReviews": [
+    {
+      "id": "lower-backstreets",
+      "name": "下層の生活裏道",
+      "from": "lower_court",
+      "to": "fabric_13_76"
+    },
+    {
+      "id": "terrace-stairs",
+      "name": "段丘を横断する石段",
+      "from": "fabric_4_34",
+      "to": "fabric_3_28"
+    },
+    {
+      "id": "river-quay",
+      "name": "橋詰と河岸歩廊",
+      "from": "bank_walk_-1_2",
+      "to": "bank_walk_-1_3"
+    }
+  ]
+}

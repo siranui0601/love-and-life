@@ -1,0 +1,12 @@
+PUBLIC MATCH capital-clock.js 60445fd9473288afd2e3e600ec8f63a2e0b6ffbcdbcb867b9c2104689cda6f5c
+PUBLIC MATCH capital-data.js 5071fc0215837bb4f722da2426fca4349d5bdc53c70567747c73ac5b2244ef0a
+PUBLIC MATCH capital-fabric.js 6ce2d45f238e1642e47d4d9c08e3c5998defd9de17e35c482700c3d568ac2530
+PUBLIC MATCH capital-routing.js 934f42e2d4fefdfa00ec521ce2af06fddab8531cd5eb719189f0af914dcbc6c8
+PUBLIC MATCH capital-scene.js a4449a791836ffb351159c15c0385faec8492daa753514a26d3b4be1d8703efd
+PUBLIC MATCH capital-spatial.js 619baaae6f45b5476df4fa769ea3aae0d96902aec7d60e7c0ed24ef29f3fa31e
+PUBLIC MATCH capital-surfaces.js 2c8f32119033b371ebe9c74b84fd09e9ddd3cd60d9c55f925ca500ce05c861ce
+PUBLIC MATCH capital-traffic.js 60dc26db7d335668e6a17fa679433169cfdeaf5959b0ddfba040c7ea59150e88
+PUBLIC MATCH index.html a45b02f428d1f0b364476190d2b0cd819c62cda2e7b5ce22baad554d271e12e1
+PUBLIC MATCH review.js e9805b1c66928aa5df9d195a933e7ba2413e0a485b8e26bc925d926f28f2fb6b
+PUBLIC MATCH style.css d1438054bccf60da5495c574b3286c789cfba58c668da3f117050156c03ea533
+PRODUCTION PASS {"url":"https://siranui.jp/capital-review/?audit=1","routes":14,"states":8,"lowFpsDistanceM":1.400000000025155,"invalidRouteStopsGuide":true}

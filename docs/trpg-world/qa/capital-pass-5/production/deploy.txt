@@ -1,0 +1,59 @@
+Updating 0de0c101..ff4db857
+Fast-forward
+ .../CAPITAL-STREET-TERRAIN-PASS-5-2026-10-03.md    |    26 +
+ .../qa/capital-pass-5/premerge/browser-audit.json  | 12191 +++++++++++++++++++
+ .../capital-pass-5/premerge/market-castle-end.png  |   Bin 0 -> 112537 bytes
+ .../premerge/market-castle-middle.png              |   Bin 0 -> 141339 bytes
+ .../qa/capital-pass-5/premerge/metrics.json        |    36 +
+ .../premerge/micro-lower-backstreets-start.png     |   Bin 0 -> 130244 bytes
+ .../premerge/micro-lower-backstreets-walking.png   |   Bin 0 -> 125058 bytes
+ .../premerge/micro-river-quay-start.png            |   Bin 0 -> 137584 bytes
+ .../premerge/micro-terrace-stairs-walking.png      |   Bin 0 -> 256341 bytes
+ .../qa/capital-pass-5/premerge/mobile.png          |   Bin 0 -> 68326 bytes
+ .../qa/capital-pass-5/premerge/overview-east.png   |   Bin 0 -> 636752 bytes
+ .../qa/capital-pass-5/premerge/overview-south.png  |   Bin 0 -> 682006 bytes
+ .../qa/capital-pass-5/premerge/overview-west.png   |   Bin 0 -> 587152 bytes
+ .../qa/capital-pass-5/premerge/source-head.txt     |     1 +
+ .../qa/capital-pass-5/premerge/state-T11.png       |   Bin 0 -> 122405 bytes
+ .../qa/capital-pass-5/premerge/state-flood.png     |   Bin 0 -> 147575 bytes
+ .../qa/capital-pass-5/premerge/tests.txt           |    57 +
+ .../qa/capital-pass-5/premerge/topology.png        |   Bin 0 -> 643525 bytes
+ .../qa/capital-pass-5/premerge/urban-form.png      |   Bin 0 -> 695000 bytes
+ public/capital-review/capital-data.js              |    90 +-
+ public/capital-review/capital-fabric.js            |    53 +
+ public/capital-review/capital-routing.js           |    30 +-
+ public/capital-review/capital-scene.js             |    37 +-
+ public/capital-review/capital-spatial.js           |    11 +-
+ public/capital-review/capital-surfaces.js          |     5 +-
+ public/capital-review/review.js                    |     8 +-
+ test/capital-morphology.test.mjs                   |    39 +-
+ tools/trpg-world/audit-capital-browser.mjs         |    11 +
+ tools/trpg-world/verify-capital-public.mjs         |     6 +-
+ 29 files changed, 12554 insertions(+), 47 deletions(-)
+ create mode 100644 docs/trpg-world/CAPITAL-STREET-TERRAIN-PASS-5-2026-10-03.md
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/browser-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/market-castle-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/market-castle-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/metrics.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/micro-lower-backstreets-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/micro-lower-backstreets-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/micro-river-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/micro-terrace-stairs-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/mobile.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/overview-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/overview-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/source-head.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/state-T11.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/state-flood.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/tests.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/topology.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-5/premerge/urban-form.png
+ create mode 100644 public/capital-review/capital-fabric.js
+VPS HEAD 0de0c1015a280ebe129bad69065d3a3180357318 ORIGIN MAIN ff4db8575e618410d2e56baa116ae9d3f4630d2d
+DIRTY TRACKED ['public/TRPG/assets/manifest.json', 'public/TRPG/player-simulation-report.json', 'tools/trpg-sim/reports/player-latest.md']
+UNTRACKED FILES 102 INCOMING 29 OVERLAP 0
+DIRTY SHA256 fdb95a3f5b15cdca2cd95e4108bd43e6e6d8189945a9def3bfcb10719e4ffe21
+PRESERVED dirty work and untracked metadata
+FINAL HEAD ff4db8575e618410d2e56baa116ae9d3f4630d2d
+STATIC ONLY: no process restart
