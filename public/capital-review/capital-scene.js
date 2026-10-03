@@ -62,8 +62,12 @@ export function mountCapitalScene(getState,getRoute){
  }
  // Cross-slope lanes show individual risers where their real grade climbs.
  for(const e of CAPITAL.edges.filter(e=>e.fabric&&e.class==='stairs')){const ps=sampleLine(e.points,.8),left=[],right=[];
-  for(let i=0;i<ps.length;i++){const p=ps[i],a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=e.widthM/2/1000,height=edgeHeightAt(e,p)+.035;
-   for(const h of [i?edgeHeightAt(e,ps[i-1])+.035:height,height]){const [lx,lz]=toLocal([p[0]-dy/len*off,p[1]+dx/len*off]),[rx,rz]=toLocal([p[0]+dy/len*off,p[1]-dx/len*off]);left.push(V(lx,h,lz));right.push(V(rx,h,rz));}}
+  for(let i=0;i<ps.length;i++){const p=ps[i],a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=e.widthM/2/1000;
+   // Tread tops cover the smooth walking ramp at both road edges; using only
+   // the centre height exposed diagonal triangles of paving through the stone.
+   const sidePoint=(q,s)=>[q[0]+s*dy/len*off,q[1]-s*dx/len*off];
+   const tread=(q,r,s)=>Math.max(edgeHeightAt(e,sidePoint(q,s)),edgeHeightAt(e,sidePoint(r,s)))+.045;
+   for(const pair of [[a,p],[p,b]]){const [lx,lz]=toLocal(sidePoint(p,-1)),[rx,rz]=toLocal(sidePoint(p,1));left.push(V(lx,tread(...pair,-1),lz));right.push(V(rx,tread(...pair,1),rz));}}
   const m=MeshBuilder.CreateRibbon('terrace-stairs:'+e.id,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);m.material=stone;m.isPickable=false;
  }
  // Fine river-bank terrain closes the coarse outer heightfield at the inherited
