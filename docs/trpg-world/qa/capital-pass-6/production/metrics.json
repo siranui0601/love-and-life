@@ -1,0 +1,16 @@
+{
+  "version": "capital-block-enclosure-pass-6",
+  "buildings": 3879,
+  "plots": 3808,
+  "frontageRows": 1419,
+  "coreCoverage": 0.35878731196054037,
+  "fortifications": 82,
+  "heights": {
+    "castle": 249.2088258673123,
+    "market": 47.7493330773702,
+    "lower_court": 36.17723507677865,
+    "royal_gate": 146.6,
+    "office": 136.44218170801906,
+    "noble_square": 194.69601223241528
+  }
+}

@@ -1,0 +1,173 @@
+Updating f8f3d175..b735272e
+Fast-forward
+ .../CAPITAL-BLOCK-ENCLOSURE-PASS-6-2026-10-03.md   |    61 +
+ .../CAPITAL-PASS-6-WORK-STATUS-2026-10-03.md       |    50 +
+ .../geometry-review/browser-audit.json             | 12241 +++++++++++++++++
+ .../geometry-review/entry-east_gate-end.png        |   Bin 0 -> 113841 bytes
+ .../geometry-review/entry-south_gate-end.png       |   Bin 0 -> 113758 bytes
+ .../geometry-review/entry-west_gate-end.png        |   Bin 0 -> 126436 bytes
+ .../geometry-review/market-castle-end.png          |   Bin 0 -> 113905 bytes
+ .../geometry-review/market-castle-middle.png       |   Bin 0 -> 151054 bytes
+ .../qa/capital-pass-6/geometry-review/metrics.json |    16 +
+ .../micro-lower-backstreets-walking.png            |   Bin 0 -> 130708 bytes
+ .../geometry-review/micro-river-quay-start.png     |   Bin 0 -> 146853 bytes
+ .../micro-terrace-stairs-walking.png               |   Bin 0 -> 271995 bytes
+ .../qa/capital-pass-6/geometry-review/mobile.png   |   Bin 0 -> 64800 bytes
+ .../geometry-review/overview-east.png              |   Bin 0 -> 651947 bytes
+ .../geometry-review/overview-south.png             |   Bin 0 -> 735030 bytes
+ .../geometry-review/overview-west.png              |   Bin 0 -> 605955 bytes
+ .../capital-pass-6/geometry-review/source-head.txt |     1 +
+ .../capital-pass-6/geometry-review/state-T11.png   |   Bin 0 -> 124016 bytes
+ .../capital-pass-6/geometry-review/state-flood.png |   Bin 0 -> 152020 bytes
+ .../qa/capital-pass-6/geometry-review/tests.txt    |    60 +
+ .../qa/capital-pass-6/geometry-review/topology.png |   Bin 0 -> 634838 bytes
+ .../capital-pass-6/geometry-review/urban-form.png  |   Bin 0 -> 694362 bytes
+ docs/trpg-world/qa/capital-pass-6/latest-tests.txt |    61 +
+ .../qa/capital-pass-6/premerge/browser-audit.json  | 12241 +++++++++++++++++
+ .../premerge/entry-east_gate-end.png               |   Bin 0 -> 113790 bytes
+ .../premerge/entry-south_gate-end.png              |   Bin 0 -> 113728 bytes
+ .../premerge/entry-west_gate-end.png               |   Bin 0 -> 126425 bytes
+ .../capital-pass-6/premerge/grade-diagnostic.json  | 13735 +++++++++++++++++++
+ .../capital-pass-6/premerge/market-castle-end.png  |   Bin 0 -> 112436 bytes
+ .../premerge/market-castle-middle.png              |   Bin 0 -> 144433 bytes
+ .../qa/capital-pass-6/premerge/metrics.json        |    16 +
+ .../premerge/micro-lower-backstreets-walking.png   |   Bin 0 -> 129508 bytes
+ .../premerge/micro-river-quay-start.png            |   Bin 0 -> 145913 bytes
+ .../premerge/micro-terrace-stairs-walking.png      |   Bin 0 -> 225326 bytes
+ .../qa/capital-pass-6/premerge/mobile.png          |   Bin 0 -> 70169 bytes
+ .../qa/capital-pass-6/premerge/overview-east.png   |   Bin 0 -> 631568 bytes
+ .../qa/capital-pass-6/premerge/overview-south.png  |   Bin 0 -> 706363 bytes
+ .../qa/capital-pass-6/premerge/overview-west.png   |   Bin 0 -> 589895 bytes
+ .../qa/capital-pass-6/premerge/source-head.txt     |     1 +
+ .../qa/capital-pass-6/premerge/state-T11.png       |   Bin 0 -> 122554 bytes
+ .../qa/capital-pass-6/premerge/state-flood.png     |   Bin 0 -> 151465 bytes
+ .../qa/capital-pass-6/premerge/tests.txt           |    60 +
+ .../qa/capital-pass-6/premerge/topology.png        |   Bin 0 -> 634838 bytes
+ .../qa/capital-pass-6/premerge/urban-form.png      |   Bin 0 -> 694362 bytes
+ .../qa/capital-pass-6/release/browser-audit.json   | 12241 +++++++++++++++++
+ .../capital-pass-6/release/entry-east_gate-end.png |   Bin 0 -> 114535 bytes
+ .../release/entry-south_gate-end.png               |   Bin 0 -> 116767 bytes
+ .../capital-pass-6/release/entry-west_gate-end.png |   Bin 0 -> 138070 bytes
+ .../qa/capital-pass-6/release/grade-audit.json     | 12927 +++++++++++++++++
+ .../capital-pass-6/release/market-castle-end.png   |   Bin 0 -> 119840 bytes
+ .../release/market-castle-middle.png               |   Bin 0 -> 125475 bytes
+ .../qa/capital-pass-6/release/metrics.json         |    16 +
+ .../release/micro-lower-backstreets-walking.png    |   Bin 0 -> 129782 bytes
+ .../release/micro-river-quay-start.png             |   Bin 0 -> 146855 bytes
+ .../release/micro-terrace-stairs-walking.png       |   Bin 0 -> 213411 bytes
+ .../qa/capital-pass-6/release/mobile.png           |   Bin 0 -> 71487 bytes
+ .../qa/capital-pass-6/release/overview-east.png    |   Bin 0 -> 648575 bytes
+ .../qa/capital-pass-6/release/overview-south.png   |   Bin 0 -> 753846 bytes
+ .../qa/capital-pass-6/release/overview-west.png    |   Bin 0 -> 599572 bytes
+ .../release/sections/castle-approach.png           |   Bin 0 -> 134732 bytes
+ .../capital-pass-6/release/sections/gate-east.png  |   Bin 0 -> 120900 bytes
+ .../capital-pass-6/release/sections/gate-south.png |   Bin 0 -> 121055 bytes
+ .../capital-pass-6/release/sections/gate-west.png  |   Bin 0 -> 123130 bytes
+ .../release/sections/lower-backstreets.png         |   Bin 0 -> 131009 bytes
+ .../release/sections/overview-west.png             |   Bin 0 -> 607488 bytes
+ .../release/sections/section-review.json           |   118 +
+ .../release/sections/source-head.txt               |     1 +
+ .../release/sections/terrace-stairs.png            |   Bin 0 -> 222668 bytes
+ .../qa/capital-pass-6/release/source-head.txt      |     1 +
+ .../qa/capital-pass-6/release/state-T11.png        |   Bin 0 -> 129721 bytes
+ .../qa/capital-pass-6/release/state-flood.png      |   Bin 0 -> 151353 bytes
+ .../trpg-world/qa/capital-pass-6/release/tests.txt |    62 +
+ .../qa/capital-pass-6/release/topology.png         |   Bin 0 -> 634403 bytes
+ .../qa/capital-pass-6/release/urban-form.png       |   Bin 0 -> 702273 bytes
+ public/capital-review/capital-data.js              |    71 +-
+ public/capital-review/capital-parcels.js           |    34 +
+ public/capital-review/capital-scene.js             |    44 +-
+ public/capital-review/capital-spatial.js           |     2 +-
+ public/capital-review/capital-surfaces.js          |     3 +-
+ public/capital-review/review.js                    |     4 +-
+ test/capital-clock.test.mjs                        |     6 +
+ test/capital-morphology.test.mjs                   |    29 +
+ tools/trpg-world/audit-capital-browser.mjs         |     8 +
+ tools/trpg-world/audit-capital-grades.mjs          |    17 +
+ tools/trpg-world/review-capital-sections.mjs       |    22 +
+ tools/trpg-world/verify-capital-public.mjs         |    13 +-
+ 86 files changed, 64108 insertions(+), 54 deletions(-)
+ create mode 100644 docs/trpg-world/CAPITAL-BLOCK-ENCLOSURE-PASS-6-2026-10-03.md
+ create mode 100644 docs/trpg-world/CAPITAL-PASS-6-WORK-STATUS-2026-10-03.md
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/browser-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/entry-east_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/entry-south_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/entry-west_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/market-castle-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/market-castle-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/metrics.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/micro-lower-backstreets-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/micro-river-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/micro-terrace-stairs-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/mobile.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/overview-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/overview-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/source-head.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/state-T11.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/state-flood.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/tests.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/topology.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/geometry-review/urban-form.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/latest-tests.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/browser-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/entry-east_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/entry-south_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/entry-west_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/grade-diagnostic.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/market-castle-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/market-castle-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/metrics.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/micro-lower-backstreets-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/micro-river-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/micro-terrace-stairs-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/mobile.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/overview-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/overview-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/source-head.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/state-T11.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/state-flood.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/tests.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/topology.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/premerge/urban-form.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/browser-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/entry-east_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/entry-south_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/entry-west_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/grade-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/market-castle-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/market-castle-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/metrics.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/micro-lower-backstreets-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/micro-river-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/micro-terrace-stairs-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/mobile.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/overview-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/overview-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/castle-approach.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/gate-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/gate-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/gate-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/lower-backstreets.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/section-review.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/source-head.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/sections/terrace-stairs.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/source-head.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/state-T11.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/state-flood.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/tests.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/topology.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-6/release/urban-form.png
+ create mode 100644 public/capital-review/capital-parcels.js
+ create mode 100644 tools/trpg-world/audit-capital-grades.mjs
+ create mode 100644 tools/trpg-world/review-capital-sections.mjs
+VPS HEAD f8f3d175760e803cecc7332f17014bdb8ae5af74 ORIGIN MAIN b735272e9de968739af1c143ae2b0d32ea5683dd
+DIRTY TRACKED ['public/TRPG/assets/manifest.json', 'public/TRPG/player-simulation-report.json', 'tools/trpg-sim/reports/player-latest.md']
+UNTRACKED FILES 102 INCOMING 86 OVERLAP 0
+DIRTY SHA256 fdb95a3f5b15cdca2cd95e4108bd43e6e6d8189945a9def3bfcb10719e4ffe21
+PRESERVED dirty work and untracked metadata
+FINAL HEAD b735272e9de968739af1c143ae2b0d32ea5683dd
+STATIC ONLY: no process restart
