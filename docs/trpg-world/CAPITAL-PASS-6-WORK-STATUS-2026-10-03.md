@@ -1,5 +1,26 @@
 # 王都 Pass 6 作業チェックポイント
 
+## 公開検証済み（この節が最新）
+
+- 実装PR338 merged。都市コードのmain/VPS: `b735272e9de968739af1c143ae2b0d32ea5683dd`。QA保存は `feat/capital-pass-6-production-qa` branchで実施。
+- URL: https://siranui.jp/capital-review/ 。本番全監査20経路＋事件/増水5経路、朝昼夕、errors0、384.17s。配信中の全JS/CSS/HTML bytesがgit sourceと一致。通常歩行1.4m/s、低FPS elapsed保存、route消失時停止も再確認。
+- 本番追加6断面レビュー:3門の外35m・儀礼路・石段・下層路地。浮いた塔の基礎0、errors0。
+- 54テスト合格、1265道路勾配監査違反0（都市通常街路/橋20%、広域粗路25%）。本番画像/JSON/検証ログ: `qa/capital-pass-6/production/`。
+- VPS dirty tracked3 /untracked102、dirtySHA `fdb95a3f5b15cdca2cd95e4108bd43e6e6d8189945a9def3bfcb10719e4ffe21` を更新前後で保持。`git reset/clean/stash`、stage-linebot操作、アプリrestartは実行していない。
+- `verify-capital-public.mjs` のdefaultは、コミットされた本番監査をimport.meta.url基準で解決。別originのレポートは検証前に拒否する。次の変更後は実URL監査を必ず更新する。
+
+### 次に行う具体的な都市品質作業
+
+1. 大きな敷地をfront-wing /side-wing /courtyardへ分解し、描画と物理判定を同じcompound footprintへ統合する。中庭は空きスペースのmetadataで終わらせず、道路から実際に入れる小loopを作る。canonical施設を増やさない。
+2. 斜面の生活路を短い階段flight・踊り場・手摺・擁壁に分け、上り途中で王城/魔術塔を回復できる視点を配置する。現行の連続石段は検証面であり最終形ではない。
+3. 低屋根歩廊を実際の低建築へ統合し、屋根の入口・出口を同じ街路地盤へ繋ぐ。裏道・屋根・大通りの時間/情報/景観/事件時の価値を分ける。
+4. 河岸の橋詰・荷役庭・倉庫mass・人と荷車の干渉を街路断面へ整理する。水系や施設を参考画像から正本へ追加しない。
+5. 次も俯瞰だけでなく目線6断面→全経路→勾配/事件→PR/CI→安全VPS→実URL監査を実施。今回もgreybox改善であり「王都完成」の宣言ではない。
+
+最後のQAのみのmain更新でSHAが変わる場合、最新SHAはGitHub mainとVPS `git rev-parse HEAD origin/main` を照合する。都市コードの上記commitと、本番監査source-head.txtの一致も確認できる。
+
+## 公開直前の記録（履歴）
+
 ## 継続作業の現在地（10月3日後半）
 
 以下の旧チェックポイントは履歴。最大91%の坂と地形の尖りは、その後の修正で解消した。最新の空間コードは `fde63b8b8f8acfdbe6cd0f62044050dfdda52dc0`。同じPass6 branch /PR338で継続している。

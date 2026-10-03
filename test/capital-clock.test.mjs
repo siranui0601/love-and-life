@@ -19,9 +19,11 @@ test('committed production verification resolves its report independently of cwd
  assert.equal(report.routes.length,14);
  const source=fs.readFileSync(script,'utf8');assert.match(source,/new URL\('\.\/browser-audit.json',import.meta.url\)/);
 });
-test('current verifier uses committed review evidence and rejects another host before checking assets',()=>{
+test('current verifier uses committed production evidence and rejects another host before checking assets',()=>{
  const source=fs.readFileSync(new URL('../tools/trpg-world/verify-capital-public.mjs',import.meta.url),'utf8');
- assert.match(source,/new URL\('\.\.\/\.\.\/docs\/trpg-world\/qa\/capital-pass-6\/premerge\/browser-audit.json',import.meta.url\)/);
+ assert.match(source,/new URL\('\.\.\/\.\.\/docs\/trpg-world\/qa\/capital-pass-6\/production\/browser-audit.json',import.meta.url\)/);
+ const report=JSON.parse(fs.readFileSync(new URL('../docs/trpg-world/qa/capital-pass-6/production/browser-audit.json',import.meta.url),'utf8'));
+ assert.equal(new URL(report.url).origin,'https://siranui.jp');
  assert.match(source,/new URL\(report.url\).origin!==targetOrigin/);
  assert.ok(source.indexOf('new URL(report.url).origin!==targetOrigin')<source.indexOf('await fetch('));
 });
