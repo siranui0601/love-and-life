@@ -2,6 +2,7 @@
  * Canonical IDs and PDF anchors are preserved. No terrain/atlas source is rewritten.
  */
 import {buildStreetFabric} from './capital-fabric.js';
+import {buildFrontageRows} from './capital-parcels.js';
 import { WORLD, settlements, waterways, routes, areaOf, pointInPolygon as inside } from '../world-blueprint/geography.js';
 
 export const ORIGIN = [22.35, 21.45];
@@ -28,7 +29,7 @@ function projectGate(id,name,originalPosition) {
 }
 const gates=[projectGate('west_gate','西門・交易街道口',[21.16,21.55]),projectGate('south_gate','南門・田園／神殿街道口',[22.35,20.05]),projectGate('east_gate','東門・森街道口',[23.94,21.55])];
 const walls=[];
-corePolygon.forEach((a,i)=>{const b=corePolygon[(i+1)%corePolygon.length],gate=gates.find(g=>g.wallIndex===i);if(!gate){walls.push({id:`wall_${i}`,points:[a,b],widthM:4,heightM:15});return;}const len=distance(a,b),u=[(b[0]-a[0])/len,(b[1]-a[1])/len],half=gate.widthM/2;walls.push({id:`wall_${i}a`,points:[a,[gate.position[0]-u[0]*half,gate.position[1]-u[1]*half]],widthM:4,heightM:15},{id:`wall_${i}b`,points:[[gate.position[0]+u[0]*half,gate.position[1]+u[1]*half],b],widthM:4,heightM:15});});
+corePolygon.forEach((a,i)=>{const b=corePolygon[(i+1)%corePolygon.length],gate=gates.find(g=>g.wallIndex===i);if(!gate){walls.push({id:`wall_${i}`,points:[a,b],widthM:8,heightM:32});return;}const len=distance(a,b),u=[(b[0]-a[0])/len,(b[1]-a[1])/len],half=gate.widthM/2;walls.push({id:`wall_${i}a`,points:[a,[gate.position[0]-u[0]*half,gate.position[1]-u[1]*half]],widthM:8,heightM:32},{id:`wall_${i}b`,points:[[gate.position[0]+u[0]*half,gate.position[1]+u[1]*half],b],widthM:8,heightM:32});});
 
 const districts=[
  {id:'castle',name:'王城高台',polygon:[[22.43,22.03],[23.05,22.03],[23.40,22.66],[22.67,22.96],[22.37,22.65]],color:'#d7cbb0',ground:'切石・儀礼路',streetWidthM:22,heightRangeM:[22,42],density:.27,npcJobs:['衛兵','宮廷役人'],gateTag:'royal',risk:'許可による入域・平時D0',identity:'北の高台。儀礼軸と軍務迂回路。王城は段丘頂部の地盤約246m＋高塔。'},
@@ -75,19 +76,29 @@ const riverY=x=>{const p=rivers[0].points;for(let i=1;i<p.length;i++)if(x>=Math.
 // A terraced castle hill: landings have readable faces, while the same physical
 // roads cut graded ramps/stairs through the benches. Heights are true metres.
 const hillCentre=[22.70,22.62];
-const terraceBands=[{radiusM:1520,riseM:22},{radiusM:1150,riseM:38},{radiusM:830,riseM:48},{radiusM:560,riseM:58},{radiusM:315,riseM:66}];
-let terrainStreets=[];const terrainBuckets=new Map();
+const terraceBands=[{radiusM:1520,riseM:22},{radiusM:1150,riseM:44},{radiusM:830,riseM:62},{radiusM:560,riseM:78},{radiusM:315,riseM:92}];
+let terrainStreets=[];const terrainBuckets=new Map(),parcelLevels=new Map();
 const contourFactor=a=>1+.065*Math.sin(3*a+.3)+.035*Math.cos(5*a-.4);
 const hillRadius=(x,y)=>{const dx=(x-hillCentre[0])*1000/1.08,dy=(y-hillCentre[1])*1000;return Math.hypot(dx,dy)*contourFactor(Math.atan2(dy,dx));};
 const contourPoint=(radiusM,a)=>[hillCentre[0]+Math.cos(a)*radiusM/contourFactor(a)*1.08/1000,hillCentre[1]+Math.sin(a)*radiusM/contourFactor(a)/1000];
 function benchHill(x,y,transitionM=12){transitionM=Math.max(transitionM,12+260*Math.max(0,Math.min(1,(y-22.70)/.5)));let h=14+4*Math.exp(-((x-22.25)**2+(y-20.8)**2)/.55);const r=hillRadius(x,y);for(const band of terraceBands){const t=Math.max(0,Math.min(1,(band.radiusM+transitionM/2-r)/transitionM));h+=band.riseM*t*t*(3-2*t);}return h;}
 const rawHill=(x,y)=>benchHill(x,y);
-const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:rawHill(...N(id).position)}));
+// A shared longitudinal datum for streets: the water edge and castle hill
+// bound the rise. Junctions evaluate the same field, regardless of road class.
+// Off-road retaining benches remain steep; transport streets do not inherit
+// their cliff faces. Values are metres/metre, not cosmetic camera adjustments.
+function streetGradeAt(x,y){const riverDistance=distanceToLine([x,y],rivers[0].points);return Math.min(312,14+.14*Math.max(0,2200-hillRadius(x,y)),14+.195*Math.max(0,riverDistance-160));}
+const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:streetGradeAt(...N(id).position)}));
 export function terrainBaseAt(x,y){
- let h=benchHill(x,y),nearest=null,min=Infinity;
+ // The entire urban ground follows the same regional rise as its streets.
+ // Retaining terraces add bounded local relief; leaving the old 92m bench
+ // beside a graded road created needle-shaped ground between neighbouring lots.
+ let h=streetGradeAt(x,y)+Math.max(-10,Math.min(10,benchHill(x,y)-benchHill(x,y,480))),nearest=null,min=Infinity;
  for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=Math.max(0,distanceToLine([x,y],e.points)-e.widthM/2);if(d<22&&d<min){min=d;nearest=e;}}
- if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t),graded=benchHill(x,y,180);h=h*(1-blend)+graded*blend;}
- for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);return h*(1-blend)+14*blend;
+ for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);h=h*(1-blend)+14*blend;
+ if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t);h=h*(1-blend)+streetGradeAt(x,y)*blend;}
+ for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.benchHeightM;}
+ return h;
 }
 export function elevationAt(x,y){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+10;cut=Math.max(cut,(r.context?Math.max(0,1-Math.max(0,d-r.widthM/2)/16)*8:Math.max(0,1-d/bank)*6));}return terrainBaseAt(x,y)-cut;}
 // Retaining faces follow the actual hill contours; roads create gaps/ramp cuts.
@@ -287,7 +298,7 @@ for(const side of [-1,1]){
  }
 }
 const streetFabric=buildStreetFabric({contourPoint,nodes,edges,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
-terrainStreets=edges.filter(e=>!e.bridgeId&&e.class!=='roof');
+terrainStreets=edges.filter(e=>!e.bridgeId);
 for(const e of terrainStreets)for(let j=1;j<e.points.length;j++){
  const a=e.points[j-1],b=e.points[j];for(let x=Math.floor((Math.min(a[0],b[0])-.04)*10);x<=Math.floor((Math.max(a[0],b[0])+.04)*10);x++)for(let y=Math.floor((Math.min(a[1],b[1])-.04)*10);y<=Math.floor((Math.max(a[1],b[1])+.04)*10);y++){const k=x+','+y;if(!terrainBuckets.has(k))terrainBuckets.set(k,new Set());terrainBuckets.get(k).add(e);}
 }
@@ -355,8 +366,8 @@ const districtsAt=p=>p[1]>22.64?districts[0]:districts.find(d=>inside(p,d.polygo
 const occupied=new Map(),cell=.06,key=(x,y)=>x+','+y;
 function near(p){const out=[],x=Math.floor(p[0]/cell),y=Math.floor(p[1]/cell);for(let i=x-1;i<=x+1;i++)for(let j=y-1;j<=y+1;j++)out.push(...(occupied.get(key(i,j))||[]));return out;}
 function corners(b,pad=0){const w=b.widthM/2+pad,h=b.depthM/2+pad,c=Math.cos(b.rotationRad),t=Math.sin(b.rotationRad);return [[-w,-h],[w,-h],[w,h],[-w,h]].map(([x,z])=>[b.position[0]+(x*c+z*t)/1000,b.position[1]+(x*t-z*c)/1000]);}
-function overlaps(a,b){const ac=corners(a,1),bc=corners(b,1);for(const angle of [a.rotationRad,b.rotationRad])for(const t of [angle,angle+Math.PI/2]){const axis=[Math.cos(t),Math.sin(t)],aa=ac.map(p=>p[0]*axis[0]+p[1]*axis[1]),bb=bc.map(p=>p[0]*axis[0]+p[1]*axis[1]);if(Math.max(...aa)<=Math.min(...bb)||Math.max(...bb)<=Math.min(...aa))return false;}return true;}
-function add(b){const p=b.position,r=Math.hypot(b.widthM,b.depthM)/2,cs=corners(b,1);
+function overlaps(a,b){const ac=corners(a,.3),bc=corners(b,.3);for(const angle of [a.rotationRad,b.rotationRad])for(const t of [angle,angle+Math.PI/2]){const axis=[Math.cos(t),Math.sin(t)],aa=ac.map(p=>p[0]*axis[0]+p[1]*axis[1]),bb=bc.map(p=>p[0]*axis[0]+p[1]*axis[1]);if(Math.max(...aa)<=Math.min(...bb)||Math.max(...bb)<=Math.min(...aa))return false;}return true;}
+function add(b){const p=b.position,r=Math.hypot(b.widthM,b.depthM)/2,cs=corners(b,.15);
  if(cs.some(q=>!inside(q,corePolygon))||distanceToLine(p,[...corePolygon,corePolygon[0]])<r+7)return false;
  if(distanceToLine(p,rivers[0].points)<r+14)return false;
  if(negativeSpaces.some(q=>distance(p,q.position)<q.radiusM+r))return false;
@@ -371,30 +382,11 @@ function add(b){const p=b.position,r=Math.hypot(b.widthM,b.depthM)/2,cs=corners(
  if(near(p).some(q=>overlaps(b,q))||royalParts.some(q=>overlaps(b,q)))return false;
  buildings.push(b);const k=key(Math.floor(p[0]/cell),Math.floor(p[1]/cell));if(!occupied.has(k))occupied.set(k,[]);occupied.get(k).push(b);return true;
 }
-for(const e of streetFabric.surveyLines.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class)))for(let j=1;j<e.points.length;j++){
- const a=e.points[j-1],b=e.points[j],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;
- for(let along=12;along<len-9;){const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2],profile=districtsAt(mid),widthM=(profile.id==='noble'?23:profile.id==='lower'?10:14)+rnd()*9,depthM=(profile.id==='noble'?39:29)+rnd()*14;
-  for(const side of [-1,1]){const offset=e.widthM/2+depthM/2+2.3,p=[a[0]+(dx*along-dy*offset*side)/1000,a[1]+(dy*along+dx*offset*side)/1000],d=districtsAt(p);
-   add({id:'frontage_'+buildings.length,frontageEdgeId:edges.find(q=>(q.parentEdgeId||q.id)===e.id&&distanceToLine(p,q.points)<offset+1)?.id||e.id,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:Math.atan2(dy,dx),district:d.id,color:d.color,roofHeightM:4+rnd()*4});
-  }along+=widthM+1.4+rnd()*1.8;
- }
-}
-// Fine-grain infill uses remaining surveyed frontage, with smaller serviced
-// parcels at bends. Each retains its physical road/door association.
-for(const e of streetFabric.surveyLines.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class)))for(let j=1;j<e.points.length;j++){
- const a=e.points[j-1],b=e.points[j],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;
- for(let along=8;along<len-7;along+=9)for(const side of [-1,1]){const widthM=9+rnd()*5,depthM=18+rnd()*12,offset=e.widthM/2+depthM/2+2.3,p=[a[0]+(dx*along-dy*offset*side)/1000,a[1]+(dy*along+dx*offset*side)/1000],d=districtsAt(p),road=edges.find(q=>(q.parentEdgeId||q.id)===e.id&&distanceToLine(p,q.points)<offset+1);
-  if(!road)continue;add({id:'infill_'+buildings.length,frontageEdgeId:road.id,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:Math.atan2(dy,dx),district:d.id,color:d.color,roofHeightM:4+rnd()*4});
- }
-}
-// Fine-grain infill uses remaining surveyed frontage, with smaller serviced
-// parcels at bends. Each retains its physical road/door association.
-for(const e of streetFabric.surveyLines.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class)))for(let j=1;j<e.points.length;j++){
- const a=e.points[j-1],b=e.points[j],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;
- for(let along=5;along<len-5;along+=7)for(const side of [-1,1]){const widthM=8+rnd()*5,depthM=16+rnd()*13,offset=e.widthM/2+depthM/2+2.3,p=[a[0]+(dx*along-dy*offset*side)/1000,a[1]+(dy*along+dx*offset*side)/1000],d=districtsAt(p),road=edges.find(q=>(q.parentEdgeId||q.id)===e.id&&distanceToLine(p,q.points)<offset+1);
-  if(!road)continue;add({id:'bend_parcel_'+buildings.length,frontageEdgeId:road.id,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:Math.atan2(dy,dx),district:d.id,color:d.color,roofHeightM:4+rnd()*4});
- }
-}
+const frontageRows=buildFrontageRows({streets:streetFabric.surveyLines,edges,districtsAt,distance,distanceToLine,add});
+// Level each occupied plot to its own street entrance. Register only after all
+// entrance levels are sampled so one plot cannot change its neighbour's datum.
+for(const b of buildings){b.benchHeightM=terrainBaseAt(...b.frontage.position);}
+for(const b of buildings){const r=Math.hypot(b.widthM,b.depthM)/2/1000;for(let x=Math.floor((b.position[0]-r)*20);x<=Math.floor((b.position[0]+r)*20);x++)for(let y=Math.floor((b.position[1]-r)*20);y<=Math.floor((b.position[1]+r)*20);y++){const k=x+','+y;if(!parcelLevels.has(k))parcelLevels.set(k,[]);parcelLevels.get(k).push(b);}}
 // No unserviced scatter fill: ordinary parcels must front a usable street.
 // Longer lanes receive deeper footprints, rather than inaccessible rear boxes.
 // Sparse outskirts follow the same gate approach roads. Density decays along
@@ -419,10 +411,11 @@ for(const b of buildings.filter(b=>!b.facilityId&&!b.royalPart))if(distanceToLin
 // A deduplicated street keeps the frontage reference of every serviced parcel.
 for(const b of buildings)if(!edges.some(e=>e.id===b.frontageEdgeId)){const e=edges.filter(e=>!e.bridgeId&&e.class!=='roof').reduce((best,e)=>distanceToLine(b.position,e.points)<distanceToLine(b.position,best.points)?e:best);b.frontageEdgeId=e.id;}
 const publicLane=e=>e.fabric&&!['castle','noble','mage'].includes(N(e.from).district)&&!['castle','noble','mage'].includes(N(e.to).district);
-const lowerStop=nodes.filter(n=>n.id.startsWith('fabric_')&&!n.id.startsWith('fabric_junction')&&n.district==='lower').sort((a,b)=>distance(a.position,[22.09,20.61])-distance(b.position,[22.09,20.61]))[0];
+const frontageCount=new Map();for(const b of buildings)frontageCount.set(b.frontageEdgeId,(frontageCount.get(b.frontageEdgeId)||0)+1);
+const lowerLane=edges.filter(e=>e.fabric&&e.class==='alley'&&N(e.from).district==='lower'&&N(e.to).district==='lower').sort((a,b)=>(frontageCount.get(b.id)||0)-(frontageCount.get(a.id)||0))[0];
 const stairReview=edges.filter(e=>publicLane(e)&&e.class==='stairs').sort((a,b)=>Math.abs(elevationAt(...N(b.from).position)-elevationAt(...N(b.to).position))-Math.abs(elevationAt(...N(a.from).position)-elevationAt(...N(a.to).position)))[0];
 const quayReview=edges.filter(e=>publicLane(e)&&e.fabricRole==='quay').sort((a,b)=>distance(b.points[0],b.points.at(-1))-distance(a.points[0],a.points.at(-1)))[0];
-const walkingReviews=[{id:'lower-backstreets',name:'下層の生活裏道',from:'lower_court',to:lowerStop.id},{id:'terrace-stairs',name:'段丘を横断する石段',from:stairReview.from,to:stairReview.to},{id:'river-quay',name:'橋詰と河岸歩廊',from:quayReview.from,to:quayReview.to}];
+const walkingReviews=[{id:'lower-backstreets',name:'街路前面が連続する下層路地',from:lowerLane.from,to:lowerLane.to},{id:'terrace-stairs',name:'段丘を横断する石段',from:stairReview.from,to:stairReview.to},{id:'river-quay',name:'橋詰と河岸歩廊',from:quayReview.from,to:quayReview.to}];
 buildings.push(...suburbBuildings);
 buildings.push(...royalParts);
 // Facility masses sit north of their exact anchor; the anchor remains the door.
@@ -444,5 +437,11 @@ for(const o of outskirts)if(o.kind!=='farmland')for(let i=0;i<4;i++)furnish(o.id
 
 export const CAPITAL={version:'capital-street-terrain-pass-5',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},suburbBuildings,royalParts,urbanBlocks,walkingReviews,streetFabric:{rings:streetFabric.rings,laneCount:edges.filter(e=>e.fabric).length},retainingFaces,terraceBands,hillCentre,districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['正本IDと広域接続を継承。城丘・王城の量感・街区・副街路・水系曲率は参考画像/PDFに基づく設計提案。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
 
+Object.assign(CAPITAL,{version:'capital-block-enclosure-pass-6',frontageRows});
+districts[0].identity='上層の段丘・擁壁と儀礼坂の頂点。王城地盤約312mから低地と市場を見下ろす。';
+const fortifications=[];
+for(const w of walls){const [a,b]=w.points,steps=Math.ceil(distance(a,b)/110);for(let i=1;i<steps;i++){const p=[a[0]+(b[0]-a[0])*i/steps,a[1]+(b[1]-a[1])*i/steps];if(edges.some(e=>distanceToLine(p,e.points)<e.widthM/2+12))continue;fortifications.push({id:w.id+':tower:'+i,position:p,widthM:16,depthM:16,heightM:44,radiusM:8,kind:'wall-tower'});}}
+for(const g of gates){const a=corePolygon[g.wallIndex],b=corePolygon[(g.wallIndex+1)%corePolygon.length],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;for(const side of [-1,1])fortifications.push({id:g.id+':tower:'+side,position:[g.position[0]+side*dx*.018,g.position[1]+side*dy*.018],widthM:16,depthM:16,heightM:53,radiusM:8,kind:'gate-tower'});}
+CAPITAL.fortifications=fortifications;
 // Shared graph geometry is immutable. Renderers must copy when reversing/slicing paths.
 for(const e of edges){e.points.forEach(Object.freeze);Object.freeze(e.points);Object.freeze(e);}

@@ -32,7 +32,7 @@ export function pointInMass(position,b,paddingM=0){
  const x=dx*Math.cos(angle)-dz*Math.sin(angle),z=dx*Math.sin(angle)+dz*Math.cos(angle);
  return Math.abs(x)<b.widthM/2+paddingM&&Math.abs(z)<b.depthM/2+paddingM;
 }
-const masses=[...CAPITAL.buildings,...CAPITAL.furnishings].map(massFootprint);
+const masses=[...CAPITAL.buildings,...CAPITAL.furnishings,...(CAPITAL.fortifications||[])].map(massFootprint);
 // Spatial buckets keep eye-level movement independent of total city building count.
 const cellM=80,buckets=new Map();
 const key=p=>Math.floor(p[0]*1000/cellM)+','+Math.floor(p[1]*1000/cellM);
