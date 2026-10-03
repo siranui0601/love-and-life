@@ -47,7 +47,9 @@ export function mountCapitalScene(getState,getRoute){
  for(const e of CAPITAL.edges){
   if(!e.bridgeId&&!['world','roof'].includes(e.class)){
    const ps=sampleLine(e.points,2),paths=[],half=e.widthM/2+18;
-   for(let ring=0;ring<=24;ring++){const off=-half+half*2*ring/24;paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}
+   // Explicit road-edge rings preserve the carriageway without tessellating
+   // every shoulder metre into millions of redundant vertices.
+   for(const off of [-half,-e.widthM/2-1,-e.widthM/2,0,e.widthM/2,e.widthM/2+1,half]){paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}
    const patch=MeshBuilder.CreateRibbon('street-ground:'+e.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);patch.material=mat('street-ground','#b3a78c');patch.isPickable=false;streetGroundParts.push(patch);
   }
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
