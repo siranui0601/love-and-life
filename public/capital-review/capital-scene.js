@@ -1,4 +1,4 @@
-import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,pointInPolygon} from './capital-data.js';
+import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,distanceToLine,pointInPolygon} from './capital-data.js';
 import {pathPolyline,polylineLengthM} from './capital-routing.js';
 import {sampleLine,locateOnLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
 import {advanceElapsed} from './capital-clock.js';
@@ -20,7 +20,11 @@ export function mountCapitalScene(getState,getRoute){
  function ground(name,b,nx,nz){
   const positions=[],indices=[],normals=[],uvs=[];
   for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const wx=b.minX+(b.maxX-b.minX)*ix/nx,wy=b.minY+(b.maxY-b.minY)*iz/nz,[x,z]=toLocal([wx,wy]);positions.push(x,elevationAt(wx,wy),z);uvs.push(ix/nx,iz/nz);}
-  for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){const a=z*(nx+1)+x,c=a+nx+1;indices.push(a,c,a+1,a+1,c,c+1);}
+  for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){const a=z*(nx+1)+x,c=a+nx+1,p=[b.minX+(b.maxX-b.minX)*(x+.5)/nx,b.minY+(b.maxY-b.minY)*(z+.5)/nz];
+   // The finer channel surface owns this strip; a coarse triangle must not
+   // cover the water again and create saw-tooth islands along its bank.
+   if(CAPITAL.rivers.some(r=>r.context&&distanceToLine(p,r.points)<r.widthM/2+20))continue;
+   indices.push(a,c,a+1,a+1,c,c+1);}
   VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat('ground','#939a78');mesh.isPickable=false;
  }
  ground('core-ground',core,384,384);
@@ -48,17 +52,36 @@ export function mountCapitalScene(getState,getRoute){
    merge(parts,'rails:'+e.id,stone);
   }
  }
+ // Exposed retaining faces make the five benches readable in silhouette and
+ // at eye height. Gaps follow the same graded street cuts as the walking surface.
+ for(const face of CAPITAL.retainingFaces){const paths=[[],[]];let parts=[];
+  function flush(){if(paths[0].length>1){const m=MeshBuilder.CreateRibbon(face.id,{pathArray:paths.map(p=>[...p]),sideOrientation:Mesh.DOUBLESIDE},scene);m.material=mat('retaining','#b4ad94');m.isPickable=false;parts.push(m);}paths[0].length=0;paths[1].length=0;}
+  for(const p of face.points){const dx=p[0]-CAPITAL.hillCentre[0],dy=p[1]-CAPITAL.hillCentre[1],len=Math.hypot(dx,dy),a=[p[0]-dx/len*.009,p[1]-dy/len*.009],b=[p[0]+dx/len*.009,p[1]+dy/len*.009];
+   if(!pointInPolygon(p,CAPITAL.core.polygon)||elevationAt(...a)-elevationAt(...b)<7){flush();continue;}const [x,z]=toLocal(p);paths[0].push(V(x,elevationAt(...b),z));paths[1].push(V(x,elevationAt(...a),z));}
+  flush();merge(parts,face.id,mat('retaining','#b4ad94'));
+ }
+ // Cross-slope lanes show individual risers where their real grade climbs.
+ for(const e of CAPITAL.edges.filter(e=>e.fabric&&e.class==='stairs')){const ps=sampleLine(e.points,.8),left=[],right=[];
+  for(let i=0;i<ps.length;i++){const p=ps[i],a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=e.widthM/2/1000;
+   // Tread tops cover the smooth walking ramp at both road edges; using only
+   // the centre height exposed diagonal triangles of paving through the stone.
+   const sidePoint=(q,s)=>[q[0]+s*dy/len*off,q[1]-s*dx/len*off];
+   const tread=(q,r,s)=>Math.max(edgeHeightAt(e,sidePoint(q,s)),edgeHeightAt(e,sidePoint(r,s)))+.045;
+   for(const pair of [[a,p],[p,b]]){const [lx,lz]=toLocal(sidePoint(p,-1)),[rx,rz]=toLocal(sidePoint(p,1));left.push(V(lx,tread(...pair,-1),lz));right.push(V(rx,tread(...pair,1),rz));}}
+  const m=MeshBuilder.CreateRibbon('terrace-stairs:'+e.id,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);m.material=stone;m.isPickable=false;
+ }
  // Fine river-bank terrain closes the coarse outer heightfield at the inherited
  // macro river bends. It uses the same cut channel function as walking.
  for(const r of CAPITAL.rivers){const ps=sampleLine(r.points,10),paths=[];
-  for(let ring=0;ring<=10;ring++){const off=(ring/10-.5)*(r.highFlowWidthM+45);paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.02,z);}));}
+  const rings=r.context?32:10;for(let ring=0;ring<=rings;ring++){const off=(ring/rings-.5)*(r.highFlowWidthM+(r.context?160:45));paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.02,z);}));}
   const bank=MeshBuilder.CreateRibbon('river-bank:'+r.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);bank.material=mat('bank','#939a78');bank.isPickable=false;
  }
  for(const b of CAPITAL.bridges.filter(b=>b.context)){const e=CAPITAL.edges.find(e=>e.id===b.edgeId);strip(b.id,b.points,b.widthM,stone,p=>edgeHeightAt(e,p));}
  for(const r of CAPITAL.rivers.filter(r=>r.context))strip('context-water:'+r.id,r.points,r.widthM,mat('context-water','#407d89'),p=>terrainBaseAt(...p)-4);
+ const quayParts=[];for(const r of CAPITAL.rivers.filter(r=>!r.context)){const ps=sampleLine(r.points,8);for(let i=1;i<ps.length;i++)for(const side of [-1,1]){const a=ps[i-1],b=ps[i],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=side*(r.highFlowWidthM/2+2)/1000,aa=[a[0]-dy/len*off,a[1]+dx/len*off],bb=[b[0]-dy/len*off,b[1]+dx/len*off];quayParts.push(segmentBox('quay-face',aa,bb,1.1,3.3,stone,p=>terrainBaseAt(...p)-4.5));}}merge(quayParts,'river-quay-faces',stone);
  const river=CAPITAL.rivers[0],waterMat=mat('water','#407d89');
- const normalWater=strip('river-normal',river.points,river.widthM,waterMat,p=>terrainBaseAt(...p)-.9);
- const floodWater=strip('river-flood',river.points,river.highFlowWidthM,waterMat,p=>terrainBaseAt(...p)-.2);
+ const normalWater=strip('river-normal',river.points,river.widthM,waterMat,p=>terrainBaseAt(...p)-1.6);
+ const floodWater=strip('river-flood',river.points,river.highFlowWidthM,waterMat,p=>terrainBaseAt(...p)-.8);
  function segmentBox(name,a,b,width,height,material,heightAt=elevationAtPosition){
   const [ax,az]=toLocal(a),[bx,bz]=toLocal(b),dx=bx-ax,dz=bz-az,mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];const mesh=MeshBuilder.CreateBox(name,{width:Math.hypot(dx,dz),height,depth:width},scene);mesh.position=V((ax+bx)/2,heightAt(mid)+height/2,(az+bz)/2);mesh.rotation.y=-Math.atan2(dz,dx);mesh.material=material;return mesh;
  }
@@ -114,7 +137,7 @@ export function mountCapitalScene(getState,getRoute){
   if(f.kind==='tree'){const trunk=MeshBuilder.CreateCylinder(f.id,{diameter:.6,height:3,tessellation:5},scene);trunk.position=V(x,y+1.5,z);trunk.material=mat('wood','#685a43');const crown=MeshBuilder.CreateSphere(f.id+':canopy',{diameter:5,segments:4},scene);crown.position=V(x,y+4.5,z);crown.material=mat('leaves','#587353');}
   else{const m=MeshBuilder.CreateBox(f.id,{width:f.widthM,height:f.heightM,depth:f.depthM},scene);m.position=V(x,y+f.heightM/2,z);m.material=mat('fixture:'+f.kind,f.color);}
  }
- const closures=new Map();for(const barrier of activeBarriers({access:'public',weather:'flood',events:{T10:'active',T11:'active',T16:'active',T17:'active'}})){const m=segmentBox('closure:'+barrier.edgeId,...barrier.points,2,barrier.heightM,closureMat,p=>surfaceAt(p).heightM);closures.set(barrier.edgeId,m);}
+ const closures=new Map();
  const orbit=new ArcRotateCamera('capital-orbit',Math.PI/2,1.02,3600,V(0,80,-380),scene);orbit.minZ=10;orbit.maxZ=18000;orbit.lowerRadiusLimit=80;orbit.upperRadiusLimit=9000;orbit.wheelPrecision=5;orbit.attachControl(canvas,true);scene.activeCamera=orbit;
  let auditPaused=false;let skipFrame=false;const resumeFrame=()=>{skipFrame=true;};document.addEventListener('visibilitychange',resumeFrame);
  let walk=null,feet=null,guide=null,travelledM=0,simSeconds=0,blocked=null,barriers=[],plans=[],agents=[],trafficClock=0,telemetryClock=0,disposed=false;
@@ -131,7 +154,7 @@ export function mountCapitalScene(getState,getRoute){
   updateTelemetry();
  }
  function updateState(){
-  const s=getState();barriers=activeBarriers(s);const closed=new Set(barriers.map(b=>b.edgeId));for(const [id,m]of closures)m.setEnabled(closed.has(id));
+  const s=getState();barriers=activeBarriers(s);for(const m of closures.values())m.setEnabled(false);for(const b of barriers){const key=b.reason+':'+b.edgeId;let m=closures.get(key);if(!m){m=segmentBox('closure:'+key,...b.points,2,b.heightM,closureMat,p=>surfaceAt(p).heightM);closures.set(key,m);}m.setEnabled(true);}
   normalWater.setEnabled(s.weather!=='flood');floodWater.setEnabled(s.weather==='flood');
   scene.fogMode=s.weather==='fog'?Scene.FOGMODE_EXP2:Scene.FOGMODE_NONE;scene.fogDensity=.0005;scene.fogColor=new Color3(.68,.72,.70);
   const night=s.hour>=20||s.hour<6;hemi.intensity=night?.28:.65;sun.intensity=night?.12:.65;scene.clearColor=night?new Color4(.07,.10,.15,1):s.weather==='rain'?new Color4(.45,.55,.58,1):new Color4(.68,.79,.84,1);

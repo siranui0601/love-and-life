@@ -30,9 +30,12 @@ export function edgeHeightAt(edge,position){
  }
  return elevationAt(...position)+.28;
 }
+// Local queries must remain practical as neighbourhood lanes become a real mesh.
+const roadBuckets=new Map(),roadCell=.06;
+for(const e of CAPITAL.edges)for(let i=1;i<e.points.length;i++){const a=e.points[i-1],b=e.points[i],pad=(e.widthM/2+1)/1000;for(let x=Math.floor((Math.min(a[0],b[0])-pad)/roadCell);x<=Math.floor((Math.max(a[0],b[0])+pad)/roadCell);x++)for(let y=Math.floor((Math.min(a[1],b[1])-pad)/roadCell);y<=Math.floor((Math.max(a[1],b[1])+pad)/roadCell);y++){const key=x+','+y;if(!roadBuckets.has(key))roadBuckets.set(key,new Set());roadBuckets.get(key).add(e);}}
 export function surfaceAt(position){
  let best=null,min=Infinity;
- for(const e of CAPITAL.edges){
+ for(const e of roadBuckets.get(Math.floor(position[0]/roadCell)+','+Math.floor(position[1]/roadCell))||[]){
   const d=distanceToLine(position,e.points);
   if(d<=e.widthM/2+.15&&d<min){best=e;min=d;}
  }
