@@ -3,7 +3,7 @@
 - Authoritative repository: `C:\Users\inaba\capital-pass-4`
 - Branch: `feat/capital-block-enclosure-pass-6`
 - PR: https://github.com/siranui0601/love-and-life/pull/338
-- Latest spatial source commit: `4f1d19eb2616338c8b4c837af48541304fbda015`
+- Latest code commit: `becb693400f1b60b8eebfd03306310fd340f81ca` (street geometry is the earlier `4f1d19e`; subsequent fixes make surveyed plot IDs unique and verify report origins).
 - Base main / publicly deployed VPS: `f8f3d175760e803cecc7332f17014bdb8ae5af74` (Pass 5). Pass 6 has NOT been deployed.
 
 ## Implemented and verified before the final terrain rendering correction
@@ -18,14 +18,14 @@ Actual screenshots revealed stair tread terrain penetration and a steep ceremoni
 
 - Current browser audit output: `C:\Users\inaba\capital-pass-4\qa-pass6-ground-optimized`
 - Audit parent PowerShell PID: 22828 finished successfully: 20 routes and 5 event/flood walks, errors0, runtime502s. Visual quality still fails the slope acceptance criterion, and this is slower than the earlier271s audit. Do not mistake completion for quality approval.
-- Own preview server: Node PID15076, parent18796, port9894. Confirm process identity before stopping.
+- Own preview server Node PID15076 /parent18796 was identified and stopped after the audit. No audit or preview process remains running. Restart `node preview.cjs` for port9894 when continuing.
 - Partial stopped audit retained: `qa-pass6-ground` (not accepted QA).
-- Latest tests output: `qa-pass6-tests.txt`; rerun if tests/code change.
+- Latest tests output: `qa-pass6-tests.txt`, 53/53 passed after the P2 fixes; rerun if tests/code change. Committed copy: `qa/capital-pass-6/latest-tests.txt`.
 - QA preservation helper: `prepare-pass6.cjs <output-folder> <premerge|production>`. It checks completion/error counts. Do not run on partial output.
 
 ## Concrete next steps
 
-1. Read audit PID22828, review `micro-terrace-stairs-walking.png`, `market-castle-middle.png`, gate approach images and mobile performance. Fix physical/rendered geometry if still poor; test passing is insufficient. The optimized castle-middle image STILL shows road dominating the view. Physical 2m grade analysis found ceremonial-road maxima: `castle_court__castle` 90.74%, `royal_approach__royal_gate__part_1` 79.46%, `royal_gate__castle_court` 62.18%. This is a topology/longitudinal-profile release blocker, not merely camera pitch. Keep the high castle apex but lengthen contour/switchback approaches and add proper landings; do not fake a fix by tilting the camera. Run `node tools/trpg-world/audit-capital-grades.mjs --strict` (currently expected to fail the 20% ordinary-street review target).
+1. Review the finished audit committed under `qa/capital-pass-6/geometry-review/`, especially `micro-terrace-stairs-walking.png`, `market-castle-middle.png`, gate approach images and mobile performance. Fix physical/rendered geometry if still poor; test passing is insufficient. The optimized castle-middle image STILL shows road dominating the view. Physical 2m grade analysis found ceremonial-road maxima: `castle_court__castle` 90.74%, `royal_approach__royal_gate__part_1` 79.46%, `royal_gate__castle_court` 62.18%. This is a topology/longitudinal-profile release blocker, not merely camera pitch. Keep the high castle apex but lengthen contour/switchback approaches and add proper landings; do not fake a fix by tilting the camera. Run `node tools/trpg-world/audit-capital-grades.mjs --strict` (currently expected to fail: 121 of1265 ordinary roads exceed the20% review target).
 2. Add accepted final screenshots/report with correct source SHA. Recheck all52 tests and latest PR338 CI/review threads. Merge only after quality review.
 3. Deploy using `tools/trpg-world/deploy-capital-vps.py` via configured SSH key, with exact merge SHA. The script fetches, compares dirty/incoming paths and performs ff-only; preserve tracked3/untracked102 and dirty hash. No reset/clean/stash/restart.
 4. Audit the real public URL again and store `qa/capital-pass-6/production/`; run `verify-capital-public.mjs --report=<real-production-report>` after this report exists. The default now resolves the committed Pass6 premerge report and explicitly rejects a different origin before checking deployed assets. Change the default to real production only when that report is committed.
