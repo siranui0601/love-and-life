@@ -17,7 +17,7 @@
 Actual screenshots revealed stair tread terrain penetration and a steep ceremonial street view dominated by the roadway. Additional source commits `aaef1ff` / `4f1d19e` remove coarse ground cells over roads, add batched 7-ring fine terrain and sample road ribbons at 1m. Initial 25-ring audit was stopped because it became too slow; no unrelated process was stopped.
 
 - Current browser audit output: `C:\Users\inaba\capital-pass-4\qa-pass6-ground-optimized`
-- Audit parent PowerShell PID: 22828. Read its output; do not launch a duplicate audit blindly.
+- Audit parent PowerShell PID: 22828 finished successfully: 20 routes and 5 event/flood walks, errors0, runtime502s. Visual quality still fails the slope acceptance criterion, and this is slower than the earlier271s audit. Do not mistake completion for quality approval.
 - Own preview server: Node PID15076, parent18796, port9894. Confirm process identity before stopping.
 - Partial stopped audit retained: `qa-pass6-ground` (not accepted QA).
 - Latest tests output: `qa-pass6-tests.txt`; rerun if tests/code change.
@@ -28,7 +28,7 @@ Actual screenshots revealed stair tread terrain penetration and a steep ceremoni
 1. Read audit PID22828, review `micro-terrace-stairs-walking.png`, `market-castle-middle.png`, gate approach images and mobile performance. Fix physical/rendered geometry if still poor; test passing is insufficient. The optimized castle-middle image STILL shows road dominating the view. Physical 2m grade analysis found ceremonial-road maxima: `castle_court__castle` 90.74%, `royal_approach__royal_gate__part_1` 79.46%, `royal_gate__castle_court` 62.18%. This is a topology/longitudinal-profile release blocker, not merely camera pitch. Keep the high castle apex but lengthen contour/switchback approaches and add proper landings; do not fake a fix by tilting the camera. Run `node tools/trpg-world/audit-capital-grades.mjs --strict` (currently expected to fail the 20% ordinary-street review target).
 2. Add accepted final screenshots/report with correct source SHA. Recheck all52 tests and latest PR338 CI/review threads. Merge only after quality review.
 3. Deploy using `tools/trpg-world/deploy-capital-vps.py` via configured SSH key, with exact merge SHA. The script fetches, compares dirty/incoming paths and performs ff-only; preserve tracked3/untracked102 and dirty hash. No reset/clean/stash/restart.
-4. Audit the real public URL again and store `qa/capital-pass-6/production/`; run `verify-capital-public.mjs` after this report exists. Default verifier now expects Pass6 production report.
+4. Audit the real public URL again and store `qa/capital-pass-6/production/`; run `verify-capital-public.mjs --report=<real-production-report>` after this report exists. The default now resolves the committed Pass6 premerge report and explicitly rejects a different origin before checking deployed assets. Change the default to real production only when that report is committed.
 5. Persist production results and current main/VPS SHA, commit/push and close the preview process. Continue courtyards, roof integration, wall walks, waterfront detail and NPC schedules. Do not call the city complete.
 
 Local scratch checkout has a separate checkpoint history; do not force-push it over the authoritative Windows branch. Original `C:\Users\inaba\love-and-life` worktree and VPS user files remain untouched.

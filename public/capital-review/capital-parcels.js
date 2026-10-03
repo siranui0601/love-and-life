@@ -2,7 +2,7 @@
  * not a nearest-road label added to an arbitrary building after placement. */
 export function buildFrontageRows({streets,edges,districtsAt,distance,distanceToLine,add}){
  const rows=[];
- for(const e of streets.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class)))for(let segment=1;segment<e.points.length;segment++){
+ for(const [surveyIndex,e] of streets.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class)).entries())for(let segment=1;segment<e.points.length;segment++){
   const a=e.points[segment-1],b=e.points[segment],length=distance(a,b);if(length<14)continue;
   const dx=(b[0]-a[0])*1000/length,dy=(b[1]-a[1])*1000/length;
   const d=districtsAt([(a[0]+b[0])/2,(a[1]+b[1])/2]);
@@ -11,7 +11,7 @@ export function buildFrontageRows({streets,edges,districtsAt,distance,distanceTo
   const floors=d.id==='lower'?3:d.id==='market'?5:d.id==='noble'?6:4;
   const gap=.85,setbackM=1.25;
   for(const side of [-1,1]){
-   const row={id:e.id+':'+segment+':'+side,streetId:e.id,side,parcels:[],segment:[a,b]};
+   const row={id:e.id+':survey:'+surveyIndex+':'+segment+':'+side,streetId:e.id,side,parcels:[],segment:[a,b]};
    const count=Math.max(1,Math.floor((length-12)/(grain+gap))),pattern=[1.05,.82,1.30,.94,.89],weights=Array.from({length:count},(_,i)=>pattern[(i+segment+(side+1))%pattern.length]),total=weights.reduce((a,b)=>a+b,0),available=length-12-count*gap;let cursor=6;
    for(let i=0;i<count;i++){
     const widthM=available*weights[i]/total,along=cursor+widthM/2,offset=e.widthM/2+setbackM+depth/2;cursor+=widthM+gap;

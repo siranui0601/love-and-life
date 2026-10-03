@@ -4,6 +4,8 @@ import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../publ
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
 test('surveyed plots have real street-facing doors, measured setbacks and level foundations',()=>{
  const plots=CAPITAL.buildings.filter(b=>b.frontage),roads=new Map(CAPITAL.edges.map(e=>[e.id,e]));assert.ok(plots.length>2000);
+ assert.equal(new Set(CAPITAL.buildings.map(b=>b.id)).size,CAPITAL.buildings.length,'building IDs collide across repeated survey geometries');
+ assert.equal(new Set(CAPITAL.frontageRows.map(r=>r.id)).size,CAPITAL.frontageRows.length,'survey row IDs collide');
  for(const b of plots){const f=b.frontage,e=roads.get(b.frontageEdgeId),dx=(f.position[0]-b.position[0])*1000,dy=(f.position[1]-b.position[1])*1000;
   assert.ok(Math.abs(dx*f.tangent[0]+dy*f.tangent[1])<.001,b.id+' door displaced along facade');
   assert.ok(Math.abs(Math.hypot(dx,dy)-b.depthM/2)<.001,b.id+' door not on facade');
