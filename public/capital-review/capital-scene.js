@@ -18,14 +18,14 @@ export function mountCapitalScene(getState,getRoute){
  const core=bounds(CAPITAL.core.polygon),outer=bounds([...CAPITAL.activityEnvelope.polygon,...CAPITAL.worldConnections.flatMap(c=>c.path)]);
  for(const name of ['minX','minY'])outer[name]-=.5;for(const name of ['maxX','maxY'])outer[name]+=.5;
  function ground(name,b,nx,nz){
-  const positions=[],indices=[],normals=[],uvs=[];
-  for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const wx=b.minX+(b.maxX-b.minX)*ix/nx,wy=b.minY+(b.maxY-b.minY)*iz/nz,[x,z]=toLocal([wx,wy]);positions.push(x,elevationAt(wx,wy),z);uvs.push(ix/nx,iz/nz);}
+  const positions=[],indices=[],normals=[],uvs=[],colors=[];
+  for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const wx=b.minX+(b.maxX-b.minX)*ix/nx,wy=b.minY+(b.maxY-b.minY)*iz/nz,[x,z]=toLocal([wx,wy]);positions.push(x,elevationAt(wx,wy),z);uvs.push(ix/nx,iz/nz);const c=Color3.FromHexString(pointInPolygon([wx,wy],CAPITAL.core.polygon)?'#b3a78c':'#939a78');colors.push(c.r,c.g,c.b,1);}
   for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){const a=z*(nx+1)+x,c=a+nx+1,p=[b.minX+(b.maxX-b.minX)*(x+.5)/nx,b.minY+(b.maxY-b.minY)*(z+.5)/nz];
    // The finer channel surface owns this strip; a coarse triangle must not
    // cover the water again and create saw-tooth islands along its bank.
    if(CAPITAL.rivers.some(r=>r.context&&distanceToLine(p,r.points)<r.widthM/2+20))continue;
    indices.push(a,c,a+1,a+1,c,c+1);}
-  VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat(name==='core-ground'?'urban-ground':'ground',name==='core-ground'?'#b3a78c':'#939a78');mesh.isPickable=false;
+  VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs,colors});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat('ground','#ffffff');mesh.isPickable=false;
  }
  ground('core-ground',core,384,384);
  ground('west-ground',{...outer,maxX:core.minX},64,128);ground('east-ground',{...outer,minX:core.maxX},64,128);

@@ -61,6 +61,14 @@ try{
   report.microRoutes.push({...review,...result});if(!result.complete||result.blocked)errors.push(review.id+': '+(result.blocked||'incomplete'));
   await page.screenshot({path:path.join(output,'micro-'+review.id+'-end.png')});await page.locator('#walk-stop').click();console.log('MICRO',review.id,JSON.stringify(result));
  }
+ report.entryRoutes=[];
+ for(const [from,to]of [['world_R06','west_gate'],['world_R12','south_gate'],['world_R13','east_gate']]){
+  await page.locator('#route-from').selectOption(from);await page.locator('#route-to').selectOption(to);await page.locator('#walk-route').click();let result;
+  await page.screenshot({path:path.join(output,'entry-'+to+'-start.png')});
+  for(let i=0;i<120;i++){result=await page.evaluate(()=>window.__capitalAudit.advance(15));if(i===Math.floor((result.routeDistanceM/1.4/15)*.85))await page.screenshot({path:path.join(output,'entry-'+to+'-approach.png')});if(result.complete||result.blocked)break;}
+  report.entryRoutes.push({from,to,...result});if(!result.complete||result.blocked)errors.push('entry '+to+': '+(result.blocked||'incomplete'));
+  await page.screenshot({path:path.join(output,'entry-'+to+'-end.png')});await page.locator('#walk-stop').click();console.log('ENTRY',to,JSON.stringify(result));
+ }
  // Detours physically walked under the same weather/event state as routing and barriers.
  for(const setting of [{id:'flood',from:'stable',to:'inn',weather:'flood'},{id:'T16',from:'ajin',to:'market',event:'T16'},{id:'T11',from:'market',to:'castle',event:'T11',access:'permitted'},{id:'T17',from:'office',to:'mage_tower',event:'T17',access:'permitted'},{id:'T10',from:'orphanage',to:'office',event:'T10'}]){
   await page.locator('#weather').selectOption(setting.weather||'clear');await page.locator('#access').selectOption(setting.access||'public');

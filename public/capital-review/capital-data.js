@@ -403,10 +403,11 @@ for(const b of buildings.filter(b=>!b.facilityId&&!b.royalPart))if(distanceToLin
 // A deduplicated street keeps the frontage reference of every serviced parcel.
 for(const b of buildings)if(!edges.some(e=>e.id===b.frontageEdgeId)){const e=edges.filter(e=>!e.bridgeId&&e.class!=='roof').reduce((best,e)=>distanceToLine(b.position,e.points)<distanceToLine(b.position,best.points)?e:best);b.frontageEdgeId=e.id;}
 const publicLane=e=>e.fabric&&!['castle','noble','mage'].includes(N(e.from).district)&&!['castle','noble','mage'].includes(N(e.to).district);
-const lowerStop=nodes.filter(n=>n.id.startsWith('fabric_')&&!n.id.startsWith('fabric_junction')&&n.district==='lower').sort((a,b)=>distance(a.position,[22.09,20.61])-distance(b.position,[22.09,20.61]))[0];
+const frontageCount=new Map();for(const b of buildings)frontageCount.set(b.frontageEdgeId,(frontageCount.get(b.frontageEdgeId)||0)+1);
+const lowerLane=edges.filter(e=>e.fabric&&e.class==='alley'&&N(e.from).district==='lower'&&N(e.to).district==='lower').sort((a,b)=>(frontageCount.get(b.id)||0)-(frontageCount.get(a.id)||0))[0];
 const stairReview=edges.filter(e=>publicLane(e)&&e.class==='stairs').sort((a,b)=>Math.abs(elevationAt(...N(b.from).position)-elevationAt(...N(b.to).position))-Math.abs(elevationAt(...N(a.from).position)-elevationAt(...N(a.to).position)))[0];
 const quayReview=edges.filter(e=>publicLane(e)&&e.fabricRole==='quay').sort((a,b)=>distance(b.points[0],b.points.at(-1))-distance(a.points[0],a.points.at(-1)))[0];
-const walkingReviews=[{id:'lower-backstreets',name:'下層の生活裏道',from:'lower_court',to:lowerStop.id},{id:'terrace-stairs',name:'段丘を横断する石段',from:stairReview.from,to:stairReview.to},{id:'river-quay',name:'橋詰と河岸歩廊',from:quayReview.from,to:quayReview.to}];
+const walkingReviews=[{id:'lower-backstreets',name:'街路前面が連続する下層路地',from:lowerLane.from,to:lowerLane.to},{id:'terrace-stairs',name:'段丘を横断する石段',from:stairReview.from,to:stairReview.to},{id:'river-quay',name:'橋詰と河岸歩廊',from:quayReview.from,to:quayReview.to}];
 buildings.push(...suburbBuildings);
 buildings.push(...royalParts);
 // Facility masses sit north of their exact anchor; the anchor remains the door.
