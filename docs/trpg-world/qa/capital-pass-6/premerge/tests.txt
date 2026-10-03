@@ -1,0 +1,44 @@
+笨・surveyed plots have real street-facing doors, measured setbacks and level foundations (39.4ms)
+笨・street walls contain joined parcel runs rather than uniformly separated boxes (2.4967ms)
+笨・city walls have a substantial curtain and shared physical wall and gate towers (44.1568ms)
+笨・selecting the same route endpoint returns a stationary route without corridor search (0.4219ms)
+笨・castle is the terrain and massing apex above ordinary city strata (0.2701ms)
+笨・dense core has substantial roof coverage and a finer grain in lower neighbourhoods (1.2481ms)
+笨・small block loops and protected courts create choices beyond principal streets (2.03ms)
+笨・outskirts are sparse roadside buildings, with no copied wall-scale district (0.101ms)
+笨・physical streets have unique IDs and major alternatives diverge in physical distance (240.5511ms)
+笨・every ordinary core parcel fronts an existing physical lane instead of unserviced scatter (3.0132ms)
+笨・all neighbourhood lanes connect to the authored graph at real junctions (5.0009ms)
+笨・castle benches expose substantial local relief and the distributary stays on one river datum (18.6125ms)
+笨・royal investigation detours do not collide with duplicate checkpoints on split streets (145.8624ms)
+笨・authored core is 6.5 kmﾂｲ and activity envelope is a distinct terrain-led 20窶・4 kmﾂｲ footprint (0.6829ms)
+笨・all twelve canonical capital facilities resolve, including canonical weapon shop ID and conditional reuse of orphanage parcel (0.5273ms)
+笨・three public gates each have at least two meaningfully distinct routes to the market in normal conditions (245.6028ms)
+笨・social gating is topology, not an enemy-level wall (54.4917ms)
+笨・flood closes the low bridge but leaves high-bridge urban circulation (85.5162ms)
+笨・T10/T11/T16/T17 reuse the city graph and only active incidents impose their authored temporary barriers (7.8925ms)
+笨・NPC life routes are physically routable in the same graph (88.6208ms)
+笨・level-design contracts include distinct landmarks, compression/release nodes, vertical change and connected macro approaches (0.3501ms)
+笨・authored sight corridors stay physically clear enough for cognitive-map landmarks (5.9329ms)
+笨・compression/release rhythm is encoded as gates/checkpoints feeding plazas rather than a uniform street field (0.3954ms)
+笨・gate-to-market alternatives are spatially different, not cosmetic branches that immediately rejoin (189.9954ms)
+笨・Deep Research spatial principles exist as inspectable beats rather than prose-only guidance (0.263ms)
+笨・street hierarchy carries semantic traversal roles for logistics, daily life, shortcuts and ceremonial orientation (0.1753ms)
+笨・repeated 2D/NPC/state rendering cannot mutate roads or change metrics (3277.4962ms)
+笨・reverse routes measure uphill/downhill in travel order and include slopes between endpoints (7.1691ms)
+笨・every rendered road including facility doors, roof deck and world connections is physically traversable (7454.9537ms)
+笨・eight requested routes physically connect at eye height, rather than merely passing graph tests (655.633ms)
+笨・public city services stay connected under all 16 simultaneous incident combinations and flood (361.8311ms)
+笨・bridges and roof routes have continuous real height, and river/closures prevent crossing (1.972ms)
+笨・landmarks are physically visible at reserved viewpoints and intermittently hidden along streets (281.0585ms)
+笨・street frontage encloses roads while negative spaces retain their authored footprints (20.5057ms)
+笨・traffic changes with time, reflects at endpoints without warps and reroutes across incidents (381.8528ms)
+笨・state barriers span the full actual road width and manual movement cannot bypass a social boundary (2.0238ms)
+邃ｹ tests 36
+邃ｹ suites 0
+邃ｹ pass 36
+邃ｹ fail 0
+邃ｹ cancelled 0
+邃ｹ skipped 0
+邃ｹ todo 0
+邃ｹ duration_ms 14963.581
