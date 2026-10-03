@@ -90,7 +90,10 @@ const rawHill=(x,y)=>benchHill(x,y);
 function streetGradeAt(x,y){const riverDistance=distanceToLine([x,y],rivers[0].points);return Math.min(312,14+.14*Math.max(0,2200-hillRadius(x,y)),14+.195*Math.max(0,riverDistance-160));}
 const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:streetGradeAt(...N(id).position)}));
 export function terrainBaseAt(x,y){
- let h=benchHill(x,y),nearest=null,min=Infinity;
+ // The entire urban ground follows the same regional rise as its streets.
+ // Retaining terraces add bounded local relief; leaving the old 92m bench
+ // beside a graded road created needle-shaped ground between neighbouring lots.
+ let h=streetGradeAt(x,y)+Math.max(-10,Math.min(10,benchHill(x,y)-benchHill(x,y,480))),nearest=null,min=Infinity;
  for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=Math.max(0,distanceToLine([x,y],e.points)-e.widthM/2);if(d<22&&d<min){min=d;nearest=e;}}
  for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);h=h*(1-blend)+14*blend;
  if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t);h=h*(1-blend)+streetGradeAt(x,y)*blend;}
