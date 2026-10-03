@@ -3,6 +3,7 @@ export function sampleLine(points,spacingM=8){
  const out=[points[0]];
  for(let i=1;i<points.length;i++){
   const a=points[i-1],b=points[i],steps=Math.max(1,Math.ceil(distance(a,b)/spacingM));
+  if(distance(a,b)<1e-8)continue;
   for(let j=1;j<=steps;j++)out.push([a[0]+(b[0]-a[0])*j/steps,a[1]+(b[1]-a[1])*j/steps]);
  }
  return out;

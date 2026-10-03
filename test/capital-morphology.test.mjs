@@ -4,6 +4,7 @@ import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../publ
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
 test('ordinary city streets and bridge approaches never inherit terrace cliff grades',async()=>{
  const {sampleLine,edgeHeightAt}=await import('../public/capital-review/capital-surfaces.js');
+ assert.equal(sampleLine([[0,0],[0,0],[.001,0]],2).length,2,'zero-length road points must not create undefined grades');
  for(const e of CAPITAL.edges.filter(e=>!['world','stairs','roof'].includes(e.class))){const points=sampleLine(e.points,2);
   for(let i=1;i<points.length;i++){const grade=Math.abs(edgeHeightAt(e,points[i])-edgeHeightAt(e,points[i-1]))/distance(points[i],points[i-1]);assert.ok(grade<=.200001,e.id+' physical grade '+grade);}
  }
