@@ -25,7 +25,7 @@ Actual screenshots revealed stair tread terrain penetration and a steep ceremoni
 
 ## Concrete next steps
 
-1. Read audit PID22828, review `micro-terrace-stairs-walking.png`, `market-castle-middle.png`, gate approach images and mobile performance. Fix physical/rendered geometry if still poor; test passing is insufficient.
+1. Read audit PID22828, review `micro-terrace-stairs-walking.png`, `market-castle-middle.png`, gate approach images and mobile performance. Fix physical/rendered geometry if still poor; test passing is insufficient. The optimized castle-middle image STILL shows road dominating the view. Physical 2m grade analysis found ceremonial-road maxima: `castle_court__castle` 90.74%, `royal_approach__royal_gate__part_1` 79.46%, `royal_gate__castle_court` 62.18%. This is a topology/longitudinal-profile release blocker, not merely camera pitch. Keep the high castle apex but lengthen contour/switchback approaches and add proper landings; do not fake a fix by tilting the camera. Run `node tools/trpg-world/audit-capital-grades.mjs --strict` (currently expected to fail the 20% ordinary-street review target).
 2. Add accepted final screenshots/report with correct source SHA. Recheck all52 tests and latest PR338 CI/review threads. Merge only after quality review.
 3. Deploy using `tools/trpg-world/deploy-capital-vps.py` via configured SSH key, with exact merge SHA. The script fetches, compares dirty/incoming paths and performs ff-only; preserve tracked3/untracked102 and dirty hash. No reset/clean/stash/restart.
 4. Audit the real public URL again and store `qa/capital-pass-6/production/`; run `verify-capital-public.mjs` after this report exists. Default verifier now expects Pass6 production report.
