@@ -1,5 +1,21 @@
 # 王都 Pass 6 作業チェックポイント
 
+## 継続作業の現在地（10月3日後半）
+
+以下の旧チェックポイントは履歴。最大91%の坂と地形の尖りは、その後の修正で解消した。最新の空間コードは `fde63b8b8f8acfdbe6cd0f62044050dfdda52dc0`。同じPass6 branch /PR338で継続している。
+
+- 道路と街区地盤を河岸から王城へ連続する共通地盤へ統合。都市道路・橋の最大20%を保証、広域の粗い接続のみ25%以内。監査1265道路、違反0。
+- 王城歩行地盤249.2m、市場47.75m、差201.46m。河岸地盤14m、橋の取付32m。段丘は共通地盤上の局所±10mの擁壁段差となり、道路脇の旧92m cliffは残さない。
+- 54/54 tests、全20経路＋事件/増水5経路・朝昼夕に成功。`qa/capital-pass-6/release/` は共通地盤修正後の全監査。
+- 3門の35m外側・路地・石段・儀礼路を実描画確認。塔の全82基で基礎が地面に入っていることをWebGL上で検査し、浮き0。追加証拠は `release/sections/`、partial visual reviewを完歩監査と混同しない。
+- Own preview Node PID29916 /parent9260、port9894。全監査PowerShell37476・追加断面5488は終了済み。公開反映後にidentity確認してpreviewだけ停止する。
+- Latest full test log: `qa-pass6-city-tests.txt`、最新勾配JSON: `qa-pass6-city-grades.json`。full audit output: `qa-pass6-city-final`、supplement: `qa-pass6-foundation-sections`。
+- main/VPSはまだPass5 `f8f3d175760e803cecc7332f17014bdb8ae5af74`。最新PR CI/reviewを確認→merge→safe ff-only VPS反映→実URLで全監査、の段階。
+
+次の都市品質タスク: 中庭・小広場の敷地統合、斜面の生活路に踊り場と手摺、低屋根の建築統合、河岸の物流動作、城壁上の歩行、NPC本番schedule。現在も検証用greyboxであり、都市完成を宣言しない。
+
+## 以前のチェックポイント（初期Pass6）
+
 - Authoritative repository: `C:\Users\inaba\capital-pass-4`
 - Branch: `feat/capital-block-enclosure-pass-6`
 - PR: https://github.com/siranui0601/love-and-life/pull/338
