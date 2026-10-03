@@ -2,6 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
+test('ordinary city streets and bridge approaches never inherit terrace cliff grades',async()=>{
+ const {sampleLine,edgeHeightAt}=await import('../public/capital-review/capital-surfaces.js');
+ for(const e of CAPITAL.edges.filter(e=>!['world','stairs','roof'].includes(e.class))){const points=sampleLine(e.points,2);
+  for(let i=1;i<points.length;i++){const grade=Math.abs(edgeHeightAt(e,points[i])-edgeHeightAt(e,points[i-1]))/distance(points[i],points[i-1]);assert.ok(grade<=.200001,e.id+' physical grade '+grade);}
+ }
+});
 test('surveyed plots have real street-facing doors, measured setbacks and level foundations',()=>{
  const plots=CAPITAL.buildings.filter(b=>b.frontage),roads=new Map(CAPITAL.edges.map(e=>[e.id,e]));assert.ok(plots.length>2000);
  assert.equal(new Set(CAPITAL.buildings.map(b=>b.id)).size,CAPITAL.buildings.length,'building IDs collide across repeated survey geometries');

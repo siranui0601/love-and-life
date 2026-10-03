@@ -39,14 +39,14 @@ export function mountCapitalScene(getState,getRoute){
  // Dense samples follow the same height function as feet; endpoint-only ribbons cut
  // through curved terrain and create phantom ramps/steps.
  function strip(name,points,width,material,heightAt){
-  const ps=sampleLine(points,name.startsWith('road:')?1:8),left=[],right=[];
+  const ps=sampleLine(points,name.startsWith('road:')?2:8),left=[],right=[];
   for(let i=0;i<ps.length;i++){const prev=ps[Math.max(0,i-1)],next=ps[Math.min(ps.length-1,i+1)],[x,z]=toLocal(ps[i]);let dx=(next[0]-prev[0])*1000,dz=-(next[1]-prev[1])*1000,len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const lx=x-dz*width/2,lz=z+dx*width/2,rx=x+dz*width/2,rz=z-dx*width/2,crossSlope=name.startsWith('road:')||name.startsWith('world_bridge_');left.push(V(lx,heightAt(crossSlope?fromLocal([lx,lz]):ps[i]),lz));right.push(V(rx,heightAt(crossSlope?fromLocal([rx,rz]):ps[i]),rz));}
   const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
  }
  const streetGroundParts=[];
  for(const e of CAPITAL.edges){
   if(!e.bridgeId&&!['world','roof'].includes(e.class)){
-   const ps=sampleLine(e.points,2),paths=[],half=e.widthM/2+18;
+   const ps=sampleLine(e.points,4),paths=[],half=e.widthM/2+18;
    // Explicit road-edge rings preserve the carriageway without tessellating
    // every shoulder metre into millions of redundant vertices.
    for(const off of [-half,-e.widthM/2-1,-e.widthM/2,0,e.widthM/2,e.widthM/2+1,half]){paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}

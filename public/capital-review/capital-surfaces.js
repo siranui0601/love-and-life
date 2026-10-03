@@ -20,7 +20,7 @@ export function edgeHeightAt(edge,position){
  const contextBridge=CAPITAL.bridges.find(b=>b.context&&b.edgeId===edge.id&&distanceToLine(position,b.points)<b.widthM/2+.1&&distance(position,b.position)<b.lengthM/2);
  if(edge.bridgeId||contextBridge){
   const bridge=contextBridge||CAPITAL.bridges.find(b=>b.id===edge.bridgeId),a=bridge.points[0],b=bridge.points.at(-1),total=distance(a,b),travel=distance(a,nearestOnSegment(position,a,b));
-  const rise=Math.min(1,travel/28,(total-travel)/28);
+  const rise=Math.min(1,travel/32,(total-travel)/32);
   // Both ends meet their approach exactly; the deck clears the water in the middle.
   return terrainBaseAt(...position)+.28+Math.max(0,rise)*(bridge.deckHeightM-terrainBaseAt(...bridge.position));
  }

@@ -83,12 +83,17 @@ const hillRadius=(x,y)=>{const dx=(x-hillCentre[0])*1000/1.08,dy=(y-hillCentre[1
 const contourPoint=(radiusM,a)=>[hillCentre[0]+Math.cos(a)*radiusM/contourFactor(a)*1.08/1000,hillCentre[1]+Math.sin(a)*radiusM/contourFactor(a)/1000];
 function benchHill(x,y,transitionM=12){transitionM=Math.max(transitionM,12+260*Math.max(0,Math.min(1,(y-22.70)/.5)));let h=14+4*Math.exp(-((x-22.25)**2+(y-20.8)**2)/.55);const r=hillRadius(x,y);for(const band of terraceBands){const t=Math.max(0,Math.min(1,(band.radiusM+transitionM/2-r)/transitionM));h+=band.riseM*t*t*(3-2*t);}return h;}
 const rawHill=(x,y)=>benchHill(x,y);
-const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:rawHill(...N(id).position)}));
+// A shared longitudinal datum for streets: the water edge and castle hill
+// bound the rise. Junctions evaluate the same field, regardless of road class.
+// Off-road retaining benches remain steep; transport streets do not inherit
+// their cliff faces. Values are metres/metre, not cosmetic camera adjustments.
+function streetGradeAt(x,y){const riverDistance=distanceToLine([x,y],rivers[0].points);return Math.min(312,14+.14*Math.max(0,2200-hillRadius(x,y)),14+.195*Math.max(0,riverDistance-160));}
+const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:streetGradeAt(...N(id).position)}));
 export function terrainBaseAt(x,y){
  let h=benchHill(x,y),nearest=null,min=Infinity;
  for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=Math.max(0,distanceToLine([x,y],e.points)-e.widthM/2);if(d<22&&d<min){min=d;nearest=e;}}
- if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t),graded=benchHill(x,y,180);h=h*(1-blend)+graded*blend;}
  for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);h=h*(1-blend)+14*blend;
+ if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t);h=h*(1-blend)+streetGradeAt(x,y)*blend;}
  for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.benchHeightM;}
  return h;
 }
@@ -290,7 +295,7 @@ for(const side of [-1,1]){
  }
 }
 const streetFabric=buildStreetFabric({contourPoint,nodes,edges,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
-terrainStreets=edges.filter(e=>!e.bridgeId&&e.class!=='roof');
+terrainStreets=edges.filter(e=>!e.bridgeId);
 for(const e of terrainStreets)for(let j=1;j<e.points.length;j++){
  const a=e.points[j-1],b=e.points[j];for(let x=Math.floor((Math.min(a[0],b[0])-.04)*10);x<=Math.floor((Math.max(a[0],b[0])+.04)*10);x++)for(let y=Math.floor((Math.min(a[1],b[1])-.04)*10);y<=Math.floor((Math.max(a[1],b[1])+.04)*10);y++){const k=x+','+y;if(!terrainBuckets.has(k))terrainBuckets.set(k,new Set());terrainBuckets.get(k).add(e);}
 }
