@@ -9,11 +9,16 @@ import {
   AUTHORED_DAY1_T01_VILLAGE_NIGHT_INTERNALS as night,
   AUTHORED_DAY1_T01_VILLAGE_NIGHT_CANONICAL_INTERNALS as canonical,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
+import { consumeMeal, publicPlayerNeeds } from "../lib/player-needs.mjs";
 
-function runtime() {
+const MERCHANT_CONTEXT = Object.freeze({ presentNpcs: [{ id: "NPC008" }] });
+
+// Production epoch: absoluteMinute=0 is Day1 10:00. T01 aftercare begins at
+// absoluteMinute=292 (Day1 14:52) in the strict New Game route.
+function runtime({ absoluteMinute = 292 } = {}) {
   return {
     playerState: {
-      absoluteMinute: 780,
+      absoluteMinute,
       player: {
         location: "田園の村",
         facilityId: "LOC_FARM_SQUARE",
@@ -22,7 +27,7 @@ function runtime() {
       },
       hunger: 34,
       fatigue: 58,
-      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed", completedAt: 780 }],
+      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed", completedAt: 292 }],
       worldFlags: { t01Resolved: true, t01FinnReturned: true },
       history: [],
       evidence: {},
@@ -33,10 +38,11 @@ function runtime() {
 function choose(state, action) {
   const result = { ok: true };
   assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
+  state.playerState.absoluteMinute += Number(action.minutes ?? 0);
   return result;
 }
 
-function reachNight(state) {
+function reachEvening(state) {
   const help = authoredMissionFlowExclusiveActions(state)
     .find((action) => action.id === aftercare.HELP_ACTION_ID);
   choose(state, help);
@@ -45,90 +51,133 @@ function reachNight(state) {
   choose(state, bread);
 }
 
-test("Day1 T01 route continues from supper into a different short night scene", () => {
-  const state = runtime();
-  reachNight(state);
+function reachNight(state) {
+  reachEvening(state);
+  const evening = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === night.EVENING_REST_ACTION_ID);
+  assert.ok(evening);
+  choose(state, evening);
+}
 
+function sleepToDay2(state) {
+  reachNight(state);
+  const sleep = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === night.SLEEP_ACTION_ID);
+  const result = choose(state, sleep);
+  return { sleep, result };
+}
+
+function eatBreakfastAtBakery(state) {
+  // The live canonical merchant morning is at the bakery, not the inn. The
+  // authored arrival is unlocked by the completed night plus an actual meal;
+  // generic NPC scheduler placement must not make that causal scene disappear.
+  state.playerState.player.facilityId = "LOC_FARM_BAKERY";
+  consumeMeal(state.playerState.player, {
+    minute: state.playerState.absoluteMinute + 7,
+    nutrition: 58,
+    quality: "standard",
+  });
+  state.playerState.absoluteMinute += 7;
+}
+
+test("15:42 after supper offers a natural evening scene instead of premature sleep", () => {
+  const state = runtime();
+  reachEvening(state);
+
+  assert.equal(state.playerState.absoluteMinute, 342);
   const guidance = authoredMissionFlowGuidance(state);
   const actions = authoredMissionFlowExclusiveActions(state);
 
+  assert.equal(guidance.title, "夜までどう過ごすか");
+  assert.deepEqual(actions.map((action) => action.label), [
+    "装備を手入れし、身体を休める",
+    "広場の片づけを手伝う",
+    "村人と火のそばで話す",
+  ]);
+  assert.equal(actions.some((action) => action.id === night.SLEEP_ACTION_ID), false);
+  const rest = actions.find((action) => action.id === night.EVENING_REST_ACTION_ID);
+  assert.equal(rest.minutes, 408);
+  assert.equal(new Set(actions.map((action) => action.family)).size, 3);
+});
+
+test("evening free-time action advances exactly to 22:30 and only then opens night choices", () => {
+  const state = runtime();
+  reachEvening(state);
+  const rest = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === night.EVENING_REST_ACTION_ID);
+  choose(state, rest);
+
+  assert.equal(state.playerState.absoluteMinute, 750);
+  assert.equal(night.currentClock(state).minuteOfDay, 22 * 60 + 30);
+  assert.equal(state.playerState.worldFlags["t01Evening:gearMaintainedAndRested"], true);
+  assert.equal(state.playerState.day1T01VillageNight.eveningClosedActionIds.length, 2);
+
+  const guidance = authoredMissionFlowGuidance(state);
+  const actions = authoredMissionFlowExclusiveActions(state);
   assert.equal(guidance.title, "救出した夜の過ごし方");
-  assert.equal(actions.length, 3);
   assert.deepEqual(actions.map((action) => action.label), [
     "ミラの家で眠る",
     "夜番を手伝う",
     "井戸端で話す",
   ]);
-  assert.equal(new Set(actions.map((action) => action.id)).size, 3);
-  assert.equal(new Set(actions.map((action) => action.family)).size, 3);
-  for (const action of actions) {
-    assert.ok(action.label.length >= 4 && action.label.length <= 20);
-  }
+  assert.equal(actions.find((action) => action.id === night.SLEEP_ACTION_ID).minutes, 480);
 });
 
-test("sleeping changes living state, closes branches, and reaches the Day2 merchant", () => {
+test("lodging sleep crosses into Day2 with fatigue recovered, while authored merchant arrival is scheduler-independent", () => {
   const state = runtime();
-  reachNight(state);
+  const { result } = sleepToDay2(state);
 
-  const sleep = authoredMissionFlowExclusiveActions(state)
-    .find((action) => action.id === night.SLEEP_ACTION_ID);
-  const result = choose(state, sleep);
-
-  assert.equal(state.playerState.player.hunger, 22);
-  assert.equal(state.playerState.player.fatigue, 13);
-  assert.equal(state.playerState.hunger, 22);
-  assert.equal(state.playerState.fatigue, 13);
   assert.equal(state.playerState.player.facilityId, "LOC_FARM_INN");
   assert.equal(state.playerState.day1T01VillageNight.nightClosedActionIds.length, 2);
   assert.equal(result.sceneTransition, night.MORNING_SCENE_ID);
-  assert.deepEqual(result.livingState, {
-    hungerBefore: 34,
-    hungerAfter: 22,
-    fatigueBefore: 58,
-    fatigueAfter: 13,
-  });
+  assert.equal(night.currentClock(state).day, 2);
+  assert.equal(night.currentClock(state).minuteOfDay, 6 * 60 + 30);
+  assert.equal(publicPlayerNeeds(state.playerState.player).fatigue, 0);
+  assert.equal(publicPlayerNeeds(state.playerState.player).lastSleepQuality, "lodging");
+  assert.equal(canonical.merchantMorningStateEligible(state), false);
+  assert.equal(canonical.merchantMorningEligible(state, MERCHANT_CONTEXT), false);
+  assert.notEqual(authoredMissionFlowGuidance(state)?.title, "Day2の行商人");
 
-  const guidance = authoredMissionFlowGuidance(state);
-  const morning = authoredMissionFlowExclusiveActions(state);
-  assert.equal(guidance.title, "Day2の行商人");
-  assert.deepEqual(morning.map((action) => action.label), [
+  eatBreakfastAtBakery(state);
+  assert.equal(canonical.merchantMorningStateEligible(state), true);
+  assert.equal(canonical.merchantMorningEligible(state, { presentNpcs: [] }), true);
+  assert.equal(canonical.merchantMorningEligible(state, MERCHANT_CONTEXT), true);
+
+  const withoutScheduledPresence = authoredMissionFlowExclusiveActions(state, { presentNpcs: [] });
+  assert.deepEqual(withoutScheduledPresence.map((action) => action.label), [
     "荷ほどきを手伝う",
     "品物を見る",
     "朝粥を食べる",
   ]);
-  assert.ok(morning.every((action) => action.targetNpcId === canonical.MERCHANT_NPC_ID));
-  assert.ok(morning.every((action) => action.authoredDay1T01VillageNightSpeech.actorId === "NPC008"));
+  assert.ok(withoutScheduledPresence.every((action) => action.targetNpcId === canonical.MERCHANT_NPC_ID));
+  assert.ok(withoutScheduledPresence.every((action) => action.authoredDay1T01VillageNightSpeech.actorId === "NPC008"));
+
+  const morning = authoredMissionFlowExclusiveActions(state, MERCHANT_CONTEXT);
+  assert.deepEqual(morning.map((action) => action.id), withoutScheduledPresence.map((action) => action.id));
 });
 
-test("merchant choices create different logistics, shopping, and life results", () => {
+test("merchant choices create different logistics and life results only after breakfast at the bakery", () => {
   const workState = runtime();
-  reachNight(workState);
-  choose(workState, authoredMissionFlowExclusiveActions(workState)
-    .find((action) => action.id === night.SLEEP_ACTION_ID));
-  const unload = authoredMissionFlowExclusiveActions(workState)
+  sleepToDay2(workState);
+  eatBreakfastAtBakery(workState);
+  const unload = authoredMissionFlowExclusiveActions(workState, { presentNpcs: [] })
     .find((action) => action.label === "荷ほどきを手伝う");
   const unloadResult = choose(workState, unload);
   assert.equal(unloadResult.speeches[0].actorId, "NPC008");
   assert.equal(workState.playerState.worldFlags["day2Merchant:unloadingHelped"], true);
   assert.equal(workState.playerState.worldFlags["day2Merchant:access:trusted"], true);
-  assert.equal(workState.playerState.day1T01VillageNight.merchantAccess, "trusted");
 
   const foodState = runtime();
-  reachNight(foodState);
-  choose(foodState, authoredMissionFlowExclusiveActions(foodState)
-    .find((action) => action.id === night.SLEEP_ACTION_ID));
-  const porridge = authoredMissionFlowExclusiveActions(foodState)
+  sleepToDay2(foodState);
+  eatBreakfastAtBakery(foodState);
+  const porridge = authoredMissionFlowExclusiveActions(foodState, { presentNpcs: [] })
     .find((action) => action.label === "朝粥を食べる");
   choose(foodState, porridge);
-  assert.equal(foodState.playerState.player.hunger, 4);
   assert.equal(foodState.playerState.worldFlags["day2Merchant:morningPorridgeEaten"], true);
   assert.equal(foodState.playerState.worldFlags["day2Merchant:access:open"], true);
-
-  assert.ok(!authoredMissionFlowExclusiveActions(foodState)
-    ?.some((action) => action.authoredDay1T01VillageNightChoice));
 });
 
-test("night watch and well talk preserve different hidden causes", () => {
+test("night watch and well talk remain distinct after the evening bridge", () => {
   const watchState = runtime();
   reachNight(watchState);
   const watch = authoredMissionFlowExclusiveActions(watchState)
@@ -150,11 +199,13 @@ test("night watch and well talk preserve different hidden causes", () => {
   assert.equal(night.morningEligible(wellState), false);
 });
 
-test("the night scene cannot be reached without the saved bread-sharing history", () => {
-  const state = runtime();
-  state.playerState.history.push({
-    type: "T01_AFTERCARE_FINN_ROUTE_TESTIMONY",
-    actionId: "MISSION_FLOW:T01:SQUARE_SUPPER:ask_finn",
-  });
-  assert.equal(night.nightEligible(state), false);
+test("night scene cannot be reached before 22:30 or without bread-sharing history", () => {
+  const early = runtime();
+  early.playerState.history.push({ type: "T01_AFTERCARE_BREAD_SHARED" });
+  assert.equal(night.nightEligible(early), false);
+  assert.equal(night.eveningEligible(early), true);
+
+  const noBread = runtime({ absoluteMinute: 750 });
+  assert.equal(night.nightEligible(noBread), false);
+  assert.equal(night.eveningEligible(noBread), false);
 });

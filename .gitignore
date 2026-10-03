@@ -5,3 +5,20 @@ token.json
 
 data/
 runtime-data/
+
+# Day1〜Day100 通し再生が実行ごとに書き出す診断ログ。
+# CI では artifact として上げるため、リポジトリでは追跡しない。
+# （tools/trpg-sim/reports/ 配下の他のファイルは従来どおり追跡対象。）
+tools/trpg-sim/reports/day100-route-*
+
+# 人徳ルートv3の正本exportと行単位compile成果物。
+# 元データは非公開Google Sheetなので公開repositoryへはコミットしない。
+# クリーンcheckoutでは export-virtue-route-v2-source.mjs で再生成する。
+docs/trpg/virtue-route-v2-source.csv
+docs/trpg/virtue-route-v3-mapping.csv
+docs/trpg/virtue-route-v3-unresolved.json
+docs/trpg/virtue-route-v3-proposed-local-moves.json
+docs/trpg/virtue-route-v3-static-ledger.csv
+docs/trpg/virtue-route-v3-sheet-ledger.csv
+docs/trpg/virtue-route-v3-sheet-v2-v3-map.csv
+docs/trpg/virtue-route-v3-sheet-validation.csv

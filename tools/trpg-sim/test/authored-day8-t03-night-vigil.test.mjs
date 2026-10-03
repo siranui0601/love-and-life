@@ -1,0 +1,108 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+  applyAuthoredMissionFlowAction,
+  authoredMissionFlowExclusiveActions,
+  authoredMissionFlowGuidance,
+  AUTHORED_DAY8_T03_NIGHT_VIGIL_INTERNALS as vigil,
+} from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
+
+function runtime() {
+  return {
+    playerState: {
+      day: 8,
+      absoluteMinute: 7 * 1440 + 22 * 60 + 40,
+      player: {
+        location: "田園の村",
+        facilityId: "LOC_FARM_NORTH_FENCE",
+        hunger: 61,
+        fatigue: 64,
+        needs: { hunger: 61, fatigue: 64 },
+      },
+      day2Day8VillageWatch: {
+        howlCompletedAtMinute: 7 * 1440 + 22 * 60 + 40,
+      },
+      worldFlags: {},
+      history: [],
+      goapRequests: {},
+    },
+  };
+}
+
+function setPostClockNeeds(state, { hunger, fatigue }) {
+  state.playerState.player.needs.hunger = hunger;
+  state.playerState.player.needs.fatigue = fatigue;
+  state.playerState.player.hunger = hunger;
+  state.playerState.player.fatigue = fatigue;
+}
+
+function choose(state, choiceId) {
+  const action = authoredMissionFlowExclusiveActions(state)
+    ?.find((entry) => entry.authoredDay8T03NightVigilChoice === choiceId);
+  assert.ok(action, `${choiceId} must be visible`);
+  const result = { ok: true };
+  assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
+  return { action, result };
+}
+
+test("the Day8 howl opens three public dawn-watch choices", () => {
+  const state = runtime();
+  const actions = authoredMissionFlowExclusiveActions(state);
+  assert.equal(authoredMissionFlowGuidance(state).title, "北柵の夜を誰が引き受けるか");
+  assert.deepEqual(actions.map((entry) => entry.authoredDay8T03NightVigilChoice), [
+    "keep_written_watch_until_dawn",
+    "rotate_short_patrols",
+    "hand_watch_to_jill",
+  ]);
+  assert.deepEqual(actions.map((entry) => entry.minutes), [390, 360, 60]);
+  assert.ok(actions.every((entry) => entry.id === entry.actionId));
+});
+
+test("the full dawn vigil can consume production clock fatigue then recover through its seated relief periods", () => {
+  const state = runtime();
+  // Production time authority has already charged the six-and-a-half-hour night
+  // before the authored consequence is consumed. The action-internal relief is
+  // applied afterwards, before CollapseAware opens an incident.
+  setPostClockNeeds(state, { hunger: 87, fatigue: 100 });
+  const { result } = choose(state, "keep_written_watch_until_dawn");
+  assert.equal(state.playerState.player.needs.hunger, 87);
+  assert.equal(state.playerState.player.needs.fatigue, 70);
+  assert.deepEqual(result.livingState, {
+    before: { hunger: 87, fatigue: 100 },
+    after: { hunger: 87, fatigue: 70 },
+    fatigueRecovery: 30,
+  });
+  assert.equal(state.playerState.worldFlags["day8WolfWatch:playerStayedUntilDawn"], true);
+  assert.equal(state.playerState.goapRequests["GOAP-DAY8-T03-DAWN-RELIEF"].actorNpcId, "NPC060");
+  assert.equal(result.closedActionIds.length, 2);
+  assert.equal(vigil.actions(state), null);
+});
+
+test("rotating the whole watch and handing it off remain materially distinct in duration, fact and recovery", () => {
+  const rotated = runtime();
+  setPostClockNeeds(rotated, { hunger: 84, fatigue: 97 });
+  const rotatedResult = choose(rotated, "rotate_short_patrols");
+  assert.equal(rotated.playerState.player.needs.fatigue, 65);
+  assert.equal(rotated.playerState.worldFlags["day8WolfWatch:rotatingPatrolsUsed"], true);
+  assert.equal(rotatedResult.action.minutes, 360);
+  assert.equal(rotatedResult.result.livingState.fatigueRecovery, 32);
+
+  const handed = runtime();
+  setPostClockNeeds(handed, { hunger: 66, fatigue: 71 });
+  const handedResult = choose(handed, "hand_watch_to_jill");
+  assert.equal(handed.playerState.player.needs.fatigue, 71);
+  assert.equal(handed.playerState.worldFlags["day8WolfWatch:jillTookDawnWatch"], true);
+  assert.equal(handedResult.action.minutes, 60);
+  assert.equal(handedResult.result.livingState.fatigueRecovery, 0);
+});
+
+test("the vigil is unavailable before the howl or away from the fence", () => {
+  const before = runtime();
+  before.playerState.day2Day8VillageWatch.howlCompletedAtMinute = null;
+  assert.equal(vigil.actions(before), null);
+
+  const away = runtime();
+  away.playerState.player.facilityId = "LOC_FARM_SQUARE";
+  assert.equal(vigil.actions(away), null);
+});

@@ -9,6 +9,7 @@ import {
 } from "../../../src/server/trpg/game/service.js";
 import { loadTrpgGameData } from "../../../src/server/trpg/game/game-data.js";
 import { ensureWorkMarket } from "../../../src/server/trpg/resolvers/work-market-resolver.js";
+import { clockFromMinute } from "../lib/player-journey.mjs";
 
 function hideAllNpcs(runtime) {
   for (const state of Object.values(runtime.livingWorld.npcStates)) {
@@ -31,14 +32,33 @@ function placeNpc(runtime, npcId, facilityId) {
   runtime.playerState.authoritativePresentNpcIds = new Set([npcId]);
 }
 
-function setClock(runtime, { day = 1, hour = 8, minute = 0 } = {}) {
+function setClock(runtime, { day = 1, hour = 10, minute = 0 } = {}) {
   const state = runtime.playerState;
-  state.day = day;
-  state.hour = hour;
-  state.minute = minute;
-  state.absoluteMinute = (day - 1) * 1440 + hour * 60 + minute;
-  state.phaseIndex = hour < 8 ? 0 : hour < 12 ? 1 : hour < 18 ? 2 : 3;
-  state.daypart = hour < 6 ? "night" : hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+  // Production time starts at Day1 10:00 == absoluteMinute 0.  Build the
+  // fixture from that canonical epoch instead of maintaining an independent
+  // wall-clock formula that can disagree with authored scene scheduling.
+  const absoluteMinute = (day - 1) * 1440 + hour * 60 + minute - 600;
+  assert.ok(absoluteMinute >= 0, `requested clock predates Day1 10:00: Day${day} ${hour}:${minute}`);
+  const clock = clockFromMinute(absoluteMinute);
+  assert.equal(clock.day, day);
+  assert.equal(clock.hour, hour);
+  assert.equal(clock.minute, minute);
+  state.absoluteMinute = absoluteMinute;
+  Object.assign(state, clock);
+  state.phaseIndex = state.minuteOfDay >= 1320 || state.minuteOfDay < 600
+    ? 3
+    : state.minuteOfDay >= 1080
+      ? 2
+      : state.minuteOfDay >= 840
+        ? 1
+        : 0;
+  state.daypart = state.minuteOfDay < 480
+    ? "dawn"
+    : state.minuteOfDay < 1080
+      ? "day"
+      : state.minuteOfDay < 1320
+        ? "dusk"
+        : "night";
   state.player.needs.hunger = 15;
   state.player.needs.fatigue = 8;
 }
@@ -150,7 +170,7 @@ test("the same employer does not generate another offer until the next day", () 
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
   assert.equal(candidateWorkOffer(runtime, data), undefined);
 
-  setClock(runtime, { day: 2, hour: 8 });
+  setClock(runtime, { day: 2, hour: 10 });
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
   assert.ok(candidateWorkOffer(runtime, data));
 });
@@ -168,8 +188,7 @@ test("a stale pending offer is cleared instead of exposing a confirm action", ()
   assert.ok(offer);
   stagePendingWorkOffer(runtime, offer);
   runtime.playerState.absoluteMinute += 181;
-  runtime.playerState.hour = 11;
-  runtime.playerState.minute = 1;
+  Object.assign(runtime.playerState, clockFromMinute(runtime.playerState.absoluteMinute));
   placeNpc(runtime, "NPC003", "LOC_FARM_SQUARE");
 
   assert.equal(confirmAction(runtime, data), undefined);

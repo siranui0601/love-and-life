@@ -5,22 +5,34 @@ import {
   applyAuthoredMissionFlowAction,
   authoredMissionFlowExclusiveActions,
   authoredMissionFlowGuidance,
-  AUTHORED_DAY1_T01_SQUARE_AFTERCARE_INTERNALS as aftercare,
-  AUTHORED_DAY1_T01_VILLAGE_NIGHT_INTERNALS as night,
-  AUTHORED_DAY2_T01_MERCHANT_PAYMENT_INTERNALS as payment,
   AUTHORED_DAY2_T01_VILLAGE_WARNING_INTERNALS as warning,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
-function runtime() {
+const WARNING_DUE_MINUTE = 1583; // Day2 12:23 after the natural Jill warning wait.
+
+function runtime({ due = true, queued = true, history = true } = {}) {
   return {
     playerState: {
-      absoluteMinute: 780,
-      player: { location: "田園の村", facilityId: "LOC_FARM_SQUARE", hunger: 34, fatigue: 58, gold: 0 },
-      gold: 0,
+      absoluteMinute: due ? WARNING_DUE_MINUTE : WARNING_DUE_MINUTE - 1,
+      player: { location: "森", facilityId: "LOC_FOREST_HUNTER_HUT", hunger: 34, fatigue: 40, gold: 42 },
+      gold: 42,
       inventory: {},
-      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed", completedAt: 780 }],
+      missions: [{ id: "MSN-T01", troubleId: "T01", status: "completed", completedAt: 292 }],
       worldFlags: { t01Resolved: true, t01FinnReturned: true },
-      history: [], evidence: {}, contracts: {}, goapRequests: {},
+      history: history ? [{ type: "DAY2_HUNTER_VILLAGE_WARNING_QUEUED" }] : [],
+      evidence: {},
+      contracts: {},
+      goapRequests: queued ? {
+        [warning.REQUEST_ID]: {
+          id: warning.REQUEST_ID,
+          actorNpcId: "NPC060",
+          goal: "warn_village_north_fence",
+          destination: "LOC_FARM_NORTH_FENCE",
+          status: "queued",
+          createdAtMinute: WARNING_DUE_MINUTE - 180,
+          dueAtMinute: WARNING_DUE_MINUTE,
+        },
+      } : {},
     },
   };
 }
@@ -31,25 +43,14 @@ function choose(state, action) {
   assert.equal(applyAuthoredMissionFlowAction(state, action, result), true);
   return result;
 }
-function chooseId(state, id) { return choose(state, authoredMissionFlowExclusiveActions(state).find((a) => a.id === id)); }
 function chooseLabel(state, label) { return choose(state, authoredMissionFlowExclusiveActions(state).find((a) => a.label === label)); }
 
 function reachWarningResult(state) {
-  chooseId(state, aftercare.HELP_ACTION_ID);
-  chooseId(state, "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread");
-  chooseId(state, night.SLEEP_ACTION_ID);
-  chooseId(state, payment.SOURCE_ACTION_ID);
-  chooseLabel(state, "三Gを受け取る");
-  chooseLabel(state, "猟師の荷を預かる");
-  chooseLabel(state, "狩人小屋へ向かう");
-  chooseLabel(state, "罠を直す");
-  chooseLabel(state, "村へ知らせる");
-  state.playerState.absoluteMinute = state.playerState.goapRequests[warning.REQUEST_ID].dueAtMinute;
+  state.playerState.absoluteMinute = WARNING_DUE_MINUTE;
 }
 
-test("Day1 route reaches the village warning follow-up", () => {
+test("queued warning at its real due time reaches the village warning follow-up", () => {
   const state = runtime();
-  reachWarningResult(state);
   const actions = authoredMissionFlowExclusiveActions(state);
   assert.equal(authoredMissionFlowGuidance(state).title, "北柵への警告、その後");
   assert.deepEqual(actions.map((a) => a.label), ["家畜を移す", "鈴を見回る", "ジルに任せる"]);
@@ -61,7 +62,6 @@ test("Day1 route reaches the village warning follow-up", () => {
 
 test("moving livestock completes the request and moves the player", () => {
   const state = runtime();
-  reachWarningResult(state);
   chooseLabel(state, "家畜を移す");
   assert.equal(state.playerState.player.location, "田園の村");
   assert.equal(state.playerState.player.facilityId, "LOC_FARM_NORTH_FENCE");
@@ -72,18 +72,16 @@ test("moving livestock completes the request and moves the player", () => {
 
 test("inspecting bells preserves evidence and source", () => {
   const state = runtime();
-  reachWarningResult(state);
   chooseLabel(state, "鈴を見回る");
   assert.deepEqual(state.playerState.evidence["T03-EVIDENCE-DAY2-NORTHEAST-BELL-MARK"], {
     id: "T03-EVIDENCE-DAY2-NORTHEAST-BELL-MARK",
     source: "LOC_FOREST_HUNTER_HUT:NORTHEAST_WARNING_LINE",
-    acquiredAtMinute: 960,
+    acquiredAtMinute: WARNING_DUE_MINUTE,
   });
 });
 
 test("leaving it to Jill is a valid non-intervention result", () => {
   const state = runtime();
-  reachWarningResult(state);
   chooseLabel(state, "ジルに任せる");
   assert.equal(state.playerState.worldFlags["day2Hunter:warningLeftToJill"], true);
   assert.equal(state.playerState.goapRequests[warning.REQUEST_ID].status, "completed");
@@ -91,12 +89,18 @@ test("leaving it to Jill is a valid non-intervention result", () => {
 });
 
 test("warning follow-up requires due time, queued request, history, and facility", () => {
-  const state = runtime();
-  reachWarningResult(state);
-  state.playerState.absoluteMinute -= 1;
-  assert.equal(warning.eligible(state), false);
-  state.playerState.absoluteMinute += 1;
-  assert.equal(warning.eligible(state), true);
-  state.playerState.player.facilityId = "LOC_FARM_SQUARE";
-  assert.equal(warning.eligible(state), false);
+  const early = runtime({ due: false });
+  assert.equal(warning.eligible(early), false);
+  reachWarningResult(early);
+  assert.equal(warning.eligible(early), true);
+
+  const noRequest = runtime({ queued: false });
+  assert.equal(warning.eligible(noRequest), false);
+
+  const noHistory = runtime({ history: false });
+  assert.equal(warning.eligible(noHistory), false);
+
+  const wrongPlace = runtime();
+  wrongPlace.playerState.player.facilityId = "LOC_FARM_SQUARE";
+  assert.equal(warning.eligible(wrongPlace), false);
 });

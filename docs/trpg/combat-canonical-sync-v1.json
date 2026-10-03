@@ -1,0 +1,104 @@
+{
+  "baseHead": "c4c44f0d70a7edef2d8cde73f7c2c089fdd98d21",
+  "counts": {
+    "bosses": 9,
+    "encounters": 76,
+    "equipment": 142,
+    "materialBuyback": 61,
+    "monsterActions": 286,
+    "monsterSkills": 96,
+    "monsters": 77,
+    "shopInventory": 149
+  },
+  "generatedAt": "2026-08-17T19:07:16+09:00",
+  "integrity": {
+    "blankEquipmentIds": 0,
+    "blankInventoryIds": 0,
+    "blankMaterialIds": 0,
+    "duplicateEquipmentIds": 0,
+    "duplicateInventoryIds": 0,
+    "duplicateMaterialIds": 0,
+    "shopEquipmentOrphans": 0
+  },
+  "materialEconomy": {
+    "dropToSaleJoinKey": "素材ID / monster drop itemId",
+    "integration": "separate canonical economy catalog attached to battle data; not mixed into actor stats"
+  },
+  "provenance": {
+    "モンスタースキル": {
+      "columnCount": 13,
+      "range": "A1:M100",
+      "rowCount": 100,
+      "sha256": "1a97d92de5108e9fb672794479833225d0fc5ed44957e9753b0d3615bd662b06"
+    },
+    "モンスター一覧": {
+      "columnCount": 32,
+      "range": "A1:AF81",
+      "rowCount": 81,
+      "sha256": "0907c2896f0fa2aa024469954bf998306139f3391563985fe4f3cfe8f86b7b43"
+    },
+    "モンスター行動": {
+      "columnCount": 12,
+      "range": "A1:L290",
+      "rowCount": 290,
+      "sha256": "87f722602fafa70ac8c0b66fe4ab6c0e36f8f02635a3be03e91513b172c4bcea"
+    },
+    "地域別エンカウント": {
+      "columnCount": 15,
+      "range": "A1:O80",
+      "rowCount": 80,
+      "sha256": "358d9db9b1a7e9e54ad2336cf86f1d6c0c4c504e65ef02d9a31d1997c813dcea"
+    },
+    "店舗装備在庫": {
+      "columnCount": 15,
+      "range": "A1:O153",
+      "rowCount": 153,
+      "sha256": "174d4397f2010d4b6da673ea490d2d74bc1290c62e7ff44ea00c1a2d020a6c43"
+    },
+    "素材買取価格": {
+      "columnCount": 9,
+      "range": "A1:I62",
+      "rowCount": 62,
+      "sha256": "712df92c134ea603238bca5d4d73be6e694c10159a08c205727e46e2dfb696c4"
+    },
+    "装備性能マスター": {
+      "columnCount": 30,
+      "range": "A1:AD146",
+      "rowCount": 146,
+      "sha256": "e699396948a9b9502cac3848397a10e8eed3f78125202c270bdeb6dcba8f355b"
+    },
+    "設計サマリー": {
+      "columnCount": 6,
+      "range": "A1:F9",
+      "rowCount": 9,
+      "sha256": "2b106d7a68dee2a860e73ebaefe62c9fd88660e86fb04b49f48deca5368a03e2"
+    }
+  },
+  "routeReplay": false,
+  "scaleNormalization": {
+    "additionalBalanceChangeRows": 6,
+    "additionalBalanceChangeStatus": "preserved_provisional_pending_feasibility",
+    "after": {
+      "monsterHpScale": 1.0,
+      "monsterOffenceScale": 1.0
+    },
+    "before": {
+      "monsterHpScale": 0.55,
+      "monsterOffenceScale": 1.4
+    },
+    "canonicalRowsChangedInRevision20": 77,
+    "canonicalStatCellsChangedInRevision20": 231,
+    "doubleScaleGuard": true,
+    "publicRuntimeMeaning": "canonical monster HP / physicalPower / magicPower are used directly",
+    "pureScaleNormalizationRows": 71
+  },
+  "schemaVersion": "combat-canonical-sync-v1",
+  "source": {
+    "recoveryDecodedSha256": "ffcfbabf9f97373666e9153c0a1988cd8177e70fee032c31033b4eaad98af854",
+    "recoverySnapshot": "docs/trpg/combat-sheet-revision20-snapshot.json.gz.b64",
+    "revisionId": "20",
+    "revisionModifiedTime": "2026-08-17T04:30:47.260Z",
+    "spreadsheetId": "1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+    "title": "TRPG_戦闘データマスターβ1"
+  }
+}

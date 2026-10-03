@@ -1,0 +1,73 @@
+name: Temporary TRPG live audit patch
+on:
+  push:
+    branches:
+      - claude/trpg-virtue-route-main-143ar9
+    paths:
+      - ".github/workflows/_temporary-live-patch-20260908.yml"
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/trpg-virtue-route-main-143ar9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch routine-life precedence and authored diagnostic
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/server/trpg/content/authored-mission-flow-registry.js')
+          s = p.read_text()
+          needle = '  const combined = [...labour, ...products, ...actions];\n  return [...new Map(combined.map((action) => [action.id, action])).values()];'
+          repl = '  const priorityProducts = products.filter((action) => publicLifeProductPriority(runtime, action) < 1);\n  const remainingProducts = products.filter((action) => publicLifeProductPriority(runtime, action) >= 1);\n  const combined = [...priorityProducts, ...labour, ...remainingProducts, ...actions];\n  return [...new Map(combined.map((action) => [action.id, action])).values()];'
+          assert needle in s, 'routine merge target missing'
+          s = s.replace(needle, repl, 1)
+          needle = '  actions = mergePublicProductsBesideRoutineLife(runtime, actions);\n  actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);'
+          repl = '  if (productionRuntimeBeforeBase) {\n    actions = mergePublicProductsBesideRoutineLife(runtime, actions);\n    actions = mergeLocalPublicProductsBesideAuthoredActions(runtime, actions);\n  }'
+          assert needle in s, 'production merge target missing'
+          p.write_text(s.replace(needle, repl, 1))
+
+          p = Path('src/server/trpg/content/canonical-public-action-policy.js')
+          s = p.read_text()
+          needle = 'function stampCurrentLifeLocation(runtime, action) {\n  if (!action?.canonicalWorldLifeChoice) return action;\n  const current = player(runtime);'
+          repl = 'function stampCurrentLifeLocation(runtime, action) {\n  if (!action?.canonicalWorldLifeChoice) return action;\n  // Permission-gated guest lodging is already bound to the current facility;\n  // it must stay a life action rather than acquire synthetic movement targets.\n  if (actionRootId(action) === "LIFE:SLEEP:ITM195") return action;\n  const current = player(runtime);'
+          assert needle in s, 'guest bough stamp target missing'
+          p.write_text(s.replace(needle, repl, 1))
+
+          p = Path('tools/trpg-sim/test/game-service.test.mjs')
+          s = p.read_text()
+          needle = '      assert.ok(resolution.outcome.summary.startsWith(selectedRoute.summary));'
+          repl = '''      if (!resolution.outcome.summary.startsWith(selectedRoute.summary)) {
+                console.error("[AUTHORED_SUMMARY_MISMATCH]", JSON.stringify({
+                  packId: pack.id,
+                  troubleId: pack.troubleId,
+                  routeId: selectedRoute.id,
+                  expectedSummary: selectedRoute.summary,
+                  actualSummary: resolution.outcome.summary,
+                }));
+              }
+              assert.ok(resolution.outcome.summary.startsWith(selectedRoute.summary));'''
+          assert needle in s, 'summary assertion target missing'
+          p.write_text(s.replace(needle, repl, 1))
+          PY
+      - name: Verify three concrete regression repairs
+        run: |
+          node --test tools/trpg-sim/test/authored-village-daily-life.test.mjs
+          node --test tools/trpg-sim/test/canonical-public-action-policy.test.mjs
+          node --test tools/trpg-sim/test/canonical-world-life-routine-merge.test.mjs
+      - name: Commit verified repairs and diagnostic
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/server/trpg/content/authored-mission-flow-registry.js src/server/trpg/content/canonical-public-action-policy.js tools/trpg-sim/test/game-service.test.mjs
+          git commit -m "fix(trpg): restore routine-life precedence contracts"
+          git push origin HEAD:claude/trpg-virtue-route-main-143ar9
+      - name: Identify remaining authored summary mismatch
+        run: |
+          node --test --test-name-pattern="authored mission packs turn each opening answer" tools/trpg-sim/test/game-service.test.mjs

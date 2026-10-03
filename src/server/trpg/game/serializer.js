@@ -3,6 +3,8 @@ import {
   applyAuthoredMissionFlowCatalogOverrides,
   reconcileAuthoredMissionFlowState,
 } from "../content/authored-mission-flow-registry.js";
+import { ensureWorkMarket } from "../resolvers/work-market-resolver.js";
+import { syncAuthoritativePresentNpcIds } from "./presence.js";
 
 const TYPE_KEY = "__trpgType";
 
@@ -28,8 +30,23 @@ function reviver(key, value) {
   return value;
 }
 
-export function serializeRuntime(runtime) {
+function canonicalizeSerializableRuntime(runtime) {
   reconcileAuthoredMissionFlowState(runtime);
+  ensureWorkMarket(runtime);
+  const model = runtime?.livingWorld?.model;
+  if (model?.npcs && runtime?.playerState) {
+    syncAuthoritativePresentNpcIds(runtime, { model });
+  }
+  // A presence/work-market reconciliation can expose an authored-state
+  // invariant whose serializer bridge also owns. Run it once more before the
+  // durable bytes are produced so view-time normalization has nothing new to
+  // persist after the command response has already been returned.
+  reconcileAuthoredMissionFlowState(runtime);
+  return runtime;
+}
+
+export function serializeRuntime(runtime) {
+  canonicalizeSerializableRuntime(runtime);
   return JSON.stringify(runtime, replacer);
 }
 
@@ -40,7 +57,7 @@ export function deserializeRuntime(serialized, data) {
     createMissionCatalog(data.model, data.battleData, runtime.playerState.tuning ?? {}),
   );
   runtime.livingWorld.model = data.model;
-  reconcileAuthoredMissionFlowState(runtime);
+  canonicalizeSerializableRuntime(runtime);
   return runtime;
 }
 

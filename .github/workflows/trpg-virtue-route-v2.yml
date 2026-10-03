@@ -1,0 +1,24 @@
+name: trpg-virtue-route-v2
+
+on:
+  pull_request:
+    paths:
+      - "src/server/trpg/**"
+      - "tools/trpg-sim/**"
+      - "docs/trpg/**"
+      - ".github/workflows/trpg-virtue-route-v2.yml"
+  workflow_dispatch:
+
+jobs:
+  canonical-route-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Verify authored Day1-Day85 route contract
+        run: node --test tools/trpg-sim/test/virtue-route-v2.test.mjs

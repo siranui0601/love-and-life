@@ -9,8 +9,9 @@ import {
   AUTHORED_T03_PASTURE_NIGHT_INTERNALS as pasture,
 } from "../../../src/server/trpg/content/authored-mission-flow-registry.js";
 
-const DAY2_MIDDAY = 1 * 1440 + 12 * 60;
-const DAY2_EVENING = 1 * 1440 + 19 * 60;
+const absoluteMinuteFor = (day, wallMinute) => (day - 1) * 1440 + wallMinute - 600;
+const DAY2_MIDDAY = absoluteMinuteFor(2, 12 * 60);
+const DAY2_EVENING = absoluteMinuteFor(2, 19 * 60);
 
 function runtime(facilityId = "LOC_FARM_WELL", minute = DAY2_MIDDAY) {
   return {
@@ -143,7 +144,7 @@ test("spending one place leaves the other places open", () => {
 test("daily life never speaks over an authored trouble scene", () => {
   const duringTrouble = {
     playerState: {
-      absoluteMinute: 7 * 1440 + 12 * 60,
+      absoluteMinute: absoluteMinuteFor(8, 12 * 60),
       player: { location: "田園の村", facilityId: "LOC_FARM_STABLE", hunger: 40, fatigue: 50 },
       missions: [{ id: "MSN-T03", troubleId: "T03", status: "active" }],
       troubles: { T03: { status: "active" } },
@@ -162,7 +163,7 @@ test("daily life never speaks over an authored trouble scene", () => {
 test("daily life returns once the trouble scene has passed", () => {
   const after = {
     playerState: {
-      absoluteMinute: 20 * 1440 + 12 * 60,
+      absoluteMinute: absoluteMinuteFor(21, 12 * 60),
       player: { location: "田園の村", facilityId: "LOC_FARM_WELL", hunger: 40, fatigue: 50 },
       missions: [{ id: "MSN-T03", troubleId: "T03", status: "completed", completedAt: 100 }],
       troubles: { T03: { status: "resolved" } },

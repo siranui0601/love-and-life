@@ -2,6 +2,7 @@ import {
   loadAllFixtures,
   tableFromTab,
 } from "./fixtures.mjs";
+import { buildWorldModel } from "./world-model.mjs";
 
 const LOCATION_TABS = [
   "北陵要塞",
@@ -103,8 +104,14 @@ function numericSummary(values) {
   };
 }
 
+function canonicalBattleDataRows(fixtures, tabName, fallback) {
+  const rowCount = Number(fixtures.battle?.provenance?.[tabName]?.rowCount);
+  return Number.isFinite(rowCount) ? Math.max(0, rowCount - 4) : fallback;
+}
+
 export function runSourceAudit(fixtures = loadAllFixtures()) {
   const worldTabs = fixtures.world.tabs;
+  const canonicalWorld = buildWorldModel(fixtures.world);
   const battleTabs = fixtures.battle.tabs;
   const troubles = tableFromTab(worldTabs["トラブル一覧"], 3);
   const chains = tableFromTab(worldTabs["トラブル連鎖"], 3);
@@ -251,15 +258,15 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
       );
     }
   }
-  const monstersWithoutFallbackAction = [...unconditionalByMonster.entries()]
+  const monstersWithoutUnconditionalAction = [...unconditionalByMonster.entries()]
     .filter(([, count]) => count === 0)
     .map(([id]) => id);
 
   const producedSpecialStates = new Set();
   for (const skill of monsterSkills) {
     for (const effect of parseJson(skill["効果命令"])) {
-      if (effect.command === "APPLY_SPECIAL_STATE" && effect.stateType) {
-        producedSpecialStates.add(effect.stateType);
+      if (effect.command === "APPLY_SPECIAL_STATE" && (effect.stateId || effect.stateType)) {
+        producedSpecialStates.add(effect.stateId || effect.stateType);
       }
     }
   }
@@ -331,15 +338,15 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
     troubles: 19,
     chains: 23,
     npcs: 110,
-    facilities: 103,
+    facilities: canonicalWorld.facilities.length,
     products: 219,
     skills: 1141,
-    equipment: 116,
-    stock: 123,
-    monsters: 77,
-    monsterSkills: 96,
-    monsterActions: 285,
-    encounters: 76,
+    equipment: canonicalBattleDataRows(fixtures, "装備性能マスター", counts.equipment),
+    stock: canonicalBattleDataRows(fixtures, "店舗装備在庫", counts.stock),
+    monsters: canonicalBattleDataRows(fixtures, "モンスター一覧", counts.monsters),
+    monsterSkills: canonicalBattleDataRows(fixtures, "モンスタースキル", counts.monsterSkills),
+    monsterActions: canonicalBattleDataRows(fixtures, "モンスター行動", counts.monsterActions),
+    encounters: canonicalBattleDataRows(fixtures, "地域別エンカウント", counts.encounters),
   };
   const countMismatches = Object.entries(expectedCounts)
     .filter(([key, expected]) => counts[key] !== expected)
@@ -393,7 +400,10 @@ export function runSourceAudit(fixtures = loadAllFixtures()) {
       },
     },
     battle: {
-      monstersWithoutFallbackAction,
+      monstersWithoutUnconditionalAction,
+      // Compatibility alias for older report consumers.  These are authored
+      // actions, not runtime fallback attacks.
+      monstersWithoutFallbackAction: monstersWithoutUnconditionalAction,
       specialStateContractMismatches,
     },
     economy: {
