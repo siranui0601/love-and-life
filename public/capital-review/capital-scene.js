@@ -16,6 +16,8 @@ export function mountCapitalScene(getState,getRoute){
  const byNode=id=>CAPITAL.nodes.find(n=>n.id===id);
  const bounds=points=>({minX:Math.min(...points.map(p=>p[0])),maxX:Math.max(...points.map(p=>p[0])),minY:Math.min(...points.map(p=>p[1])),maxY:Math.max(...points.map(p=>p[1]))});
  const core=bounds(CAPITAL.core.polygon),outer=bounds([...CAPITAL.activityEnvelope.polygon,...CAPITAL.worldConnections.flatMap(c=>c.path)]);
+ const roadGroundBuckets=new Map();
+ for(const e of CAPITAL.edges.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class))){const pad=(e.widthM/2+24)/1000,b=bounds(e.points);for(let x=Math.floor((b.minX-pad)*20);x<=Math.floor((b.maxX+pad)*20);x++)for(let y=Math.floor((b.minY-pad)*20);y<=Math.floor((b.maxY+pad)*20);y++){const k=x+','+y;if(!roadGroundBuckets.has(k))roadGroundBuckets.set(k,[]);roadGroundBuckets.get(k).push(e);}}
  for(const name of ['minX','minY'])outer[name]-=.5;for(const name of ['maxX','maxY'])outer[name]+=.5;
  function ground(name,b,nx,nz){
   const positions=[],indices=[],normals=[],uvs=[],colors=[];
@@ -24,6 +26,10 @@ export function mountCapitalScene(getState,getRoute){
    // The finer channel surface owns this strip; a coarse triangle must not
    // cover the water again and create saw-tooth islands along its bank.
    if(CAPITAL.rivers.some(r=>r.context&&distanceToLine(p,r.points)<r.widthM/2+20))continue;
+   // Plot benches are discontinuous at their footprint. A coarse terrain
+   // triangle must never interpolate a neighbouring raised plot across a road.
+   const cellRadius=Math.hypot((b.maxX-b.minX)*1000/nx,(b.maxY-b.minY)*1000/nz)/2;
+   if(name==='core-ground'&&(roadGroundBuckets.get(Math.floor(p[0]*20)+','+Math.floor(p[1]*20))||[]).some(e=>distanceToLine(p,e.points)<e.widthM/2+cellRadius+1))continue;
    indices.push(a,c,a+1,a+1,c,c+1);}
   VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs,colors});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat('ground','#ffffff');mesh.isPickable=false;
  }
@@ -33,11 +39,17 @@ export function mountCapitalScene(getState,getRoute){
  // Dense samples follow the same height function as feet; endpoint-only ribbons cut
  // through curved terrain and create phantom ramps/steps.
  function strip(name,points,width,material,heightAt){
-  const ps=sampleLine(points,8),left=[],right=[];
+  const ps=sampleLine(points,name.startsWith('road:')?1:8),left=[],right=[];
   for(let i=0;i<ps.length;i++){const prev=ps[Math.max(0,i-1)],next=ps[Math.min(ps.length-1,i+1)],[x,z]=toLocal(ps[i]);let dx=(next[0]-prev[0])*1000,dz=-(next[1]-prev[1])*1000,len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const lx=x-dz*width/2,lz=z+dx*width/2,rx=x+dz*width/2,rz=z-dx*width/2,crossSlope=name.startsWith('road:')||name.startsWith('world_bridge_');left.push(V(lx,heightAt(crossSlope?fromLocal([lx,lz]):ps[i]),lz));right.push(V(rx,heightAt(crossSlope?fromLocal([rx,rz]):ps[i]),rz));}
   const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
  }
+ const streetGroundParts=[];
  for(const e of CAPITAL.edges){
+  if(!e.bridgeId&&!['world','roof'].includes(e.class)){
+   const ps=sampleLine(e.points,2),paths=[],half=e.widthM/2+18;
+   for(let ring=0;ring<=24;ring++){const off=-half+half*2*ring/24;paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}
+   const patch=MeshBuilder.CreateRibbon('street-ground:'+e.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);patch.material=mat('street-ground','#b3a78c');patch.isPickable=false;streetGroundParts.push(patch);
+  }
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
   strip('road:'+e.id,e.points,e.widthM,mat('road:'+color,color),p=>edgeHeightAt(e,p));
   if(!e.bridgeId&&!['roof','world'].includes(e.class))for(const side of [-1,1]){const ps=sampleLine(e.points,8),curb=ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=side*(e.widthM/2+.55)/1000;return [p[0]-dy/len*off,p[1]+dx/len*off];});strip('street-shoulder:'+e.id+':'+side,curb,.9,mat('sidewalk','#b4ae9c'),p=>elevationAt(...p)+.22);}
@@ -53,6 +65,7 @@ export function mountCapitalScene(getState,getRoute){
    merge(parts,'rails:'+e.id,stone);
   }
  }
+ merge(streetGroundParts,'fine-street-ground',mat('street-ground','#b3a78c'));
  // Exposed retaining faces make the five benches readable in silhouette and
  // at eye height. Gaps follow the same graded street cuts as the walking surface.
  for(const face of CAPITAL.retainingFaces){const paths=[[],[]];let parts=[];
