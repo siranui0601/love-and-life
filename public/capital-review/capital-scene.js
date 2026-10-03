@@ -17,7 +17,7 @@ export function mountCapitalScene(getState,getRoute){
  const bounds=points=>({minX:Math.min(...points.map(p=>p[0])),maxX:Math.max(...points.map(p=>p[0])),minY:Math.min(...points.map(p=>p[1])),maxY:Math.max(...points.map(p=>p[1]))});
  const core=bounds(CAPITAL.core.polygon),outer=bounds([...CAPITAL.activityEnvelope.polygon,...CAPITAL.worldConnections.flatMap(c=>c.path)]);
  const roadGroundBuckets=new Map();
- for(const e of CAPITAL.edges.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class))){const pad=(e.widthM/2+24)/1000,b=bounds(e.points);for(let x=Math.floor((b.minX-pad)*20);x<=Math.floor((b.maxX+pad)*20);x++)for(let y=Math.floor((b.minY-pad)*20);y<=Math.floor((b.maxY+pad)*20);y++){const k=x+','+y;if(!roadGroundBuckets.has(k))roadGroundBuckets.set(k,[]);roadGroundBuckets.get(k).push(e);}}
+ for(const e of CAPITAL.edges.filter(e=>!e.bridgeId&&e.class!=='roof')){const pad=(e.widthM/2+24)/1000,b=bounds(e.points);for(let x=Math.floor((b.minX-pad)*20);x<=Math.floor((b.maxX+pad)*20);x++)for(let y=Math.floor((b.minY-pad)*20);y<=Math.floor((b.maxY+pad)*20);y++){const k=x+','+y;if(!roadGroundBuckets.has(k))roadGroundBuckets.set(k,[]);roadGroundBuckets.get(k).push(e);}}
  for(const name of ['minX','minY'])outer[name]-=.5;for(const name of ['maxX','maxY'])outer[name]+=.5;
  function ground(name,b,nx,nz){
   const positions=[],indices=[],normals=[],uvs=[],colors=[];
@@ -43,14 +43,14 @@ export function mountCapitalScene(getState,getRoute){
   for(let i=0;i<ps.length;i++){const prev=ps[Math.max(0,i-1)],next=ps[Math.min(ps.length-1,i+1)],[x,z]=toLocal(ps[i]);let dx=(next[0]-prev[0])*1000,dz=-(next[1]-prev[1])*1000,len=Math.hypot(dx,dz)||1;dx/=len;dz/=len;const lx=x-dz*width/2,lz=z+dx*width/2,rx=x+dz*width/2,rz=z-dx*width/2,crossSlope=name.startsWith('road:')||name.startsWith('world_bridge_');left.push(V(lx,heightAt(crossSlope?fromLocal([lx,lz]):ps[i]),lz));right.push(V(rx,heightAt(crossSlope?fromLocal([rx,rz]):ps[i]),rz));}
   const mesh=MeshBuilder.CreateRibbon(name,{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},scene);mesh.material=material;mesh.isPickable=false;return mesh;
  }
- const streetGroundParts=[];
+ const streetGroundParts=[],outerStreetGroundParts=[];
  for(const e of CAPITAL.edges){
-  if(!e.bridgeId&&!['world','roof'].includes(e.class)){
+  if(!e.bridgeId&&e.class!=='roof'){
    const ps=sampleLine(e.points,4),paths=[],half=e.widthM/2+18;
    // Explicit road-edge rings preserve the carriageway without tessellating
    // every shoulder metre into millions of redundant vertices.
    for(const off of [-half,-e.widthM/2-1,-e.widthM/2,0,e.widthM/2,e.widthM/2+1,half]){paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}
-   const patch=MeshBuilder.CreateRibbon('street-ground:'+e.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);patch.material=mat('street-ground','#b3a78c');patch.isPickable=false;streetGroundParts.push(patch);
+   const patch=MeshBuilder.CreateRibbon('street-ground:'+e.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);patch.material=e.class==='world'?mat('outer-street-ground','#939a78'):mat('street-ground','#b3a78c');patch.isPickable=false;(e.class==='world'?outerStreetGroundParts:streetGroundParts).push(patch);
   }
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
   strip('road:'+e.id,e.points,e.widthM,mat('road:'+color,color),p=>edgeHeightAt(e,p));
@@ -68,6 +68,7 @@ export function mountCapitalScene(getState,getRoute){
   }
  }
  merge(streetGroundParts,'fine-street-ground',mat('street-ground','#b3a78c'));
+ merge(outerStreetGroundParts,'fine-outer-street-ground',mat('outer-street-ground','#939a78'));
  // Exposed retaining faces make the five benches readable in silhouette and
  // at eye height. Gaps follow the same graded street cuts as the walking surface.
  for(const face of CAPITAL.retainingFaces){const paths=[[],[]];let parts=[];
@@ -106,7 +107,7 @@ export function mountCapitalScene(getState,getRoute){
  // Follow slopes instead of levelling each kilometre-long wall to its midpoint.
  for(const w of CAPITAL.walls){const ps=sampleLine(w.points,12),parts=[],walkway=[],merlons=[];for(let i=1;i<ps.length;i++){const a=ps[i-1],b=ps[i],low=Math.min(elevationAt(...a),elevationAt(...b)),high=Math.max(elevationAt(...a),elevationAt(...b));parts.push(segmentBox('wall',a,b,w.widthM,w.heightM+high-low,wallMat,()=>low));walkway.push(segmentBox('wall-coping',a,b,w.widthM+1,1.2,stone,()=>high+w.heightM));}
   const crest=sampleLine(w.points,5);for(let i=1;i<crest.length;i+=2){const p=crest[i],[x,z]=toLocal(p),m=MeshBuilder.CreateBox('wall-merlon',{width:2.4,depth:w.widthM+.6,height:2.5},scene);m.position=V(x,elevationAt(...p)+w.heightM+2,z);m.material=stone;merlons.push(m);}merge(parts,w.id,wallMat);merge(walkway,w.id+':coping',stone);merge(merlons,w.id+':battlements',stone);}
- function tower(name,x,z,y,h,r,material){const shaft=MeshBuilder.CreateCylinder(name,{diameter:r*2,height:h,tessellation:8},scene);shaft.position=V(x,y+h/2,z);shaft.material=material;const cap=MeshBuilder.CreateCylinder(name+':spire',{diameterTop:0,diameterBottom:r*2.5,height:r*2.2,tessellation:8},scene);cap.position=V(x,y+h+r*1.1,z);cap.material=roof;}
+ function tower(name,x,z,y,h,r,material){const p=fromLocal([x,z]),base=Math.min(y,...[[-1,-1],[-1,1],[1,-1],[1,1]].map(([a,b])=>elevationAt(p[0]+a*r/1000,p[1]+b*r/1000)))-.5,shaftHeight=y+h-base;const shaft=MeshBuilder.CreateCylinder(name,{diameter:r*2,height:shaftHeight,tessellation:8},scene);shaft.position=V(x,base+shaftHeight/2,z);shaft.material=material;const cap=MeshBuilder.CreateCylinder(name+':spire',{diameterTop:0,diameterBottom:r*2.5,height:r*2.2,tessellation:8},scene);cap.position=V(x,y+h+r*1.1,z);cap.material=roof;}
  for(const t of CAPITAL.fortifications){const [x,z]=toLocal(t.position);tower(t.id,x,z,elevationAt(...t.position),t.heightM,t.radiusM,stone);}
  for(const g of CAPITAL.gates){const [x,z]=toLocal(g.position),a=CAPITAL.core.polygon[g.wallIndex],b=CAPITAL.core.polygon[(g.wallIndex+1)%CAPITAL.core.polygon.length],dx=b[0]-a[0],dy=-(b[1]-a[1]),len=Math.hypot(dx,dy);
   const lintel=MeshBuilder.CreateBox('gate-vault:'+g.id,{width:36,height:11,depth:20},scene);lintel.position=V(x,elevationAt(...g.position)+29,z);lintel.rotation.y=-Math.atan2(dy,dx);lintel.material=stone;}
