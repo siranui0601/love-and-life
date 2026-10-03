@@ -31,7 +31,7 @@ const walls=[];
 corePolygon.forEach((a,i)=>{const b=corePolygon[(i+1)%corePolygon.length],gate=gates.find(g=>g.wallIndex===i);if(!gate){walls.push({id:`wall_${i}`,points:[a,b],widthM:4,heightM:15});return;}const len=distance(a,b),u=[(b[0]-a[0])/len,(b[1]-a[1])/len],half=gate.widthM/2;walls.push({id:`wall_${i}a`,points:[a,[gate.position[0]-u[0]*half,gate.position[1]-u[1]*half]],widthM:4,heightM:15},{id:`wall_${i}b`,points:[[gate.position[0]+u[0]*half,gate.position[1]+u[1]*half],b],widthM:4,heightM:15});});
 
 const districts=[
- {id:'castle',name:'王城高台',polygon:[[22.43,22.03],[23.05,22.03],[23.40,22.66],[22.67,22.96],[22.37,22.65]],color:'#d7cbb0',ground:'切石・儀礼路',streetWidthM:22,heightRangeM:[22,42],density:.27,npcJobs:['衛兵','宮廷役人'],gateTag:'royal',risk:'許可による入域・平時D0',identity:'北の高台。儀礼軸と軍務迂回路。王城は地盤約90m＋高塔。'},
+ {id:'castle',name:'王城高台',polygon:[[22.43,22.03],[23.05,22.03],[23.40,22.66],[22.67,22.96],[22.37,22.65]],color:'#d7cbb0',ground:'切石・儀礼路',streetWidthM:22,heightRangeM:[22,42],density:.27,npcJobs:['衛兵','宮廷役人'],gateTag:'royal',risk:'許可による入域・平時D0',identity:'北の高台。儀礼軸と軍務迂回路。王城は段丘頂部の地盤約246m＋高塔。'},
  {id:'noble',name:'貴族街',polygon:[[21.40,21.95],[22.34,21.94],[22.44,22.66],[21.91,22.80],[21.47,22.37]],color:'#ccc8a9',ground:'石畳・庭園',streetWidthM:18,heightRangeM:[17,28],density:.38,npcJobs:['貴族','庭師','従者'],gateTag:'noble',risk:'身分・服装・紹介',identity:'広い曲線路と塀、静かな植栽。城の西斜面。'},
  {id:'mage',name:'宮廷魔術塔周辺',polygon:[[23.06,21.96],[23.75,21.98],[23.73,22.33],[23.36,22.73],[23.17,22.65]],color:'#aaaec5',ground:'幾何学石舗装',streetWidthM:14,heightRangeM:[14,26],density:.35,npcJobs:['研究者','警備'],gateTag:'mage',risk:'T17発生時の封鎖と調査',identity:'王城とは東へ離れた垂直ランドマーク。'},
  {id:'administration',name:'行政区',polygon:[[22.75,21.30],[23.77,21.31],[23.84,21.86],[23.64,21.96],[22.82,21.94]],color:'#b0bbb8',ground:'整った敷石',streetWidthM:18,heightRangeM:[13,22],density:.58,npcJobs:['役人','衛兵','瓦版売り'],risk:'平時D0／捜査時D1',identity:'役所前庭、文書運搬、王城へ上る公務路。'},
@@ -77,19 +77,21 @@ const riverY=x=>{const p=rivers[0].points;for(let i=1;i<p.length;i++)if(x>=Math.
 const hillCentre=[22.70,22.62];
 const terraceBands=[{radiusM:1520,riseM:22},{radiusM:1150,riseM:38},{radiusM:830,riseM:48},{radiusM:560,riseM:58},{radiusM:315,riseM:66}];
 let terrainStreets=[];const terrainBuckets=new Map();
-const hillRadius=(x,y)=>Math.hypot((x-hillCentre[0])*1000,(y-hillCentre[1])*1000);
-function benchHill(x,y,transitionM=12){let h=14+4*Math.exp(-((x-22.25)**2+(y-20.8)**2)/.55);const r=hillRadius(x,y);for(const band of terraceBands){const t=Math.max(0,Math.min(1,(band.radiusM+transitionM/2-r)/transitionM));h+=band.riseM*t*t*(3-2*t);}return h;}
+const contourFactor=a=>1+.065*Math.sin(3*a+.3)+.035*Math.cos(5*a-.4);
+const hillRadius=(x,y)=>{const dx=(x-hillCentre[0])*1000/1.08,dy=(y-hillCentre[1])*1000;return Math.hypot(dx,dy)*contourFactor(Math.atan2(dy,dx));};
+const contourPoint=(radiusM,a)=>[hillCentre[0]+Math.cos(a)*radiusM/contourFactor(a)*1.08/1000,hillCentre[1]+Math.sin(a)*radiusM/contourFactor(a)/1000];
+function benchHill(x,y,transitionM=12){transitionM=Math.max(transitionM,12+260*Math.max(0,Math.min(1,(y-22.70)/.5)));let h=14+4*Math.exp(-((x-22.25)**2+(y-20.8)**2)/.55);const r=hillRadius(x,y);for(const band of terraceBands){const t=Math.max(0,Math.min(1,(band.radiusM+transitionM/2-r)/transitionM));h+=band.riseM*t*t*(3-2*t);}return h;}
 const rawHill=(x,y)=>benchHill(x,y);
 const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:rawHill(...N(id).position)}));
 export function terrainBaseAt(x,y){
  let h=benchHill(x,y),nearest=null,min=Infinity;
- for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=distanceToLine([x,y],e.points);if(d<e.widthM/2+22&&d<min){min=d;nearest=e;}}
- if(nearest){const d=Math.max(0,min-nearest.widthM/2),t=Math.max(0,1-d/22),blend=t*t*(3-2*t),graded=benchHill(x,y,180);h=h*(1-blend)+graded*blend;}
+ for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=Math.max(0,distanceToLine([x,y],e.points)-e.widthM/2);if(d<22&&d<min){min=d;nearest=e;}}
+ if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t),graded=benchHill(x,y,180);h=h*(1-blend)+graded*blend;}
  for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);return h*(1-blend)+14*blend;
 }
-export function elevationAt(x,y){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+10;cut=Math.max(cut,Math.max(0,1-d/bank)*(r.context?8:6));}return terrainBaseAt(x,y)-cut;}
+export function elevationAt(x,y){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+10;cut=Math.max(cut,(r.context?Math.max(0,1-Math.max(0,d-r.widthM/2)/16)*8:Math.max(0,1-d/bank)*6));}return terrainBaseAt(x,y)-cut;}
 // Retaining faces follow the actual hill contours; roads create gaps/ramp cuts.
-const retainingFaces=terraceBands.map((band,i)=>({id:'castle_bench_'+i,radiusM:band.radiusM,riseM:band.riseM,points:Array.from({length:241},(_,j)=>{const a=j/240*Math.PI*2;return [hillCentre[0]+Math.cos(a)*band.radiusM/1000,hillCentre[1]+Math.sin(a)*band.radiusM/1000];})}));
+const retainingFaces=terraceBands.map((band,i)=>({id:'castle_bench_'+i,radiusM:band.radiusM,riseM:band.riseM,points:Array.from({length:241},(_,j)=>{const a=j/240*Math.PI*2;return contourPoint(band.radiusM,a);})}));
 const bridges=[];
 for(const [id,name,x,floodClosed,widthM] of [['west_bridge','西河岸の低橋',21.52,true,9],['south_bridge','南の穀物大橋',22.275,false,20],['news_bridge','瓦版屋の高橋',22.90,false,12],['east_bridge','東の職人橋',23.60,false,12]]){
  const y=riverY(x),position=[x,y],points=[[x,y-.055],[x,y+.055]];
@@ -284,7 +286,7 @@ for(const side of [-1,1]){
   if(nearest&&distance(n.position,nearest.position)<330){const samples=Array.from({length:32},(_,j)=>[n.position[0]+(nearest.position[0]-n.position[0])*j/31,n.position[1]+(nearest.position[1]-n.position[1])*j/31]);if(samples.every(p=>distanceToLine(p,rivers[0].points)>14))edge(from,nearest.id,'橋詰から河岸へ降りる道','stairs',{widthM:4,fabric:true,fabricRole:'quay'});}
  }
 }
-const streetFabric=buildStreetFabric({nodes,edges,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
+const streetFabric=buildStreetFabric({contourPoint,nodes,edges,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
 terrainStreets=edges.filter(e=>!e.bridgeId&&e.class!=='roof');
 for(const e of terrainStreets)for(let j=1;j<e.points.length;j++){
  const a=e.points[j-1],b=e.points[j];for(let x=Math.floor((Math.min(a[0],b[0])-.04)*10);x<=Math.floor((Math.max(a[0],b[0])+.04)*10);x++)for(let y=Math.floor((Math.min(a[1],b[1])-.04)*10);y<=Math.floor((Math.max(a[1],b[1])+.04)*10);y++){const k=x+','+y;if(!terrainBuckets.has(k))terrainBuckets.set(k,new Set());terrainBuckets.get(k).add(e);}
@@ -385,6 +387,14 @@ for(const e of streetFabric.surveyLines.filter(e=>!e.bridgeId&&!['world','roof']
   if(!road)continue;add({id:'infill_'+buildings.length,frontageEdgeId:road.id,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:Math.atan2(dy,dx),district:d.id,color:d.color,roofHeightM:4+rnd()*4});
  }
 }
+// Fine-grain infill uses remaining surveyed frontage, with smaller serviced
+// parcels at bends. Each retains its physical road/door association.
+for(const e of streetFabric.surveyLines.filter(e=>!e.bridgeId&&!['world','roof'].includes(e.class)))for(let j=1;j<e.points.length;j++){
+ const a=e.points[j-1],b=e.points[j],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;
+ for(let along=5;along<len-5;along+=7)for(const side of [-1,1]){const widthM=8+rnd()*5,depthM=16+rnd()*13,offset=e.widthM/2+depthM/2+2.3,p=[a[0]+(dx*along-dy*offset*side)/1000,a[1]+(dy*along+dx*offset*side)/1000],d=districtsAt(p),road=edges.find(q=>(q.parentEdgeId||q.id)===e.id&&distanceToLine(p,q.points)<offset+1);
+  if(!road)continue;add({id:'bend_parcel_'+buildings.length,frontageEdgeId:road.id,position:p,widthM,depthM,heightM:d.heightRangeM[0]+rnd()*(d.heightRangeM[1]-d.heightRangeM[0]),rotationRad:Math.atan2(dy,dx),district:d.id,color:d.color,roofHeightM:4+rnd()*4});
+ }
+}
 // No unserviced scatter fill: ordinary parcels must front a usable street.
 // Longer lanes receive deeper footprints, rather than inaccessible rear boxes.
 // Sparse outskirts follow the same gate approach roads. Density decays along
@@ -406,6 +416,13 @@ for(const e of edges.filter(e=>e.class==='world'&&!e.bridgeId))for(let j=1;j<e.p
 const lowRoofRoute=edges.find(e=>e.class==='roof');
 for(const b of buildings.filter(b=>!b.facilityId&&!b.royalPart))if(distanceToLine(b.position,lowRoofRoute.points)<45){b.heightM=3.3;b.roofHeightM=1;b.lowRoofFabric=true;}
 
+// A deduplicated street keeps the frontage reference of every serviced parcel.
+for(const b of buildings)if(!edges.some(e=>e.id===b.frontageEdgeId)){const e=edges.filter(e=>!e.bridgeId&&e.class!=='roof').reduce((best,e)=>distanceToLine(b.position,e.points)<distanceToLine(b.position,best.points)?e:best);b.frontageEdgeId=e.id;}
+const publicLane=e=>e.fabric&&!['castle','noble','mage'].includes(N(e.from).district)&&!['castle','noble','mage'].includes(N(e.to).district);
+const lowerStop=nodes.filter(n=>n.id.startsWith('fabric_')&&!n.id.startsWith('fabric_junction')&&n.district==='lower').sort((a,b)=>distance(a.position,[22.09,20.61])-distance(b.position,[22.09,20.61]))[0];
+const stairReview=edges.filter(e=>publicLane(e)&&e.class==='stairs').sort((a,b)=>Math.abs(elevationAt(...N(b.from).position)-elevationAt(...N(b.to).position))-Math.abs(elevationAt(...N(a.from).position)-elevationAt(...N(a.to).position)))[0];
+const quayReview=edges.filter(e=>publicLane(e)&&e.fabricRole==='quay').sort((a,b)=>distance(b.points[0],b.points.at(-1))-distance(a.points[0],a.points.at(-1)))[0];
+const walkingReviews=[{id:'lower-backstreets',name:'下層の生活裏道',from:'lower_court',to:lowerStop.id},{id:'terrace-stairs',name:'段丘を横断する石段',from:stairReview.from,to:stairReview.to},{id:'river-quay',name:'橋詰と河岸歩廊',from:quayReview.from,to:quayReview.to}];
 buildings.push(...suburbBuildings);
 buildings.push(...royalParts);
 // Facility masses sit north of their exact anchor; the anchor remains the door.
@@ -425,7 +442,7 @@ for(const space of negativeSpaces){
 }
 for(const o of outskirts)if(o.kind!=='farmland')for(let i=0;i<4;i++)furnish(o.id+'_shed_'+i,[o.position[0]+(i%2?1:-1)*(32+i*6)/1000,o.position[1]-Math.floor(i/2)*.025],12+i*2,11,6,'shed');
 
-export const CAPITAL={version:'capital-street-terrain-pass-5',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},suburbBuildings,royalParts,urbanBlocks,streetFabric,retainingFaces,terraceBands,hillCentre,districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['正本IDと広域接続を継承。城丘・王城の量感・街区・副街路・水系曲率は参考画像/PDFに基づく設計提案。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
+export const CAPITAL={version:'capital-street-terrain-pass-5',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},suburbBuildings,royalParts,urbanBlocks,walkingReviews,streetFabric:{rings:streetFabric.rings,laneCount:edges.filter(e=>e.fabric).length},retainingFaces,terraceBands,hillCentre,districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['正本IDと広域接続を継承。城丘・王城の量感・街区・副街路・水系曲率は参考画像/PDFに基づく設計提案。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
 
 // Shared graph geometry is immutable. Renderers must copy when reversing/slicing paths.
 for(const e of edges){e.points.forEach(Object.freeze);Object.freeze(e.points);Object.freeze(e);}

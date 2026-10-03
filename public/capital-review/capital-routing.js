@@ -112,6 +112,7 @@ const signature=path=>path?.edgeIds.slice().sort().join('|')||'';
 export function findAlternatives(from,to,inputState={},capital=CAPITAL,limit=3){
  const first=shortestPath(from,to,inputState,capital);
  if(!first)return [];
+ if(limit<=1||!first.edges.length)return [{...first,index:0,metrics:pathMetrics(first,capital)}];
  const found=[first],seen=new Set([signature(first)]),candidates=[];
  const searchBans=path=>{
   for(const id of path.edgeIds){

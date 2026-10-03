@@ -2,7 +2,7 @@
  * Curved contour lanes, staggered cross-slope stairs and real intersections.
  * No canonical facilities, watercourses or cultures are added here.
  */
-export function buildStreetFabric({nodes,edges,districts,core,rivers,facilities,inside,distance,distanceToLine,node,edge}){
+export function buildStreetFabric({contourPoint,nodes,edges,districts,core,rivers,facilities,inside,distance,distanceToLine,node,edge}){
  const originals=[...edges],centre=[22.70,22.62],rings=[],added=[],restricted=p=>districts.filter(d=>d.gateTag&&inside(p,d.polygon)).map(d=>d.id).join('|');
  const district=p=>districts.find(d=>inside(p,d.polygon))?.id||(p[1]>22.6?'castle':'lower');
  function valid(p){return inside(p,core)&&distanceToLine(p,[...core,core[0]])>25&&distanceToLine(p,rivers[0].points)>27&&facilities.every(f=>!f.footprintM[0]||Math.abs(p[0]-f.buildingPosition[0])*1000>f.footprintM[0]/2+24||Math.abs(p[1]-f.buildingPosition[1])*1000>f.footprintM[1]/2+24)&&!(p[1]>22.39&&p[1]<22.91&&p[0]>22.36&&p[0]<23.04);}
@@ -12,7 +12,7 @@ export function buildStreetFabric({nodes,edges,districts,core,rivers,facilities,
  for(let ring=0,r=340;r<3100;ring++,r+=ring%3===0?122:147){
   const count=Math.round(2*Math.PI*r/125),row=[];
   for(let i=0;i<count;i++){
-   const a=2*Math.PI*(i+.27*(ring%2))/count,rr=r+17*Math.sin(i*2.7+ring),p=[centre[0]+Math.cos(a)*rr/1000,centre[1]+Math.sin(a)*rr/1000];
+   const a=2*Math.PI*(i+.27*(ring%2))/count,rr=r+17*Math.sin(i*2.7+ring),p=contourPoint(rr,a);
    if(!valid(p)){row.push(null);continue;}const n=node('fabric_'+ring+'_'+i,'生活路の曲がり角',p,district(p),'junction');row.push(n);
   }
   rings.push(row);

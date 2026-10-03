@@ -12,7 +12,16 @@ export function barrierFor(edge){
  return {edgeId:edge.id,position:hit.position,points:[hit.position.map((v,i)=>v-normal[i]*half),hit.position.map((v,i)=>v+normal[i]*half)],heightM:2.4,widthM:edge.widthM+5};
 }
 const physicalBarriers=new Map(CAPITAL.edges.map(e=>[e.id,barrierFor(e)]));
-export function activeBarriers(input={}){return stateClosures(input).map(c=>({...physicalBarriers.get(c.edgeId),reason:c.reason}));}
+export function activeBarriers(input={}){
+ const closed=stateClosures(input),groups=new Map(),result=[];
+ for(const c of closed){const edge=CAPITAL.edges.find(e=>e.id===c.edgeId);if(edge.parentEdgeId&&/^T\d/.test(c.reason)){const key=c.reason+':'+edge.parentEdgeId;if(!groups.has(key))groups.set(key,[]);groups.get(key).push({edge,reason:c.reason});}
+  else result.push({...physicalBarriers.get(c.edgeId),reason:c.reason});}
+ // An incident closes the original street, not every small intersection part.
+ // Put one physical checkpoint on its longest segment so a junction's alternative
+ // lanes stay clear. All parts retain the same graph closure semantics.
+ for(const members of groups.values()){const {edge,reason}=members.sort((a,b)=>polylineLengthM(b.edge.points)-polylineLengthM(a.edge.points))[0];result.push({...physicalBarriers.get(edge.id),edgeId:edge.parentEdgeId,reason});}
+ return result;
+}
 // Oriented footprint, matching the exact rendered mass (including the larger castle).
 export function massFootprint(b){
  const castle=b.facilityId==='LOC_CAP_CASTLE';

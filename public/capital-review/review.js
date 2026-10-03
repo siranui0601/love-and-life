@@ -267,10 +267,11 @@ function initControls(){
  document.getElementById('envelope-metric').textContent=CAPITAL.activityEnvelope.areaKm2.toFixed(2)+' km²';
  document.getElementById('silhouette-metric').textContent=CAPITAL.atlasSilhouette.areaKm2.toFixed(2)+' km²';
  const choices=['west_gate','south_gate','east_gate','market','castle','mage_tower','office','orphanage','ajin','inn','stable','lower_court','south_cross','roof_stair','roof_landing','quay_refuge','world_R06','world_R11','world_R12','world_R13'];
+ for(const review of CAPITAL.walkingReviews)for(const id of [review.from,review.to])if(!choices.includes(id))choices.push(id);
  for(const id of choices){
   const n=nodeById(id);if(!n)continue;
   for(const select of [document.getElementById('route-from'),document.getElementById('route-to')]){
-   const o=document.createElement('option');o.value=id;o.textContent=n.name;select.append(o);
+   const o=document.createElement('option');o.value=id;o.textContent=CAPITAL.walkingReviews.find(r=>r.to===id)?.name||n.name;select.append(o);
   }
  }
  document.getElementById('route-from').value='west_gate';document.getElementById('route-to').value='market';
