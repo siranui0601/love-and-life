@@ -2,6 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
+test('surveyed plots have real street-facing doors, measured setbacks and level foundations',()=>{
+ const plots=CAPITAL.buildings.filter(b=>b.frontage),roads=new Map(CAPITAL.edges.map(e=>[e.id,e]));assert.ok(plots.length>2000);
+ for(const b of plots){const f=b.frontage,e=roads.get(b.frontageEdgeId),dx=(f.position[0]-b.position[0])*1000,dy=(f.position[1]-b.position[1])*1000;
+  assert.ok(Math.abs(dx*f.tangent[0]+dy*f.tangent[1])<.001,b.id+' door displaced along facade');
+  assert.ok(Math.abs(Math.hypot(dx,dy)-b.depthM/2)<.001,b.id+' door not on facade');
+  assert.ok(Math.abs(distanceToLine(f.position,e.points)-e.widthM/2-f.setbackM)<.15,b.id+' wrong setback');
+  assert.ok(Math.abs(elevationAt(...b.position)-b.benchHeightM)<.001,b.id+' foundation does not match plot');
+ }
+});
+test('street walls contain joined parcel runs rather than uniformly separated boxes',()=>{
+ const buildings=new Map(CAPITAL.buildings.map(b=>[b.id,b]));let joined=0;
+ for(const row of CAPITAL.frontageRows)for(let i=1;i<row.parcels.length;i++){const a=buildings.get(row.parcels[i-1]),b=buildings.get(row.parcels[i]);if(distance(a.position,b.position)-(a.widthM+b.widthM)/2<1.1)joined++;}
+ assert.ok(joined>1000,'street walls need continuous surveyed frontage');
+});
+test('city walls have a substantial curtain and shared physical wall and gate towers',async()=>{
+ const {obstacleAt}=await import('../public/capital-review/capital-spatial.js');
+ assert.ok(CAPITAL.walls.every(w=>w.heightM>=30&&w.widthM>=8));assert.ok(CAPITAL.fortifications.length>60);
+ for(const t of CAPITAL.fortifications)assert.equal(obstacleAt(t.position,{access:'permitted'}),'mass:'+t.id);
+ for(const g of CAPITAL.gates)assert.equal(obstacleAt(g.position,{access:'permitted'}),null,g.id+' portal blocked');
+});
 test('selecting the same route endpoint returns a stationary route without corridor search',()=>{
  const routes=findAlternatives('market','market');
  assert.equal(routes.length,1);assert.equal(routes[0].edges.length,0);

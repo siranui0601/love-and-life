@@ -25,7 +25,7 @@ export function mountCapitalScene(getState,getRoute){
    // cover the water again and create saw-tooth islands along its bank.
    if(CAPITAL.rivers.some(r=>r.context&&distanceToLine(p,r.points)<r.widthM/2+20))continue;
    indices.push(a,c,a+1,a+1,c,c+1);}
-  VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat('ground','#939a78');mesh.isPickable=false;
+  VertexData.ComputeNormals(positions,indices,normals);const data=new VertexData();Object.assign(data,{positions,indices,normals,uvs});const mesh=new Mesh(name,scene);data.applyToMesh(mesh);mesh.material=mat(name==='core-ground'?'urban-ground':'ground',name==='core-ground'?'#b3a78c':'#939a78');mesh.isPickable=false;
  }
  ground('core-ground',core,384,384);
  ground('west-ground',{...outer,maxX:core.minX},64,128);ground('east-ground',{...outer,minX:core.maxX},64,128);
@@ -40,6 +40,7 @@ export function mountCapitalScene(getState,getRoute){
  for(const e of CAPITAL.edges){
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
   strip('road:'+e.id,e.points,e.widthM,mat('road:'+color,color),p=>edgeHeightAt(e,p));
+  if(!e.bridgeId&&!['roof','world'].includes(e.class))for(const side of [-1,1]){const ps=sampleLine(e.points,8),curb=ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=side*(e.widthM/2+.55)/1000;return [p[0]-dy/len*off,p[1]+dx/len*off];});strip('street-shoulder:'+e.id+':'+side,curb,.9,mat('sidewalk','#b4ae9c'),p=>elevationAt(...p)+.22);}
   if(e.surfaceRampM){const total=polylineLengthM(e.points),up=e.surfaceOffsetsM[0]<e.surfaceOffsetsM[1],start=up?total-e.surfaceRampM:0,parts=[];
    for(let step=0;step<27;step++){const a=locateOnLine(e.points,start+e.surfaceRampM*step/27).position,b=locateOnLine(e.points,start+e.surfaceRampM*(step+1)/27).position;parts.push(segmentBox('stair-tread',a,b,e.widthM,.12,stone,p=>edgeHeightAt(e,p)-.06));}merge(parts,'physical-stair:'+e.id,stone);
   }
@@ -88,11 +89,12 @@ export function mountCapitalScene(getState,getRoute){
  function elevationAtPosition(p){return elevationAt(...p);}
  function merge(parts,name,material){if(!parts.length)return;const m=Mesh.MergeMeshes(parts,true,true);m.name=name;m.material=material;return m;}
  // Follow slopes instead of levelling each kilometre-long wall to its midpoint.
- for(const w of CAPITAL.walls){const ps=sampleLine(w.points,24),parts=[];for(let i=1;i<ps.length;i++)parts.push(segmentBox('wall',ps[i-1],ps[i],w.widthM,w.heightM,wallMat));merge(parts,w.id,wallMat);}
+ for(const w of CAPITAL.walls){const ps=sampleLine(w.points,12),parts=[],walkway=[],merlons=[];for(let i=1;i<ps.length;i++){const a=ps[i-1],b=ps[i],low=Math.min(elevationAt(...a),elevationAt(...b)),high=Math.max(elevationAt(...a),elevationAt(...b));parts.push(segmentBox('wall',a,b,w.widthM,w.heightM+high-low,wallMat,()=>low));walkway.push(segmentBox('wall-coping',a,b,w.widthM+1,1.2,stone,()=>high+w.heightM));}
+  const crest=sampleLine(w.points,5);for(let i=1;i<crest.length;i+=2){const p=crest[i],[x,z]=toLocal(p),m=MeshBuilder.CreateBox('wall-merlon',{width:2.4,depth:w.widthM+.6,height:2.5},scene);m.position=V(x,elevationAt(...p)+w.heightM+2,z);m.material=stone;merlons.push(m);}merge(parts,w.id,wallMat);merge(walkway,w.id+':coping',stone);merge(merlons,w.id+':battlements',stone);}
  function tower(name,x,z,y,h,r,material){const shaft=MeshBuilder.CreateCylinder(name,{diameter:r*2,height:h,tessellation:8},scene);shaft.position=V(x,y+h/2,z);shaft.material=material;const cap=MeshBuilder.CreateCylinder(name+':spire',{diameterTop:0,diameterBottom:r*2.5,height:r*2.2,tessellation:8},scene);cap.position=V(x,y+h+r*1.1,z);cap.material=roof;}
- for(const w of CAPITAL.walls){const ps=sampleLine(w.points,125);for(const p of ps.slice(1,-1)){const [x,z]=toLocal(p);tower('wall-tower',x,z,elevationAt(...p),22,5,stone);}}
- for(const g of CAPITAL.gates){const [x,z]=toLocal(g.position),a=CAPITAL.core.polygon[g.wallIndex],b=CAPITAL.core.polygon[(g.wallIndex+1)%CAPITAL.core.polygon.length],dx=b[0]-a[0],dy=-(b[1]-a[1]),len=Math.hypot(dx,dy);for(const side of [-1,1])tower('gate:'+g.id,x+dx/len*16*side,z+dy/len*16*side,elevationAt(...g.position),34,7,stone);
-  const lintel=MeshBuilder.CreateBox('gate-vault:'+g.id,{width:32,height:5,depth:13},scene);lintel.position=V(x,elevationAt(...g.position)+24,z);lintel.rotation.y=-Math.atan2(dy,dx);lintel.material=stone;}
+ for(const t of CAPITAL.fortifications){const [x,z]=toLocal(t.position);tower(t.id,x,z,elevationAt(...t.position),t.heightM,t.radiusM,stone);}
+ for(const g of CAPITAL.gates){const [x,z]=toLocal(g.position),a=CAPITAL.core.polygon[g.wallIndex],b=CAPITAL.core.polygon[(g.wallIndex+1)%CAPITAL.core.polygon.length],dx=b[0]-a[0],dy=-(b[1]-a[1]),len=Math.hypot(dx,dy);
+  const lintel=MeshBuilder.CreateBox('gate-vault:'+g.id,{width:36,height:11,depth:20},scene);lintel.position=V(x,elevationAt(...g.position)+29,z);lintel.rotation.y=-Math.atan2(dy,dx);lintel.material=stone;}
  for(const d of [...CAPITAL.districts,{id:'outside',color:'#b6a58c',profile:{roof:'#76644f'}}]){
   const parts=[],roofs=[];
   for(const b of CAPITAL.buildings.filter(b=>b.district===d.id&&!b.facilityId)){
@@ -106,6 +108,14 @@ export function mountCapitalScene(getState,getRoute){
   }
   merge(parts,'district-mass:'+d.id,mat('d:'+d.id,d.color));merge(roofs,'district-roofs:'+d.id,mat('roof:'+d.id,d.profile.roof));
  }
+ // Batch surveyed street-facing doors, windows and cornices. The face position
+ // is the same plot frontage used by generation and collision, never guessed.
+ const facadeGroups=new Map();
+ function facadeQuad(kind,b,along,base,width,height){if(!facadeGroups.has(kind))facadeGroups.set(kind,{positions:[],indices:[]});const group=facadeGroups.get(kind),[x,z]=toLocal(b.frontage.position),[dx,dy]=b.frontage.tangent,tx=dx,tz=-dy,nx=b.frontage.side*dy,nz=b.frontage.side*dx,start=group.positions.length/3;
+  for(const [u,v]of [[-width/2,0],[width/2,0],[width/2,height],[-width/2,height]])group.positions.push(x+tx*(along+u)+nx*.045,base+v,z+tz*(along+u)+nz*.045);group.indices.push(start,start+1,start+2,start,start+2,start+3);}
+ for(const b of CAPITAL.buildings.filter(b=>b.frontage)){const base=b.benchHeightM;facadeQuad('door',b,0,base+.15,1.6,2.7);facadeQuad('cornice',b,0,base+b.heightM-.45,b.widthM,.4);
+  for(let y=4;y<b.heightM-1;y+=3.2)for(const side of [-1,1])facadeQuad('window',b,side*Math.min(4,b.widthM*.28),base+y,1.2,1.7);}
+ for(const [kind,g]of facadeGroups){const normals=[];VertexData.ComputeNormals(g.positions,g.indices,normals);const data=new VertexData();Object.assign(data,{...g,normals});const m=new Mesh('street-facades:'+kind,scene);data.applyToMesh(m);m.material=mat('facade:'+kind,kind==='cornice'?'#d0c5ae':kind==='door'?'#544636':'#53626a');m.material.backFaceCulling=false;m.isPickable=false;}
  const parcelMeshes=[];
  for(const f of CAPITAL.facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE')){
   const [x,z]=toLocal(f.buildingPosition),y=elevationAt(...f.buildingPosition),size=massFootprint(CAPITAL.buildings.find(b=>b.facilityId===f.id));
