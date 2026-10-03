@@ -15,6 +15,8 @@ try{
  const sections=[];
  for(const r of reviews){await page.locator('#route-from').selectOption(r.from);await page.locator('#route-to').selectOption(r.to);await page.locator('#walk-route').click();const initial=await page.evaluate(()=>window.__capitalAudit.snapshot());const travel=r.nearGateM?Math.max(0,initial.routeDistanceM-r.nearGateM):initial.routeDistanceM*.5;const middle=await page.evaluate(dt=>window.__capitalAudit.advance(dt),travel/1.4);sections.push({...r,...middle});await page.screenshot({path:path.join(out,r.id+'.png')});await page.locator('#walk-stop').click();}
  const meshes=await page.evaluate(()=>{const scene=BABYLON.Engine.Instances[0].scenes[0];return {meshes:scene.meshes.length,vertices:scene.meshes.reduce((n,m)=>n+m.getTotalVertices(),0)};});
- await fs.writeFile(path.join(out,'section-review.json'),JSON.stringify({method:'Partial eye-height visual review; not full route completion',sections,meshes,errors},null,2));console.log(JSON.stringify({out,meshes,errors}));
+ const floatingTowers=await page.evaluate(async()=>{const {CAPITAL,elevationAt}=await import('/capital-review/capital-data.js'),scene=BABYLON.Engine.Instances[0].scenes[0];return CAPITAL.fortifications.filter(t=>{const m=scene.getMeshByName(t.id);if(!m)return true;m.computeWorldMatrix(true);const low=Math.min(...[[-1,-1],[-1,1],[1,-1],[1,1]].map(([a,b])=>elevationAt(t.position[0]+a*t.radiusM/1000,t.position[1]+b*t.radiusM/1000)));return m.getBoundingInfo().boundingBox.minimumWorld.y>low+.01;}).map(t=>t.id);});
+ if(floatingTowers.length)errors.push('Floating tower foundations: '+floatingTowers.join(','));
+ await fs.writeFile(path.join(out,'section-review.json'),JSON.stringify({method:'Partial eye-height visual review; not full route completion',sections,meshes,floatingTowers,errors},null,2));console.log(JSON.stringify({out,meshes,floatingTowers,errors}));
 }finally{await browser.close();}
 if(errors.length)throw Error(errors.join('\n'));
