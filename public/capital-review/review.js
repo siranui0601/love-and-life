@@ -1,6 +1,7 @@
 import {CAPITAL,toLocal,fromLocal,elevationAt,pointInPolygon,distance} from './capital-data.js';
 import {findAlternatives,pathPolyline,stateClosures,normalizeState} from './capital-routing.js';
 import {mountCapitalScene} from './capital-scene.js';
+import {buildingParts} from './capital-courtyards.js';
 import {trafficPlans,trafficPressure} from './capital-traffic.js';
 
 const SVG='http://www.w3.org/2000/svg',W=1100,H=900;
@@ -113,7 +114,7 @@ function setMapMode(urban){urbanForm=urban;document.getElementById('urban-form')
  document.getElementById('map-mode-note').textContent=urban?'Urban Form View · 実寸の建築・街路幅・水系・城壁・標高。地区色と経路記号を除いた都市形態。':'Topology / Debug View · 接続・通行条件・地区・設計beatの監査用。';
 }
 function renderBuildings(){
- for(const b of CAPITAL.buildings){
+ for(const b of CAPITAL.buildings.flatMap(buildingParts)){
 
   const [x,y]=project(b.position),w=metresPx(b.widthM),h=metresPx(b.depthM);
   el('rect',{x:x-w/2,y:y-h/2,width:w,height:h,rx:.7,transform:'rotate('+((b.rotationRad||0)*180/Math.PI)+' '+x+' '+y+')',fill:districtById(b.district)?.profile.roof||'#6b6354',stroke:'#514d44','stroke-width':.25,'fill-opacity':.96},layers.buildings);

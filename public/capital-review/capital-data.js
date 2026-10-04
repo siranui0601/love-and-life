@@ -3,6 +3,7 @@
  */
 import {buildStreetFabric} from './capital-fabric.js';
 import {buildFrontageRows} from './capital-parcels.js';
+import {buildCourtyards,courtyardHeight} from './capital-courtyards.js';
 import { WORLD, settlements, waterways, routes, areaOf, pointInPolygon as inside } from '../world-blueprint/geography.js';
 
 export const ORIGIN = [22.35, 21.45];
@@ -97,7 +98,7 @@ export function terrainBaseAt(x,y){
  for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=Math.max(0,distanceToLine([x,y],e.points)-e.widthM/2);if(d<22&&d<min){min=d;nearest=e;}}
  for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);h=h*(1-blend)+14*blend;
  if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t);h=h*(1-blend)+streetGradeAt(x,y)*blend;}
- for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.benchHeightM;}
+ for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.courtyardId?courtyardHeight(b,[x,y]):b.benchHeightM;}
  return h;
 }
 export function elevationAt(x,y){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+10;cut=Math.max(cut,(r.context?Math.max(0,1-Math.max(0,d-r.widthM/2)/16)*8:Math.max(0,1-d/bank)*6));}return terrainBaseAt(x,y)-cut;}
@@ -386,6 +387,7 @@ const frontageRows=buildFrontageRows({streets:streetFabric.surveyLines,edges,dis
 // Level each occupied plot to its own street entrance. Register only after all
 // entrance levels are sampled so one plot cannot change its neighbour's datum.
 for(const b of buildings){b.benchHeightM=terrainBaseAt(...b.frontage.position);}
+const courtyards=buildCourtyards({buildings,edges,node,edge,distance,distanceToLine,nearestOnSegment,terrainBaseAt,blockedIds:new Set(Object.values(encounterStates).flatMap(s=>s.blockedEdgeIds)),isPublic:p=>!districts.some(d=>d.gateTag&&inside(p,d.polygon))});
 for(const b of buildings){const r=Math.hypot(b.widthM,b.depthM)/2/1000;for(let x=Math.floor((b.position[0]-r)*20);x<=Math.floor((b.position[0]+r)*20);x++)for(let y=Math.floor((b.position[1]-r)*20);y<=Math.floor((b.position[1]+r)*20);y++){const k=x+','+y;if(!parcelLevels.has(k))parcelLevels.set(k,[]);parcelLevels.get(k).push(b);}}
 // No unserviced scatter fill: ordinary parcels must front a usable street.
 // Longer lanes receive deeper footprints, rather than inaccessible rear boxes.
@@ -416,6 +418,7 @@ const lowerLane=edges.filter(e=>e.fabric&&e.class==='alley'&&N(e.from).district=
 const stairReview=edges.filter(e=>publicLane(e)&&e.class==='stairs').sort((a,b)=>Math.abs(elevationAt(...N(b.from).position)-elevationAt(...N(b.to).position))-Math.abs(elevationAt(...N(a.from).position)-elevationAt(...N(a.to).position)))[0];
 const quayReview=edges.filter(e=>publicLane(e)&&e.fabricRole==='quay').sort((a,b)=>distance(b.points[0],b.points.at(-1))-distance(a.points[0],a.points.at(-1)))[0];
 const walkingReviews=[{id:'lower-backstreets',name:'街路前面が連続する下層路地',from:lowerLane.from,to:lowerLane.to},{id:'terrace-stairs',name:'段丘を横断する石段',from:stairReview.from,to:stairReview.to},{id:'river-quay',name:'橋詰と河岸歩廊',from:quayReview.from,to:quayReview.to}];
+for(const district of ['lower','ajin','quay']){const c=courtyards.find(c=>c.district===district);if(c){walkingReviews.push({id:'courtyard-'+district,name:'路地から入る共同庭 · '+district,from:c.from,to:c.innerTo});walkingReviews.push({id:'courtyard-return-'+district,name:'共同庭から別の入口へ · '+district,from:c.innerFrom,to:c.to});}}
 buildings.push(...suburbBuildings);
 buildings.push(...royalParts);
 // Facility masses sit north of their exact anchor; the anchor remains the door.
@@ -437,7 +440,7 @@ for(const o of outskirts)if(o.kind!=='farmland')for(let i=0;i<4;i++)furnish(o.id
 
 export const CAPITAL={version:'capital-street-terrain-pass-5',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},suburbBuildings,royalParts,urbanBlocks,walkingReviews,streetFabric:{rings:streetFabric.rings,laneCount:edges.filter(e=>e.fabric).length},retainingFaces,terraceBands,hillCentre,districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['正本IDと広域接続を継承。城丘・王城の量感・街区・副街路・水系曲率は参考画像/PDFに基づく設計提案。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
 
-Object.assign(CAPITAL,{version:'capital-block-enclosure-pass-6',frontageRows});
+Object.assign(CAPITAL,{version:'capital-courtyard-pass-7',frontageRows,courtyards});
 districts[0].identity='上層の段丘・擁壁と儀礼坂の頂点。王城地盤約312mから低地と市場を見下ろす。';
 const fortifications=[];
 for(const w of walls){const [a,b]=w.points,steps=Math.ceil(distance(a,b)/110);for(let i=1;i<steps;i++){const p=[a[0]+(b[0]-a[0])*i/steps,a[1]+(b[1]-a[1])*i/steps];if(edges.some(e=>distanceToLine(p,e.points)<e.widthM/2+12))continue;fortifications.push({id:w.id+':tower:'+i,position:p,widthM:16,depthM:16,heightM:44,radiusM:8,kind:'wall-tower'});}}

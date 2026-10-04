@@ -2,6 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
+import {buildingParts} from '../public/capital-review/capital-courtyards.js';
+test('inhabited courtyard loops are open in shared mass geometry and continuously walkable both ways',async()=>{
+ const {sampleLine,moveWalker,obstacleAt}=await import('../public/capital-review/capital-spatial.js');
+ assert.ok(CAPITAL.courtyards.length>=10);assert.ok(new Set(CAPITAL.courtyards.map(c=>c.district)).size>=3);
+ for(const c of CAPITAL.courtyards){const b=CAPITAL.buildings.find(b=>b.id===c.parcelId);
+  assert.equal(buildingParts(b).length,4);assert.equal(obstacleAt(c.position,{access:'permitted'}),null,c.id+' court is solid');
+  for(const part of b.parts)assert.ok(obstacleAt(part.position,{access:'permitted'}),part.id+' wing is not solid');
+  const es=c.edgeIds.map(id=>CAPITAL.edges.find(e=>e.id===id));assert.equal(es.length,3);
+  const line=[...es[0].points,...es[1].points.slice(1),...es[2].points.slice(1)];
+  for(const points of [line,[...line].reverse()]){let pos=points[0];for(const target of sampleLine(points,.5).slice(1)){const step=moveWalker(pos,target.map((v,i)=>(v-pos[i])*1000),{access:'public'});assert.equal(step.blocked,null,c.id+' '+step.blocked);assert.ok(distance(step.position,target)<.001);pos=step.position;}}
+ }
+});
 test('ordinary city streets and bridge approaches never inherit terrace cliff grades',async()=>{
  const {sampleLine,edgeHeightAt}=await import('../public/capital-review/capital-surfaces.js');
  assert.equal(sampleLine([[0,0],[0,0],[.001,0]],2).length,2,'zero-length road points must not create undefined grades');
@@ -42,7 +54,7 @@ test('castle is the terrain and massing apex above ordinary city strata',()=>{
  assert.ok(castle.footprintM[0]*castle.footprintM[1]>=58000);assert.equal(CAPITAL.royalParts.length,5);
 });
 test('dense core has substantial roof coverage and a finer grain in lower neighbourhoods',()=>{
- const ordinary=CAPITAL.buildings.filter(b=>!b.facilityId&&!b.outside),coverage=ordinary.reduce((n,b)=>n+b.widthM*b.depthM,0)/(CAPITAL.core.areaKm2*1e6);
+ const ordinary=CAPITAL.buildings.filter(b=>!b.facilityId&&!b.outside),coverage=ordinary.flatMap(buildingParts).reduce((n,b)=>n+b.widthM*b.depthM,0)/(CAPITAL.core.areaKm2*1e6);
  assert.ok(coverage>.27&&coverage<.55,coverage);
  const avg=id=>{const bs=ordinary.filter(b=>b.district===id);return bs.reduce((n,b)=>n+b.widthM*b.depthM,0)/bs.length;};
  assert.ok(avg('lower')<avg('noble'));

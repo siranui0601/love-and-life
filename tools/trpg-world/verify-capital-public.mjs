@@ -19,5 +19,7 @@ for(const name of (await fs.readdir(source)).filter(n=>/\.(js|css|html)$/.test(n
  if(result.status!==200||!actual.equals(expected))throw Error(name+' content mismatch '+result.status);
  console.log('PUBLIC MATCH',name,crypto.createHash('sha256').update(actual).digest('hex'));
 }
-if(report.errors.length||report.routes.length!==14||report.microRoutes?.length!==3||report.entryRoutes?.length!==3||report.states.length!==8||![...report.routes,...report.microRoutes,...report.entryRoutes,...report.states.filter(s=>s.id)].every(r=>r.complete&&!r.blocked)||!report.invalidRouteStopsGuide||!report.roadSurfacesMatch||Math.abs(report.lowFpsDistanceM-1.4)>.001)throw Error('Production walking audit failed');
+const {CAPITAL}=await import(new URL('capital-data.js',source));
+const reviewIds=new Set(report.microRoutes?.map(r=>r.id));
+if(report.errors.length||report.routes.length!==14||reviewIds.size!==CAPITAL.walkingReviews.length||!CAPITAL.walkingReviews.every(r=>reviewIds.has(r.id))||report.entryRoutes?.length!==3||report.states.length!==8||![...report.routes,...report.microRoutes,...report.entryRoutes,...report.states.filter(s=>s.id)].every(r=>r.complete&&!r.blocked)||!report.invalidRouteStopsGuide||!report.roadSurfacesMatch||Math.abs(report.lowFpsDistanceM-1.4)>.001)throw Error('Production walking audit failed');
 console.log('PRODUCTION PASS',JSON.stringify({url:report.url,routes:report.routes.length,microRoutes:report.microRoutes.length,entries:report.entryRoutes.length,states:report.states.length,lowFpsDistanceM:report.lowFpsDistanceM,invalidRouteStopsGuide:report.invalidRouteStopsGuide}));
