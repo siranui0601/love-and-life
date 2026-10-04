@@ -13,7 +13,7 @@ export function makeCourtyard(b){
  const wing=3,portal=3.6,frontDepth=7,backDepth=6,w=b.widthM,d=b.depthM;
  const entranceU=w/2-wing-portal/2,centreWidth=w-2*(wing+portal);
  const boxes=[['left',-w/2+wing/2,d/2,wing,d],['right',w/2-wing/2,d/2,wing,d],['rear',0,d-backDepth/2,w-2*wing,backDepth],['front',0,frontDepth/2,centreWidth,frontDepth]];
- b.parts=boxes.map(([name,u,v,widthM,depthM])=>({...b,id:b.id+':'+name,parentParcelId:b.id,position:parcelPoint(b,u,v),widthM,depthM,frontage:null,roofHeightM:Math.min(3,b.roofHeightM),benchHeightM:b.benchHeightM+b.courtSlope*u}));
+ b.parts=boxes.map(([name,u,v,widthM,depthM])=>({...b,id:b.id+':'+name,parentParcelId:b.id,position:parcelPoint(b,u,v),widthM,depthM,heightM:name==='front'?b.heightM:Math.min(b.heightM,name==='rear'?6.4:9.6),frontage:null,roofHeightM:Math.min(3,b.roofHeightM),benchHeightM:b.benchHeightM+b.courtSlope*u}));
  const court={id:'court_'+b.id,parcelId:b.id,district:b.district,position:parcelPoint(b,0,(frontDepth+d-backDepth)/2),widthM:w-2*wing,depthM:d-frontDepth-backDepth,portalWidthM:portal,entranceU,frontDepth,backDepth,parts:b.parts.map(p=>p.id)};
  b.courtyardId=court.id;return court;
 }

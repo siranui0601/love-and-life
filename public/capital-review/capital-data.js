@@ -3,7 +3,7 @@
  */
 import {buildStreetFabric} from './capital-fabric.js';
 import {buildFrontageRows} from './capital-parcels.js';
-import {buildCourtyards,courtyardHeight} from './capital-courtyards.js';
+import {buildCourtyards,courtyardHeight,parcelPoint} from './capital-courtyards.js';
 import { WORLD, settlements, waterways, routes, areaOf, pointInPolygon as inside } from '../world-blueprint/geography.js';
 
 export const ORIGIN = [22.35, 21.45];
@@ -425,6 +425,10 @@ buildings.push(...royalParts);
 for(const f of facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE'))buildings.push({id:`building_${f.id}`,facilityId:f.id,position:f.buildingPosition,widthM:f.footprintM[0],depthM:f.footprintM[1],heightM:f.heightM,district:f.district,color:districts.find(d=>d.id===f.district)?.color});
 
 const furnishings=[];
+for(const court of courtyards){const b=buildings.find(b=>b.id===court.parcelId),v=b.depthM-court.backDepth-1.1;
+ furnishings.push({id:court.id+'_bench',position:parcelPoint(b,-2,v),widthM:3,depthM:.7,heightM:.5,rotationRad:b.rotationRad,kind:'bench',color:'#786953',courtyardId:court.id});
+ if(court.district!=='quay')furnishings.push({id:court.id+'_tree',position:parcelPoint(b,3,v),widthM:.6,depthM:.6,heightM:5,kind:'tree',color:'#587353',courtyardId:court.id});
+}
 function furnish(id,position,widthM,depthM,heightM,kind){
  const radius=Math.hypot(widthM,depthM)/2+.5;
  if(edges.some(e=>distanceToLine(position,e.points)<e.widthM/2+radius+1))return;

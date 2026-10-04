@@ -3,6 +3,13 @@ import assert from 'node:assert/strict';
 import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
 import {buildingParts} from '../public/capital-review/capital-courtyards.js';
+test('courtyard residents share the physical pedestrian graph and evacuate through city streets',async()=>{
+ const {trafficPlans,trafficAgents}=await import('../public/capital-review/capital-traffic.js'),{obstacleAt}=await import('../public/capital-review/capital-spatial.js');
+ for(const hour of [7,12,18]){const plans=trafficPlans({hour}).filter(p=>p.id.startsWith('courtyard-'));assert.equal(plans.length,3);
+  for(let t=0;t<120;t+=3)for(const agent of trafficAgents(plans,t))assert.equal(obstacleAt(agent.position,{hour}),null,agent.id+' inside a mass');
+ }
+ const plan=trafficPlans({events:{T16:'active'}}).find(p=>p.id==='courtyard-ajin');assert.ok(plan.oneWay);assert.equal(plan.to,'inn');assert.ok(plan.route.edges.length>3);
+});
 test('inhabited courtyard loops are open in shared mass geometry and continuously walkable both ways',async()=>{
  const {sampleLine,moveWalker,obstacleAt}=await import('../public/capital-review/capital-spatial.js');
  assert.ok(CAPITAL.courtyards.length>=10);assert.ok(new Set(CAPITAL.courtyards.map(c=>c.district)).size>=3);
