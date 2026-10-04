@@ -1,0 +1,280 @@
+Updating 1e09e801..1aa5f1b3
+Fast-forward
+ .../CAPITAL-COURTYARD-PASS-7-2026-10-04.md         |    43 +
+ .../capital-pass-7/premerge/ajin-east_gate-end.png |   Bin 0 -> 149578 bytes
+ .../premerge/ajin-east_gate-middle.png             |   Bin 0 -> 150976 bytes
+ .../premerge/ajin-east_gate-quarter.png            |   Bin 0 -> 164075 bytes
+ .../premerge/ajin-east_gate-start.png              |   Bin 0 -> 178251 bytes
+ .../premerge/ajin-east_gate-three-quarter.png      |   Bin 0 -> 148874 bytes
+ .../qa/capital-pass-7/premerge/browser-audit.json  | 12349 +++++++++++++++++++
+ .../premerge/east_gate-market-end.png              |   Bin 0 -> 165462 bytes
+ .../premerge/east_gate-market-middle.png           |   Bin 0 -> 160027 bytes
+ .../premerge/east_gate-market-quarter.png          |   Bin 0 -> 158758 bytes
+ .../premerge/east_gate-market-start.png            |   Bin 0 -> 171568 bytes
+ .../premerge/east_gate-market-three-quarter.png    |   Bin 0 -> 151414 bytes
+ .../premerge/east_gate-world_R13-end.png           |   Bin 0 -> 108819 bytes
+ .../premerge/east_gate-world_R13-middle.png        |   Bin 0 -> 118585 bytes
+ .../premerge/east_gate-world_R13-quarter.png       |   Bin 0 -> 123613 bytes
+ .../premerge/east_gate-world_R13-start.png         |   Bin 0 -> 118940 bytes
+ .../premerge/east_gate-world_R13-three-quarter.png |   Bin 0 -> 104861 bytes
+ .../premerge/entry-east_gate-approach.png          |   Bin 0 -> 144703 bytes
+ .../premerge/entry-east_gate-end.png               |   Bin 0 -> 114492 bytes
+ .../premerge/entry-east_gate-start.png             |   Bin 0 -> 124303 bytes
+ .../premerge/entry-south_gate-approach.png         |   Bin 0 -> 122892 bytes
+ .../premerge/entry-south_gate-end.png              |   Bin 0 -> 116767 bytes
+ .../premerge/entry-south_gate-start.png            |   Bin 0 -> 140194 bytes
+ .../premerge/entry-west_gate-approach.png          |   Bin 0 -> 126821 bytes
+ .../premerge/entry-west_gate-end.png               |   Bin 0 -> 138163 bytes
+ .../premerge/entry-west_gate-start.png             |   Bin 0 -> 137840 bytes
+ .../qa/capital-pass-7/premerge/grade-audit.json    |   228 +
+ .../qa/capital-pass-7/premerge/inn-castle-end.png  |   Bin 0 -> 154740 bytes
+ .../capital-pass-7/premerge/inn-castle-middle.png  |   Bin 0 -> 194863 bytes
+ .../capital-pass-7/premerge/inn-castle-quarter.png |   Bin 0 -> 212733 bytes
+ .../capital-pass-7/premerge/inn-castle-start.png   |   Bin 0 -> 168108 bytes
+ .../premerge/inn-castle-three-quarter.png          |   Bin 0 -> 155329 bytes
+ .../premerge/lower_court-roof_landing-end.png      |   Bin 0 -> 162092 bytes
+ .../premerge/lower_court-roof_landing-middle.png   |   Bin 0 -> 213528 bytes
+ .../premerge/lower_court-roof_landing-quarter.png  |   Bin 0 -> 250306 bytes
+ .../premerge/lower_court-roof_landing-start.png    |   Bin 0 -> 128195 bytes
+ .../lower_court-roof_landing-three-quarter.png     |   Bin 0 -> 170001 bytes
+ .../premerge/lower_court-south_cross-end.png       |   Bin 0 -> 134364 bytes
+ .../premerge/lower_court-south_cross-middle.png    |   Bin 0 -> 125773 bytes
+ .../premerge/lower_court-south_cross-quarter.png   |   Bin 0 -> 130289 bytes
+ .../premerge/lower_court-south_cross-start.png     |   Bin 0 -> 143644 bytes
+ .../lower_court-south_cross-three-quarter.png      |   Bin 0 -> 128643 bytes
+ .../qa/capital-pass-7/premerge/market-ajin-end.png |   Bin 0 -> 156107 bytes
+ .../capital-pass-7/premerge/market-ajin-middle.png |   Bin 0 -> 159438 bytes
+ .../premerge/market-ajin-quarter.png               |   Bin 0 -> 157888 bytes
+ .../capital-pass-7/premerge/market-ajin-start.png  |   Bin 0 -> 220397 bytes
+ .../premerge/market-ajin-three-quarter.png         |   Bin 0 -> 164719 bytes
+ .../capital-pass-7/premerge/market-castle-end.png  |   Bin 0 -> 120809 bytes
+ .../premerge/market-castle-middle.png              |   Bin 0 -> 125475 bytes
+ .../premerge/market-castle-quarter.png             |   Bin 0 -> 159096 bytes
+ .../premerge/market-castle-start.png               |   Bin 0 -> 160376 bytes
+ .../premerge/market-castle-three-quarter.png       |   Bin 0 -> 208966 bytes
+ .../premerge/market-lower_court-end.png            |   Bin 0 -> 159642 bytes
+ .../premerge/market-lower_court-middle.png         |   Bin 0 -> 175432 bytes
+ .../premerge/market-lower_court-quarter.png        |   Bin 0 -> 163115 bytes
+ .../premerge/market-lower_court-start.png          |   Bin 0 -> 212706 bytes
+ .../premerge/market-lower_court-three-quarter.png  |   Bin 0 -> 151622 bytes
+ .../premerge/micro-courtyard-ajin-end.png          |   Bin 0 -> 135495 bytes
+ .../premerge/micro-courtyard-ajin-start.png        |   Bin 0 -> 127447 bytes
+ .../premerge/micro-courtyard-lower-end.png         |   Bin 0 -> 127240 bytes
+ .../premerge/micro-courtyard-lower-start.png       |   Bin 0 -> 151426 bytes
+ .../premerge/micro-courtyard-quay-end.png          |   Bin 0 -> 128124 bytes
+ .../premerge/micro-courtyard-quay-start.png        |   Bin 0 -> 133307 bytes
+ .../premerge/micro-courtyard-return-ajin-end.png   |   Bin 0 -> 134740 bytes
+ .../premerge/micro-courtyard-return-ajin-start.png |   Bin 0 -> 113663 bytes
+ .../premerge/micro-courtyard-return-lower-end.png  |   Bin 0 -> 158893 bytes
+ .../micro-courtyard-return-lower-start.png         |   Bin 0 -> 117797 bytes
+ .../premerge/micro-courtyard-return-quay-end.png   |   Bin 0 -> 134302 bytes
+ .../premerge/micro-courtyard-return-quay-start.png |   Bin 0 -> 115929 bytes
+ .../premerge/micro-lower-backstreets-end.png       |   Bin 0 -> 127557 bytes
+ .../premerge/micro-lower-backstreets-start.png     |   Bin 0 -> 132298 bytes
+ .../premerge/micro-lower-backstreets-walking.png   |   Bin 0 -> 129782 bytes
+ .../premerge/micro-river-quay-end.png              |   Bin 0 -> 153931 bytes
+ .../premerge/micro-river-quay-start.png            |   Bin 0 -> 145234 bytes
+ .../premerge/micro-river-quay-walking.png          |   Bin 0 -> 144282 bytes
+ .../premerge/micro-terrace-stairs-end.png          |   Bin 0 -> 233784 bytes
+ .../premerge/micro-terrace-stairs-start.png        |   Bin 0 -> 217769 bytes
+ .../premerge/micro-terrace-stairs-walking.png      |   Bin 0 -> 213411 bytes
+ .../qa/capital-pass-7/premerge/mobile.png          |   Bin 0 -> 56693 bytes
+ .../qa/capital-pass-7/premerge/overview-east.png   |   Bin 0 -> 654455 bytes
+ .../qa/capital-pass-7/premerge/overview-south.png  |   Bin 0 -> 760229 bytes
+ .../qa/capital-pass-7/premerge/overview-west.png   |   Bin 0 -> 608685 bytes
+ .../qa/capital-pass-7/premerge/overview.png        |   Bin 0 -> 760229 bytes
+ .../premerge/sections/castle-approach.png          |   Bin 0 -> 134732 bytes
+ .../premerge/sections/courtyard-ajin.png           |   Bin 0 -> 125007 bytes
+ .../premerge/sections/courtyard-lower.png          |   Bin 0 -> 140911 bytes
+ .../premerge/sections/courtyard-quay.png           |   Bin 0 -> 127967 bytes
+ .../capital-pass-7/premerge/sections/gate-east.png |   Bin 0 -> 120938 bytes
+ .../premerge/sections/gate-south.png               |   Bin 0 -> 121055 bytes
+ .../capital-pass-7/premerge/sections/gate-west.png |   Bin 0 -> 123148 bytes
+ .../premerge/sections/lower-backstreets.png        |   Bin 0 -> 131009 bytes
+ .../premerge/sections/overview-west.png            |   Bin 0 -> 608685 bytes
+ .../premerge/sections/section-review.json          |   172 +
+ .../premerge/sections/terrace-stairs.png           |   Bin 0 -> 222668 bytes
+ .../qa/capital-pass-7/premerge/source-hashes.json  |    15 +
+ .../qa/capital-pass-7/premerge/source-head.txt     |     1 +
+ .../premerge/south_gate-market-end.png             |   Bin 0 -> 166471 bytes
+ .../premerge/south_gate-market-middle.png          |   Bin 0 -> 256869 bytes
+ .../premerge/south_gate-market-quarter.png         |   Bin 0 -> 148691 bytes
+ .../premerge/south_gate-market-start.png           |   Bin 0 -> 156863 bytes
+ .../premerge/south_gate-market-three-quarter.png   |   Bin 0 -> 197217 bytes
+ .../premerge/south_gate-world_R11-end.png          |   Bin 0 -> 113331 bytes
+ .../premerge/south_gate-world_R11-middle.png       |   Bin 0 -> 107584 bytes
+ .../premerge/south_gate-world_R11-quarter.png      |   Bin 0 -> 110088 bytes
+ .../premerge/south_gate-world_R11-start.png        |   Bin 0 -> 109007 bytes
+ .../south_gate-world_R11-three-quarter.png         |   Bin 0 -> 106148 bytes
+ .../premerge/south_gate-world_R12-end.png          |   Bin 0 -> 103470 bytes
+ .../premerge/south_gate-world_R12-middle.png       |   Bin 0 -> 109017 bytes
+ .../premerge/south_gate-world_R12-quarter.png      |   Bin 0 -> 109103 bytes
+ .../premerge/south_gate-world_R12-start.png        |   Bin 0 -> 112237 bytes
+ .../south_gate-world_R12-three-quarter.png         |   Bin 0 -> 105894 bytes
+ .../qa/capital-pass-7/premerge/state-T10.png       |   Bin 0 -> 153525 bytes
+ .../qa/capital-pass-7/premerge/state-T11.png       |   Bin 0 -> 130610 bytes
+ .../qa/capital-pass-7/premerge/state-T16.png       |   Bin 0 -> 190829 bytes
+ .../qa/capital-pass-7/premerge/state-T17.png       |   Bin 0 -> 152322 bytes
+ .../qa/capital-pass-7/premerge/state-flood.png     |   Bin 0 -> 151353 bytes
+ .../qa/capital-pass-7/premerge/tests.txt           |    64 +
+ .../qa/capital-pass-7/premerge/topology.png        |   Bin 0 -> 637722 bytes
+ .../qa/capital-pass-7/premerge/urban-form.png      |   Bin 0 -> 704818 bytes
+ .../premerge/west_gate-market-end.png              |   Bin 0 -> 206870 bytes
+ .../premerge/west_gate-market-middle.png           |   Bin 0 -> 163059 bytes
+ .../premerge/west_gate-market-quarter.png          |   Bin 0 -> 158379 bytes
+ .../premerge/west_gate-market-start.png            |   Bin 0 -> 163947 bytes
+ .../premerge/west_gate-market-three-quarter.png    |   Bin 0 -> 151996 bytes
+ .../premerge/west_gate-world_R06-end.png           |   Bin 0 -> 109387 bytes
+ .../premerge/west_gate-world_R06-middle.png        |   Bin 0 -> 111563 bytes
+ .../premerge/west_gate-world_R06-quarter.png       |   Bin 0 -> 113135 bytes
+ .../premerge/west_gate-world_R06-start.png         |   Bin 0 -> 128919 bytes
+ .../premerge/west_gate-world_R06-three-quarter.png |   Bin 0 -> 110733 bytes
+ public/capital-review/capital-courtyards.js        |    53 +
+ public/capital-review/capital-data.js              |    11 +-
+ public/capital-review/capital-scene.js             |    21 +-
+ public/capital-review/capital-spatial.js           |     4 +-
+ public/capital-review/capital-surfaces.js          |     3 +-
+ public/capital-review/capital-traffic.js           |     9 +-
+ public/capital-review/review.js                    |     3 +-
+ test/capital-morphology.test.mjs                   |    21 +-
+ test/capital-review.test.mjs                       |     2 +-
+ tools/trpg-world/review-capital-sections.mjs       |     2 +-
+ tools/trpg-world/verify-capital-public.mjs         |     4 +-
+ 140 files changed, 12990 insertions(+), 15 deletions(-)
+ create mode 100644 docs/trpg-world/CAPITAL-COURTYARD-PASS-7-2026-10-04.md
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/ajin-east_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/ajin-east_gate-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/ajin-east_gate-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/ajin-east_gate-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/ajin-east_gate-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/browser-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-market-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-market-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-market-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-market-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-market-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-world_R13-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-world_R13-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-world_R13-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-world_R13-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/east_gate-world_R13-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-east_gate-approach.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-east_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-east_gate-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-south_gate-approach.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-south_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-south_gate-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-west_gate-approach.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-west_gate-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/entry-west_gate-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/grade-audit.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/inn-castle-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/inn-castle-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/inn-castle-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/inn-castle-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/inn-castle-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-roof_landing-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-roof_landing-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-roof_landing-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-roof_landing-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-roof_landing-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-south_cross-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-south_cross-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-south_cross-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-south_cross-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/lower_court-south_cross-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-ajin-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-ajin-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-ajin-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-ajin-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-ajin-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-castle-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-castle-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-castle-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-castle-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-castle-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-lower_court-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-lower_court-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-lower_court-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-lower_court-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/market-lower_court-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-ajin-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-ajin-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-lower-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-lower-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-quay-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-return-ajin-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-return-ajin-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-return-lower-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-return-lower-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-return-quay-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-courtyard-return-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-lower-backstreets-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-lower-backstreets-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-lower-backstreets-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-river-quay-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-river-quay-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-river-quay-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-terrace-stairs-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-terrace-stairs-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/micro-terrace-stairs-walking.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/mobile.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/overview-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/overview-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/overview.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/castle-approach.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/courtyard-ajin.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/courtyard-lower.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/courtyard-quay.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/gate-east.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/gate-south.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/gate-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/lower-backstreets.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/overview-west.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/section-review.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/sections/terrace-stairs.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/source-hashes.json
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/source-head.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-market-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-market-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-market-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-market-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-market-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R11-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R11-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R11-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R11-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R11-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R12-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R12-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R12-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R12-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/south_gate-world_R12-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/state-T10.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/state-T11.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/state-T16.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/state-T17.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/state-flood.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/tests.txt
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/topology.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/urban-form.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-market-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-market-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-market-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-market-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-market-three-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-world_R06-end.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-world_R06-middle.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-world_R06-quarter.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-world_R06-start.png
+ create mode 100644 docs/trpg-world/qa/capital-pass-7/premerge/west_gate-world_R06-three-quarter.png
+ create mode 100644 public/capital-review/capital-courtyards.js
+VPS HEAD 1e09e8016c60b01bcd099c877d233bb6d1544fde ORIGIN MAIN 1aa5f1b316a36fd6c24e4eec7a26366c58bc0235
+DIRTY TRACKED ['public/TRPG/assets/manifest.json', 'public/TRPG/player-simulation-report.json', 'tools/trpg-sim/reports/player-latest.md']
+UNTRACKED FILES 102 INCOMING 140 OVERLAP 0
+DIRTY SHA256 fdb95a3f5b15cdca2cd95e4108bd43e6e6d8189945a9def3bfcb10719e4ffe21
+PRESERVED dirty work and untracked metadata
+FINAL HEAD 1aa5f1b316a36fd6c24e4eec7a26366c58bc0235
+STATIC ONLY: no process restart

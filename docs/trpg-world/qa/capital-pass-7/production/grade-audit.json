@@ -1,0 +1,228 @@
+{
+  "version": "capital-courtyard-pass-7",
+  "method": "2m physical street-surface samples; city streets/bridges 20%, inherited outer rough-road connectors25%; stairs and roof routes assessed separately",
+  "checked": 1645,
+  "exceedances": 0,
+  "profiles": [
+    {
+      "id": "connector_R11",
+      "class": "world",
+      "maxGrade": 0.24787725168830607,
+      "worstPosition": [
+        24.393918692579504,
+        19.590162402826852
+      ],
+      "targetGrade": 0.25,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "office_north__royal_service__part_1",
+      "class": "secondary",
+      "maxGrade": 0.19499868127261724,
+      "worstPosition": [
+        23.12,
+        21.97
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "office_north__royal_service",
+      "class": "secondary",
+      "maxGrade": 0.19499841488757128,
+      "worstPosition": [
+        23.081628642204617,
+        21.898738906951433
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_254",
+      "class": "alley",
+      "maxGrade": 0.19499789568190157,
+      "worstPosition": [
+        22.12579504585953,
+        21.322078985472544
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_254__part_1",
+      "class": "alley",
+      "maxGrade": 0.19499789568184792,
+      "worstPosition": [
+        22.147082676029026,
+        21.414474615285112
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_285",
+      "class": "alley",
+      "maxGrade": 0.19499698572470364,
+      "worstPosition": [
+        21.539366501581064,
+        21.545300353284382
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "south_cross__south_quay__part_1",
+      "class": "primary",
+      "maxGrade": 0.19499578330854014,
+      "worstPosition": [
+        22.278237264886666,
+        20.74576410680001
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "south_cross__south_quay__part_2",
+      "class": "primary",
+      "maxGrade": 0.1949922372068805,
+      "worstPosition": [
+        22.276823720373375,
+        20.830576777597457
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_9",
+      "class": "alley",
+      "maxGrade": 0.19499126414916018,
+      "worstPosition": [
+        22.18288074219125,
+        22.452614454338747
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_258",
+      "class": "alley",
+      "maxGrade": 0.19499079452559762,
+      "worstPosition": [
+        22.66668044431266,
+        21.334049683483347
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_421__part_2",
+      "class": "alley",
+      "maxGrade": 0.19498556439921347,
+      "worstPosition": [
+        23.35675916442381,
+        20.802209190349025
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_421__part_1",
+      "class": "alley",
+      "maxGrade": 0.19498556439911485,
+      "worstPosition": [
+        23.358156465041656,
+        20.782540796092448
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_421__part_3",
+      "class": "alley",
+      "maxGrade": 0.19498556439899561,
+      "worstPosition": [
+        23.35542139714731,
+        20.821039593686564
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_377",
+      "class": "alley",
+      "maxGrade": 0.19496716200295558,
+      "worstPosition": [
+        22.32855047666497,
+        20.745628788055495
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_290",
+      "class": "alley",
+      "maxGrade": 0.19496090942768718,
+      "worstPosition": [
+        22.11004986987299,
+        21.255230247436174
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "office_south__office__part_3_courtpart_1",
+      "class": "secondary",
+      "maxGrade": 0.1949570620244638,
+      "worstPosition": [
+        23.077893764984243,
+        21.642424016798063
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "office_south__office__part_2",
+      "class": "secondary",
+      "maxGrade": 0.19494147038387133,
+      "worstPosition": [
+        23.10577536745833,
+        21.557385129252083
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "fabric_lane_97",
+      "class": "alley",
+      "maxGrade": 0.19493454265502677,
+      "worstPosition": [
+        23.644041534148297,
+        22.119108414769954
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "office_south__office__part_1",
+      "class": "secondary",
+      "maxGrade": 0.19489949328913744,
+      "worstPosition": [
+        23.14520096589522,
+        21.437137054019573
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    },
+    {
+      "id": "west_inside__west_quay",
+      "class": "service",
+      "maxGrade": 0.19489175686117108,
+      "worstPosition": [
+        21.22,
+        21.529999999999998
+      ],
+      "targetGrade": 0.2,
+      "exceedsReviewTarget": false
+    }
+  ]
+}
