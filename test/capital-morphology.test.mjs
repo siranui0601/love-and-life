@@ -3,6 +3,36 @@ import assert from 'node:assert/strict';
 import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
 import {buildingParts} from '../public/capital-review/capital-courtyards.js';
+import {buildStreetBlocks} from '../public/capital-review/capital-blocks.js';
+import {benchElevation,surveyedHeightAt} from '../public/capital-review/capital-terraces.js';
+import {pointInPolygon} from '../public/capital-review/capital-data.js';
+test('street enclosure splits crossings into four real blocks and ignores a dead-end spur',()=>{
+ const core=[[0,0],[.2,0],[.2,.2],[0,.2]],walls=core.map((p,i)=>({id:'w'+i,points:[p,core[(i+1)%4]]}));
+ const edges=[{id:'east-west',points:[[0,.1],[.2,.1]]},{id:'north-south',points:[[.1,0],[.1,.2]]},{id:'dead-end',points:[[.1,.05],[.15,.05]]}];
+ const blocks=buildStreetBlocks({core,walls,edges,inside:pointInPolygon});
+ assert.equal(blocks.length,4);assert.ok(blocks.every(b=>Math.abs(b.areaM2-10000)<.01));
+});
+test('ordinary buildings occupy a surveyed street block before their footprint is accepted',()=>{
+ const blocks=new Map(CAPITAL.streetBlocks.map(b=>[b.id,b]));assert.ok(blocks.size>300);
+ for(const b of CAPITAL.buildings.filter(b=>b.frontage)){
+  const block=blocks.get(b.blockId);assert.ok(block,b.id+' has no enclosed land parcel');
+  const c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);
+  for(const [u,v]of [[-1,-1],[1,-1],[1,1],[-1,1]])assert.ok(pointInPolygon([b.position[0]+(u*b.widthM*c-v*b.depthM*s)/2000,b.position[1]+(u*b.widthM*s+v*b.depthM*c)/2000],block.polygon),b.id+' crosses its street block');
+ }
+});
+test('bench levels contain actual flat land and continuous retaining transitions',()=>{
+ assert.equal(benchElevation(36),46);assert.equal(benchElevation(55),46);
+ assert.equal(benchElevation(68),78);assert.equal(benchElevation(88),78);
+ for(let h=14;h<300;h+=.01)assert.ok(Math.abs(benchElevation(h+.001)-benchElevation(h))<.061,'discontinuous datum at '+h);
+});
+test('switchback stairs have two-metre level landings in the physical surface',()=>{
+ const e={points:[[0,0],[.06,0]],streetHeightsM:[0,18],stairLayout:'contour-switchback'};
+ assert.ok(surveyedHeightAt(e,[.008,0])<surveyedHeightAt(e,[.010,0]));
+ assert.equal(surveyedHeightAt(e,[.010,0]),surveyedHeightAt(e,[.012,0]));
+ assert.equal(surveyedHeightAt(e,[.060,0]),18);
+ assert.ok(CAPITAL.edges.some(e=>e.stairLayout==='contour-switchback'));
+ for(const e of CAPITAL.edges.filter(e=>e.streetHeightsM)){assert.equal(e.points.length,e.streetHeightsM.length,e.id);assert.ok(e.streetHeightsM.every(Number.isFinite),e.id);}
+});
 test('courtyard residents share the physical pedestrian graph and evacuate through city streets',async()=>{
  const {trafficPlans,trafficAgents}=await import('../public/capital-review/capital-traffic.js'),{obstacleAt}=await import('../public/capital-review/capital-spatial.js');
  for(const hour of [7,12,18]){const plans=trafficPlans({hour}).filter(p=>p.id.startsWith('courtyard-'));assert.equal(plans.length,3);
@@ -100,8 +130,8 @@ test('all neighbourhood lanes connect to the authored graph at real junctions',(
  for(const e of lanes){assert.ok(found.has(e.from)&&found.has(e.to));assert.equal(e.points[0],CAPITAL.nodes.find(n=>n.id===e.from).position);}
 });
 test('castle benches expose substantial local relief and the distributary stays on one river datum',()=>{
- const faces=CAPITAL.retainingFaces.flatMap(f=>f.points),centre=CAPITAL.hillCentre;
- const readable=faces.filter(p=>{const dx=p[0]-centre[0],dy=p[1]-centre[1],len=Math.hypot(dx,dy);return elevationAt(p[0]-dx/len*.012,p[1]-dy/len*.012)-elevationAt(p[0]+dx/len*.012,p[1]+dy/len*.012)>15;});
+ const faces=CAPITAL.surveyedRetainingFaces.flatMap(f=>f.lines);
+ const readable=faces.filter(([a,b])=>{const p=[(a[0]+b[0])/2,(a[1]+b[1])/2],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);return Math.abs(elevationAt(p[0]-dy/len*.012,p[1]+dx/len*.012)-elevationAt(p[0]+dy/len*.012,p[1]-dx/len*.012))>15;});
  assert.ok(readable.length>60,'terraces need exposed relief, not just endpoint height metadata');
  const water=CAPITAL.rivers[0];for(const p of water.points)assert.ok(Math.abs(terrainBaseAt(...p)-14)<.001,'river climbs the hill');
  const n=id=>CAPITAL.nodes.find(n=>n.id===id);assert.ok(elevationAt(...n('castle').position)-elevationAt(...n('market').position)>190);

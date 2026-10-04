@@ -72,11 +72,19 @@ export function mountCapitalScene(getState,getRoute){
  merge(outerStreetGroundParts,'fine-outer-street-ground',mat('outer-street-ground','#939a78'));
  // Exposed retaining faces make the five benches readable in silhouette and
  // at eye height. Gaps follow the same graded street cuts as the walking surface.
- for(const face of CAPITAL.retainingFaces){const paths=[[],[]];let parts=[];
+ for(const face of CAPITAL.retainingFaces.filter(()=>!CAPITAL.surveyedRetainingFaces)){const paths=[[],[]];let parts=[];
   function flush(){if(paths[0].length>1){const m=MeshBuilder.CreateRibbon(face.id,{pathArray:paths.map(p=>[...p]),sideOrientation:Mesh.DOUBLESIDE},scene);m.material=mat('retaining','#b4ad94');m.isPickable=false;parts.push(m);}paths[0].length=0;paths[1].length=0;}
   for(const p of face.points){const dx=p[0]-CAPITAL.hillCentre[0],dy=p[1]-CAPITAL.hillCentre[1],len=Math.hypot(dx,dy),a=[p[0]-dx/len*.009,p[1]-dy/len*.009],b=[p[0]+dx/len*.009,p[1]+dy/len*.009];
    if(!pointInPolygon(p,CAPITAL.core.polygon)||elevationAt(...a)-elevationAt(...b)<7){flush();continue;}const [x,z]=toLocal(p);paths[0].push(V(x,elevationAt(...b),z));paths[1].push(V(x,elevationAt(...a),z));}
   flush();merge(parts,face.id,mat('retaining','#b4ad94'));
+ }
+ for(const face of CAPITAL.surveyedRetainingFaces||[]){const parts=[];
+  for(const [a,b]of face.lines){const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];
+   // Graded road cuts and landings own their openings through the retaining face.
+   if((roadGroundBuckets.get(Math.floor(mid[0]*20)+','+Math.floor(mid[1]*20))||[]).some(e=>distanceToLine(mid,e.points)<e.widthM/2+14))continue;
+   const dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy),paths=[[],[]];for(const p of [a,b]){const [x,z]=toLocal(p),sides=[elevationAt(p[0]-dy/len*.012,p[1]+dx/len*.012),elevationAt(p[0]+dy/len*.012,p[1]-dx/len*.012)];paths[0].push(V(x,Math.max(face.lowerM,Math.min(...sides)),z));paths[1].push(V(x,Math.min(face.upperM,Math.max(...sides)),z));}
+   const m=MeshBuilder.CreateRibbon(face.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);m.material=stone;m.isPickable=false;parts.push(m);
+  }merge(parts,face.id,stone);
  }
  // Cross-slope lanes show individual risers where their real grade climbs.
  for(const e of CAPITAL.edges.filter(e=>e.fabric&&e.class==='stairs')){const ps=sampleLine(e.points,.8),left=[],right=[];
@@ -112,6 +120,7 @@ export function mountCapitalScene(getState,getRoute){
  for(const t of CAPITAL.fortifications){const [x,z]=toLocal(t.position);tower(t.id,x,z,elevationAt(...t.position),t.heightM,t.radiusM,stone);}
  for(const g of CAPITAL.gates){const [x,z]=toLocal(g.position),a=CAPITAL.core.polygon[g.wallIndex],b=CAPITAL.core.polygon[(g.wallIndex+1)%CAPITAL.core.polygon.length],dx=b[0]-a[0],dy=-(b[1]-a[1]),len=Math.hypot(dx,dy);
   const lintel=MeshBuilder.CreateBox('gate-vault:'+g.id,{width:36,height:11,depth:20},scene);lintel.position=V(x,elevationAt(...g.position)+29,z);lintel.rotation.y=-Math.atan2(dy,dx);lintel.material=stone;}
+ const engineeringMeshes=new Set(scene.meshes);
  for(const d of [...CAPITAL.districts,{id:'outside',color:'#b6a58c',profile:{roof:'#76644f'}}]){
   const parts=[],roofs=[];
   for(const b of CAPITAL.buildings.flatMap(buildingParts).filter(b=>b.district===d.id&&!b.facilityId)){
@@ -153,6 +162,10 @@ export function mountCapitalScene(getState,getRoute){
   }else if(f.id==='LOC_CAP_MAGE_TOWER'){tower('mage-primary',x,z,y,118,17,mat('mage','#777e9e'));tower('mage-top',x,z,y+80,58,8.5,mat('mage','#777e9e'));}
   else{const m=MeshBuilder.CreateBox(f.id,{width:size.widthM,height:size.heightM,depth:size.depthM},scene);m.position=V(x,y+size.heightM/2,z);m.material=stone;if(f.id==='LOC_CAP_ORPHANAGE')parcelMeshes.push(m);}
  }
+ const architectureMeshes=scene.meshes.filter(m=>!engineeringMeshes.has(m));
+ const structureButton=document.getElementById('structure-only');let structureOnly=false;
+ function setStructureOnly(value){structureOnly=value;for(const m of architectureMeshes)m.setEnabled(!value);structureButton?.setAttribute('aria-pressed',String(value));if(structureButton)structureButton.textContent=value?'建物も表示する':'地盤・街路・城壁だけを見る';}
+ if(structureButton)structureButton.onclick=()=>setStructureOnly(!structureOnly);
  // Negative space has edges and usable surfaces, not just a cleared generation radius.
  for(const space of CAPITAL.negativeSpaces){
   const positions=[],indices=[],normals=[],segments=48,rings=8;

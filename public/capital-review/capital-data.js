@@ -3,6 +3,8 @@
  */
 import {buildStreetFabric} from './capital-fabric.js';
 import {buildFrontageRows} from './capital-parcels.js';
+import {buildStreetBlocks,indexStreetBlocks} from './capital-blocks.js';
+import {benchElevation,surveyStreetLevels,surveyedHeightAt,surveyRetainingFaces} from './capital-terraces.js';
 import {buildCourtyards,courtyardHeight,parcelPoint} from './capital-courtyards.js';
 import { WORLD, settlements, waterways, routes, areaOf, pointInPolygon as inside } from '../world-blueprint/geography.js';
 
@@ -78,7 +80,7 @@ const riverY=x=>{const p=rivers[0].points;for(let i=1;i<p.length;i++)if(x>=Math.
 // roads cut graded ramps/stairs through the benches. Heights are true metres.
 const hillCentre=[22.70,22.62];
 const terraceBands=[{radiusM:1520,riseM:22},{radiusM:1150,riseM:44},{radiusM:830,riseM:62},{radiusM:560,riseM:78},{radiusM:315,riseM:92}];
-let terrainStreets=[];const terrainBuckets=new Map(),parcelLevels=new Map();
+let terrainStreets=[],terrainVistaCuts=[];const terrainBuckets=new Map(),parcelLevels=new Map();
 const contourFactor=a=>1+.065*Math.sin(3*a+.3)+.035*Math.cos(5*a-.4);
 const hillRadius=(x,y)=>{const dx=(x-hillCentre[0])*1000/1.08,dy=(y-hillCentre[1])*1000;return Math.hypot(dx,dy)*contourFactor(Math.atan2(dy,dx));};
 const contourPoint=(radiusM,a)=>[hillCentre[0]+Math.cos(a)*radiusM/contourFactor(a)*1.08/1000,hillCentre[1]+Math.sin(a)*radiusM/contourFactor(a)/1000];
@@ -94,10 +96,12 @@ export function terrainBaseAt(x,y){
  // The entire urban ground follows the same regional rise as its streets.
  // Retaining terraces add bounded local relief; leaving the old 92m bench
  // beside a graded road created needle-shaped ground between neighbouring lots.
- let h=streetGradeAt(x,y)+Math.max(-10,Math.min(10,benchHill(x,y)-benchHill(x,y,480))),nearest=null,min=Infinity;
- for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=Math.max(0,distanceToLine([x,y],e.points)-e.widthM/2);if(d<22&&d<min){min=d;nearest=e;}}
+ const inCity=inside([x,y],corePolygon);
+ let h=inCity?benchElevation(streetGradeAt(x,y)):streetGradeAt(x,y),nearest=null,min=Infinity;
+ for(const e of terrainBuckets.get(Math.floor(x*10)+','+Math.floor(y*10))||[]){const d=distanceToLine([x,y],e.points);if(d<e.widthM/2+22&&d<min){min=d;nearest=e;}}
  for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);h=h*(1-blend)+14*blend;
- if(nearest){const t=Math.max(0,1-min/22),blend=t*t*(3-2*t);h=h*(1-blend)+streetGradeAt(x,y)*blend;}
+ for(const cut of terrainVistaCuts){const p=[x,y],q=nearestOnSegment(p,...cut.points),d=distance(p,q),t=distance(cut.points[0],q)/cut.lengthM;if(d>cut.widthM/2+8||t<.01||t>.98)continue;const ceiling=cut.eyeM+(cut.topM-cut.eyeM)*t-2,weight=Math.max(0,Math.min(1,(cut.widthM/2+8-d)/8));h-=Math.max(0,h-ceiling)*weight;}
+ if(nearest){const t=Math.max(0,1-Math.max(0,min-nearest.widthM/2)/12),blend=t*t*(3-2*t),roadHeight=nearest.streetHeightsM?surveyedHeightAt(nearest,[x,y]):streetGradeAt(x,y);h=h*(1-blend)+roadHeight*blend;}
  for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.courtyardId?courtyardHeight(b,[x,y]):b.benchHeightM;}
  return h;
 }
@@ -299,6 +303,8 @@ for(const side of [-1,1]){
  }
 }
 const streetFabric=buildStreetFabric({contourPoint,nodes,edges,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
+const streetSurvey=surveyStreetLevels(edges,streetGradeAt,distance);
+const surveyedRetainingFaces=surveyRetainingFaces({datum:streetGradeAt,core:corePolygon,inside});
 terrainStreets=edges.filter(e=>!e.bridgeId);
 for(const e of terrainStreets)for(let j=1;j<e.points.length;j++){
  const a=e.points[j-1],b=e.points[j];for(let x=Math.floor((Math.min(a[0],b[0])-.04)*10);x<=Math.floor((Math.max(a[0],b[0])+.04)*10);x++)for(let y=Math.floor((Math.min(a[1],b[1])-.04)*10);y<=Math.floor((Math.max(a[1],b[1])+.04)*10);y++){const k=x+','+y;if(!terrainBuckets.has(k))terrainBuckets.set(k,new Set());terrainBuckets.get(k).add(e);}
@@ -326,6 +332,9 @@ for(const incident of Object.values(encounterStates))incident.blockedEdgeIds=inc
 
 const viewpoints=[{id:'west_castle',name:'西門から王城の高塔',position:N('west_inside').position,target:'castle',corridorWidthM:34,intent:'大通りの空隙から北の高塔を断続視認。'},{id:'south_castle',name:'南大橋から王城',position:N('south_bridge_north').position,target:'castle',corridorWidthM:42,intent:'橋の解放部から坂上の王城を視認。'},{id:'ajin_tower',name:'亜人街から宮廷魔術塔',position:N('ajin').position,target:'mage_tower',corridorWidthM:28,intent:'南東地区で第二の垂直軸を得る。'}];
 const sightCorridors=viewpoints.map(v=>({id:v.id,points:[v.position,N(v.target).position],widthM:v.corridorWidthM,target:v.target,intent:v.intent}));
+// Retaining terraces must preserve the same reserved reveals as building plots.
+// Survey a real cut through the bank, with shoulders; visibility is not overridden.
+terrainVistaCuts=viewpoints.map(v=>{const target=facilities.find(f=>f.nodeId===v.target).buildingPosition,points=[v.position,target];return {points,widthM:v.corridorWidthM,lengthM:distance(...points),eyeM:terrainBaseAt(...v.position)+1.98,topM:terrainBaseAt(...target)+(v.target==='castle'?210:157)};});
 const levelDesignBeats=[
  {id:'beat_west_throat',type:'compression',nodeId:'west_inside',name:'西門の圧縮',intent:'18m門を抜けた直後は城壁と検問で視界を絞り、駅馬車庭へ抜けた瞬間に開放する。'},
  {id:'beat_coach_release',type:'release',nodeId:'coach_court',name:'駅馬車転回庭の解放',intent:'旅人・荷車・宿泊客が方向を選び直す最初の都市node。'},
@@ -383,7 +392,12 @@ function add(b){const p=b.position,r=Math.hypot(b.widthM,b.depthM)/2,cs=corners(
  if(near(p).some(q=>overlaps(b,q))||royalParts.some(q=>overlaps(b,q)))return false;
  buildings.push(b);const k=key(Math.floor(p[0]/cell),Math.floor(p[1]/cell));if(!occupied.has(k))occupied.set(k,[]);occupied.get(k).push(b);return true;
 }
-const frontageRows=buildFrontageRows({streets:streetFabric.surveyLines,edges,districtsAt,distance,distanceToLine,add});
+const streetBlocks=buildStreetBlocks({edges,walls,inside,core:corePolygon});
+const blockAt=indexStreetBlocks(streetBlocks,inside);
+const frontageRows=buildFrontageRows({streets:streetFabric.surveyLines,edges,districtsAt,distance,distanceToLine,add:b=>{
+ const block=blockAt(b.position);if(!block||corners(b,.15).some(p=>!inside(p,block.polygon)))return false;
+ b.blockId=block.id;return add(b);
+}});
 // Level each occupied plot to its own street entrance. Register only after all
 // entrance levels are sampled so one plot cannot change its neighbour's datum.
 for(const b of buildings){b.benchHeightM=terrainBaseAt(...b.frontage.position);}
@@ -444,7 +458,7 @@ for(const o of outskirts)if(o.kind!=='farmland')for(let i=0;i<4;i++)furnish(o.id
 
 export const CAPITAL={version:'capital-street-terrain-pass-5',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},suburbBuildings,royalParts,urbanBlocks,walkingReviews,streetFabric:{rings:streetFabric.rings,laneCount:edges.filter(e=>e.fabric).length},retainingFaces,terraceBands,hillCentre,districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['正本IDと広域接続を継承。城丘・王城の量感・街区・副街路・水系曲率は参考画像/PDFに基づく設計提案。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
 
-Object.assign(CAPITAL,{version:'capital-courtyard-pass-7',frontageRows,courtyards});
+Object.assign(CAPITAL,{version:'capital-terrain-streets-pass-8-candidate',frontageRows,courtyards,streetBlocks,streetSurvey,surveyedRetainingFaces});
 districts[0].identity='上層の段丘・擁壁と儀礼坂の頂点。王城地盤約312mから低地と市場を見下ろす。';
 const fortifications=[];
 for(const w of walls){const [a,b]=w.points,steps=Math.ceil(distance(a,b)/110);for(let i=1;i<steps;i++){const p=[a[0]+(b[0]-a[0])*i/steps,a[1]+(b[1]-a[1])*i/steps];if(edges.some(e=>distanceToLine(p,e.points)<e.widthM/2+12))continue;fortifications.push({id:w.id+':tower:'+i,position:p,widthM:16,depthM:16,heightM:44,radiusM:8,kind:'wall-tower'});}}

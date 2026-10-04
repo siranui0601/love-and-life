@@ -30,3 +30,34 @@ jobs:
           for file in public/capital-review/*.js tools/trpg-world/*.mjs; do node --check "$file"; done
       - name: Capital spatial contracts
         run: node --test test/capital-review.test.mjs test/capital-clock.test.mjs test/capital-morphology.test.mjs test/world-blueprint.test.mjs test/world-blueprint-ecology.test.mjs
+  webgl:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated browser tools
+        run: |
+          npm install --prefix "$RUNNER_TEMP/capital-browser" playwright@1.55.0 --ignore-scripts --no-audit --no-fund
+          node "$RUNNER_TEMP/capital-browser/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Walk physical routes and capture terrain and street structure
+        run: |
+          python3 -m http.server 9893 --bind 127.0.0.1 --directory public > "$RUNNER_TEMP/capital-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent http://127.0.0.1:9893/capital-review/ > /dev/null; then break; fi
+            sleep 1
+          done
+          node tools/trpg-world/audit-capital-browser.mjs --url=http://127.0.0.1:9893 --out=capital-webgl-qa --playwright="$RUNNER_TEMP/capital-browser/node_modules/playwright/index.mjs"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capital-webgl-${{ github.event.pull_request.head.sha }}
+          path: capital-webgl-qa/
+          retention-days: 14

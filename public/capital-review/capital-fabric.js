@@ -16,8 +16,17 @@ export function buildStreetFabric({contourPoint,nodes,edges,districts,core,river
    if(!valid(p)){row.push(null);continue;}const n=node('fabric_'+ring+'_'+i,'生活路の曲がり角',p,district(p),'junction');row.push(n);
   }
   rings.push(row);
-  function connect(a,b,kind){if(!a||!b)return;const mid=[(a.position[0]+b.position[0])/2,(a.position[1]+b.position[1])/2],radial=[mid[0]-centre[0],mid[1]-centre[1]],len=Math.hypot(...radial)||1,bend=kind==='contour'?8:0,via=[mid[0]+radial[0]/len*bend/1000,mid[1]+radial[1]/len*bend/1000],points=[a.position,via,b.position];
-   if(!legal(points))return;const cls=kind==='contour'?'alley':r<1450?'stairs':'alley',e=edge(a.id,b.id,kind==='contour'?'城丘の等高生活路':'段丘をつなぐ横路・石段',cls,{id:'fabric_lane_'+added.length,via:[via],widthM:a.district==='noble'?6:a.district==='lower'?3.8:4.6,fabric:true,fabricRole:kind,reason:kind==='contour'?'段丘の街区前面と裏口をつなぐ生活路。':'等高道の間を上り下りし、街区を通り抜ける徒歩路。'});added.push(e);
+  function connect(a,b,kind){if(!a||!b)return;
+   const mid=[(a.position[0]+b.position[0])/2,(a.position[1]+b.position[1])/2],radial=[mid[0]-centre[0],mid[1]-centre[1]],len=Math.hypot(...radial)||1;
+   const cls=kind==='contour'?'alley':r<1450?'stairs':'alley';let via;
+   if(cls==='stairs'){
+    // Sideways flights parallel to the retaining contour, with a switchback.
+    // Reserve the complete stair envelope BEFORE assigning any building plots.
+    const normal=radial.map(v=>v/len),tangent=[-normal[1],normal[0]],run=Math.min(48,distance(a.position,b.position)*.32);
+    via=[[-1,1],[1,-1]].map(([side,up])=>mid.map((v,i)=>v+(side*tangent[i]*run+up*normal[i]*12)/1000));
+   }else via=[[mid[0]+radial[0]/len*(kind==='contour'?8:0)/1000,mid[1]+radial[1]/len*(kind==='contour'?8:0)/1000]];
+   const points=[a.position,...via,b.position];if(!legal(points))return;
+   const e=edge(a.id,b.id,kind==='contour'?'城丘の等高生活路':'壁沿いの折返し石段',cls,{id:'fabric_lane_'+added.length,via,widthM:a.district==='noble'?6:a.district==='lower'?3.8:4.6,fabric:true,fabricRole:kind,stairLayout:cls==='stairs'?'contour-switchback':undefined,reason:kind==='contour'?'段丘の街区前面と裏口をつなぐ生活路。':'擁壁に沿う折返しと踊り場で上層の生活路へ接続する。'});added.push(e);
   }
   for(let i=0;i<row.length;i++)connect(row[i],row[(i+1)%row.length],'contour');
   if(ring)for(let i=0;i<row.length;i++){const n=row[i];if(!n)continue;const candidates=rings[ring-1].filter(Boolean).sort((a,b)=>distance(n.position,a.position)-distance(n.position,b.position));if(candidates[0]&&distance(n.position,candidates[0].position)<200)connect(n,candidates[0],'cross-slope');}
@@ -28,7 +37,7 @@ export function buildStreetFabric({contourPoint,nodes,edges,districts,core,river
  function intersect(a,b,c,d){const rx=b[0]-a[0],ry=b[1]-a[1],sx=d[0]-c[0],sy=d[1]-c[1],den=rx*sy-ry*sx;if(Math.abs(den)<1e-12)return null;const t=((c[0]-a[0])*sy-(c[1]-a[1])*sx)/den,u=((c[0]-a[0])*ry-(c[1]-a[1])*rx)/den;return t>.0001&&t<.9999&&u>.0001&&u<.9999?{p:[a[0]+t*rx,a[1]+t*ry],t,u}:null;}
  const streets=edges.filter(e=>!e.bridgeId&&!['roof','world'].includes(e.class)&&!e.surfaceOffsetsM);
  for(let i=0;i<streets.length;i++)for(let j=i+1;j<streets.length;j++){
-  const one=streets[i],two=streets[j];if(!one.fabric&&!two.fabric)continue;
+  const one=streets[i],two=streets[j];
   for(let a=1;a<one.points.length;a++)for(let b=1;b<two.points.length;b++){const hit=intersect(one.points[a-1],one.points[a],two.points[b-1],two.points[b]);if(!hit)continue;
    let n=nodes.find(n=>distance(n.position,hit.p)<.2);if(!n)n=node('fabric_junction_'+junction++,'生活路と街道の辻',hit.p,district(hit.p),'junction');
    cuts.get(one).push({segment:a,t:hit.t,node:n});cuts.get(two).push({segment:b,t:hit.u,node:n});
