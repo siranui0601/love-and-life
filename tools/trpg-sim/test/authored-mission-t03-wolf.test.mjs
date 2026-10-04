@@ -145,7 +145,13 @@ test("two distinct T03 evidence scenes advance the canonical required-count inve
   assert.equal(choose(state, secondEvidence).ok, true);
   assert.equal(investigationProgress(state), 2);
   assert.equal(new Set(state.t03WolfContinuity.evidenceClasses).size, 2);
-  assert.equal(actions(state), null);
+  // 狼の調査がこの厩で尽きた後、厩そのものは残る。馬房はまだ汚れている。
+  // 守りたいのは「使い切った場面が戻ってこない」ことなので、そこを見る。
+  assert.equal(
+    (actions(state) ?? []).some((action) => action.authoredT03WolfChoice),
+    false,
+    "the exhausted wolf scene does not come back",
+  );
 });
 
 test("moving livestock changes the next pack evidence instead of renaming the old scene", () => {
@@ -209,5 +215,9 @@ test("T03 irreversible exit closes only the player mission", () => {
   assert.match(state.playerState.missions[MISSION_ID].failureReason, /^player_closed_t03_/u);
   assert.equal(state.playerState.worldFlags.t03PlayerMissionClosed, true);
   assert.equal(state.playerState.troubles.T03.status, "active");
-  assert.equal(actions(state), null);
+  assert.equal(
+    (actions(state) ?? []).some((action) => action.authoredT03WolfChoice),
+    false,
+    "closing the mission closes the wolf scenes, not the stalls",
+  );
 });

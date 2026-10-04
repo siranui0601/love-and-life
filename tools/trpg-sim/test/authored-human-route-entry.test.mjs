@@ -139,14 +139,16 @@ test("Day1時間窓外や別施設では救出後三択を割り込ませない"
   const early = runtime(new Map([
     ["MSN-T01", completedMission()],
   ]));
-  early.playerState.absoluteMinute = 8 * 60;
+  // absoluteMinute=0 is Day1 10:00, so 60 is Day1 11:00 and is genuinely
+  // before the canonical noon aftercare window. The old 8*60 fixture was 18:00.
+  early.playerState.absoluteMinute = 60;
   assert.equal(entry.ownActions(early), null);
 
   const day2 = runtime(new Map([
     ["MSN-T01", completedMission()],
   ]));
   day2.playerState.day = 2;
-  day2.playerState.absoluteMinute = 1440 + 8 * 60;
+  day2.playerState.absoluteMinute = 1440 + 8 * 60 - 10 * 60;
   assert.equal(entry.ownActions(day2), null);
 
   const away = runtime(new Map([

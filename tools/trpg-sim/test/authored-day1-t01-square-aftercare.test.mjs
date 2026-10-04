@@ -16,6 +16,7 @@ function runtime() {
       player: {
         location: "田園の村",
         facilityId: "LOC_FARM_SQUARE",
+        needs: { hunger: 60, fatigue: 10 },
       },
       missions: [{
         id: "MSN-T01",
@@ -54,6 +55,17 @@ test("Day1 T01 rescue reaches a short three-choice aftercare scene", () => {
   }
   assert.equal(new Set(actions.map((action) => action.family)).size, 3);
   assert.equal(new Set(actions.map((action) => action.id)).size, 3);
+});
+
+test("play_children uses canonical child NPC062 and never Eda NPC004 as the speaker", () => {
+  const state = runtime();
+  const playChildren = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === "MISSION_FLOW:T01:SQUARE_AFTERCARE:play_children");
+
+  assert.ok(playChildren);
+  assert.equal(playChildren.targetNpcId, "NPC062");
+  assert.equal(playChildren.authoredDay1T01AftercareSpeech.actorId, "NPC062");
+  assert.notEqual(playChildren.targetNpcId, "NPC004");
 });
 
 test("helping Mira closes the other branches and opens a different supper scene", () => {
@@ -104,6 +116,22 @@ test("the supper branches produce different state and do not repeat", () => {
   assert.ok(!repeated?.some((action) => action.authoredDay1T01AftercareChoice));
 });
 
+test("sharing bread is the actual zero-gold supper, not a second hidden provision", () => {
+  const state = runtime();
+  const help = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === internals.HELP_ACTION_ID);
+  choose(state, help);
+
+  const bread = authoredMissionFlowExclusiveActions(state)
+    .find((action) => action.id === "MISSION_FLOW:T01:SQUARE_SUPPER:share_bread");
+  const result = choose(state, bread);
+
+  assert.equal(state.playerState.player.needs.hunger, 2);
+  assert.equal(result.meal.price, 0);
+  assert.equal(result.meal.hungerReduced, 58);
+  assert.equal(result.meal.source, "Mira and Finn's shared bread");
+});
+
 test("eligibility reads do not mutate the persisted runtime", () => {
   const state = runtime();
   assert.equal(state.playerState.day1T01Aftercare, undefined);
@@ -111,6 +139,22 @@ test("eligibility reads do not mutate the persisted runtime", () => {
   assert.equal(internals.aftercareEligible(state), true);
   assert.equal(internals.supperEligible(state), false);
   assert.equal(state.playerState.day1T01Aftercare, undefined);
+});
+
+test("aftercare noon gate uses the canonical 10:00-based wall clock", () => {
+  const state = runtime();
+  state.playerState.absoluteMinute = 292;
+  state.playerState.missions[0].completedAt = 292;
+  assert.equal(internals.withinDay1AftercareWindow(state), true);
+  assert.equal(internals.aftercareEligible(state), true);
+
+  const beforeNoon = runtime();
+  beforeNoon.playerState.absoluteMinute = 119;
+  assert.equal(internals.withinDay1AftercareWindow(beforeNoon), false);
+
+  const noon = runtime();
+  noon.playerState.absoluteMinute = 120;
+  assert.equal(internals.withinDay1AftercareWindow(noon), true);
 });
 
 test("the scene is absent before formal completion, before Finn returns, outside the square, or outside the Day1 aftermath window", () => {
@@ -139,7 +183,7 @@ test("the scene is absent before formal completion, before Finn returns, outside
   assert.equal(internals.aftercareEligible(away), false);
 
   const morningFixture = runtime();
-  morningFixture.playerState.absoluteMinute = 480;
+  morningFixture.playerState.absoluteMinute = 60;
   assert.equal(internals.aftercareEligible(morningFixture), false);
 
   const day2 = runtime();

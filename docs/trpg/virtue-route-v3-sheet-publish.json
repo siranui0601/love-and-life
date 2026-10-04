@@ -1,0 +1,56 @@
+{
+  "publishedAt": "2026-08-16T17:02:08Z",
+  "checkpointHead": "153b4a2af5cd589fdb6b84c1a6363d1632e3cb2e",
+  "spreadsheetId": "1aSLu_pSLNsFsUm42juEyOrLDmTkJd7NPOOrQNnvnMwA",
+  "spreadsheetTitle": "TRPG_人徳ルート正規台帳_v2",
+  "source": {
+    "sheet": "正規台帳",
+    "rows": 831,
+    "columns": 32,
+    "sha256": "eb26d459851f7bcc8d9d159e6f86f5da016ce70cccbdbac329e9e684b4d14120"
+  },
+  "sheets": {
+    "正規台帳_v3": {
+      "sheetId": 525500662,
+      "dataRows": 1526,
+      "columns": 46,
+      "payloadSha256": "5299daa11a37923506239ffb0f79ad8ad78ecfc553af7d44f12725adf7afde2b",
+      "verifiedRange": "A1:AT1527",
+      "verifiedIdRows": 1527,
+      "firstId": "v3RowId",
+      "lastId": "VR3-001526"
+    },
+    "v2_v3対応表": {
+      "sheetId": 1794150287,
+      "dataRows": 831,
+      "columns": 17,
+      "payloadSha256": "20946a5841c480959abc06da5fb759f31aafed12d360d0d1f0cf234742f9d105",
+      "verifiedRange": "A1:Q832",
+      "verifiedIdRows": 832,
+      "firstId": "sourceV2RowIndex",
+      "lastId": "831"
+    },
+    "静的検証_v3": {
+      "sheetId": 399876365,
+      "dataRows": 149,
+      "columns": 4,
+      "payloadSha256": "49e904b8cdd00c13b39bdad0c37d80fbebf299a4a330b76682ab96794668f70f",
+      "verifiedRange": "A1:D150",
+      "verifiedIdRows": 150,
+      "firstId": "section",
+      "lastId": "skillTransition"
+    }
+  },
+  "verification": {
+    "headerRowsMatched": true,
+    "lastRowsMatched": true,
+    "idColumnRowCountsMatched": true,
+    "unmapped": 0,
+    "unknown": 0,
+    "todo": 0,
+    "partial": 0,
+    "staticValidation": "PASS",
+    "replayExecuted": false,
+    "combatExecuted": false
+  }
+}

@@ -223,6 +223,35 @@ function profileAccepts(profile, equipment) {
   return profile.weaponTypes.includes(equipment.weaponType);
 }
 
+function handLoadoutForCandidate(state, battleData, candidate) {
+  let mainHandId = state.player.equipment?.mainHand ?? null;
+  let offHandId = state.player.equipment?.offHand ?? null;
+
+  if (candidate.slot === "mainHand") {
+    mainHandId = candidate.id;
+    if (candidate.grip === "twoHand") offHandId = null;
+  } else if (candidate.slot === "offHand") {
+    const currentMainHand = mainHandId ? battleData.equipmentById.get(mainHandId) : null;
+    if (currentMainHand?.grip === "twoHand") return null;
+    offHandId = candidate.id;
+  } else {
+    return { mainHandId, offHandId };
+  }
+
+  const mainHand = mainHandId ? battleData.equipmentById.get(mainHandId) : null;
+  if (mainHand?.grip === "twoHand" && offHandId) return null;
+  return { mainHandId, offHandId };
+}
+
+function applyHandLoadout(state, loadout) {
+  if (!loadout) return;
+  state.player.equipment ??= {};
+  if (loadout.mainHandId) state.player.equipment.mainHand = loadout.mainHandId;
+  else delete state.player.equipment.mainHand;
+  if (loadout.offHandId) state.player.equipment.offHand = loadout.offHandId;
+  else delete state.player.equipment.offHand;
+}
+
 export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
   const purchases = [];
   const stock = availableStockAt(state, battleData, shopRuntime, tuning.scope ?? {});
@@ -231,8 +260,19 @@ export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
     const current = currentId ? battleData.equipmentById.get(currentId) : null;
     const currentPerformance = Number(current?.performanceIndex ?? 0);
     const candidates = stock
-      .map((entry) => ({ entry, equipment: battleData.equipmentById.get(entry.equipmentId) }))
+      .map((entry) => ({
+        entry,
+        equipment: battleData.equipmentById.get(entry.equipmentId),
+      }))
       .filter(({ equipment, entry }) => equipment?.slot === slot && profileAccepts(profile, equipment) && entry.price <= state.player.gold)
+      .map(({ entry, equipment }) => ({
+        entry,
+        equipment,
+        handLoadout: equipment.slot === "mainHand" || equipment.slot === "offHand"
+          ? handLoadoutForCandidate(state, battleData, equipment)
+          : null,
+      }))
+      .filter(({ equipment, handLoadout }) => !["mainHand", "offHand"].includes(equipment.slot) || handLoadout !== null)
       .filter(({ equipment }) => Number(equipment.performanceIndex ?? 0) >= currentPerformance + Number(tuning.minimumUpgradeGain ?? 2))
       .sort((left, right) => {
         const leftValue = (left.equipment.performanceIndex - currentPerformance) / Math.max(1, left.entry.price);
@@ -243,7 +283,8 @@ export function autoShop(state, battleData, shopRuntime, profile, tuning = {}) {
     if (!selected) continue;
     const result = buyEquipment(state, battleData, shopRuntime, selected.entry.id, tuning.scope ?? {});
     if (!result.ok) continue;
-    state.player.equipment[slot] = selected.equipment.id;
+    if (selected.handLoadout) applyHandLoadout(state, selected.handLoadout);
+    else state.player.equipment[slot] = selected.equipment.id;
     purchases.push({ stockId: selected.entry.id, equipmentId: selected.equipment.id, price: result.price, slot });
   }
   return purchases;

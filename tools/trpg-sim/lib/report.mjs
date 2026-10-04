@@ -179,8 +179,8 @@ function buildFindings({ sourceAudit, worldBaseline, worldTuned, progression, ec
     },
     {
       severity: "applied",
-      title: "敵AI候補枯渇を決定的フォールバックで停止回避",
-      detail: `MON-0076に無条件行動がない問題は通常攻撃へ安全退避。physicalPower表記もphysical_powerへ正規化し、未知コマンド${battleAudit.unknownCommands.length}件・状態不一致${battleAudit.unresolvedStateReferences.length}件は診断値として残します。`,
+      title: "敵AIの優先度・特殊命令・無条件戦技をruntime契約化",
+      detail: `全77体が無条件のauthored actionを持ち、MON-0076も既存「翼刃」へ接続。priority bandを選択へ反映し、召喚・field変化・敵逃走・詠唱中断・模倣を実装しました。未知コマンド${battleAudit.unknownCommands.length}件・状態不一致${battleAudit.unresolvedStateReferences.length}件・boss監査漏れ${battleAudit.bossesMissingCombatCatalog.length}件です。`,
     },
     {
       severity: "verified",

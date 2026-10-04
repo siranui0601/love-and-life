@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "archiveRoot": "archive/trpg",
+  "runtimeImportAllowed": false,
+  "canonicalBattleSource": {
+    "spreadsheetId": "1-2mUA20d7h1lmv1G9fCH0EryFEYyFQ2nkamN51uCPqw",
+    "revisionId": "20",
+    "artifact": "docs/trpg/combat-sheet-revision20-snapshot.json"
+  },
+  "entries": [
+    {
+      "archivePath": "archive/trpg/battle/battle-model-pre-normalization.mjs",
+      "originalPath": "tools/trpg-sim/lib/battle-model-pre-normalization.mjs",
+      "archiveReason": "rev17-era hidden monster HP/offence scaling and pre-canonical battle core retired from the active import graph",
+      "replacement": "tools/trpg-sim/lib/battle-core.mjs + tools/trpg-sim/lib/battle-model.mjs",
+      "lastUsedCommit": "47fb27970d8a096d7113b234aaf99ca8d8d98f84",
+      "historicalPurpose": "pre-normalization battle formulas, canonical parsers and action-condition DSL",
+      "runtimeImportForbidden": true
+    }
+  ]
+}

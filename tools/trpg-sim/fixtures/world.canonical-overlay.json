@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "source": {
+    "spreadsheetId": "15slftR2b-76VKaUqTisYolhN1iCpHeB7asUBoyMnmRk",
+    "sheet": "田園の村",
+    "range": "A16:H28",
+    "retrievedAt": "2026-08-26T08:09:00+09:00",
+    "valueRenderOption": "UNFORMATTED_VALUE",
+    "reason": "world.snapshot.json predates the canonical LOC_FARM_REPAIR row; keep the checked-in historical snapshot immutable and apply this provenance-tracked canonical delta at load time"
+  },
+  "tabs": {
+    "田園の村": {
+      "appendRows": [
+        [
+          "LOC_FARM_REPAIR",
+          "農具修理屋「鋤刃」",
+          "修理屋/農具店",
+          "農具・簡易武器の販売、研ぎ、軽修理、害獣素材の正規買取",
+          "オルグ",
+          "農村向け低価格。戦闘専用品より農具・護身具中心。素材買取は戦闘正本「素材買取価格」の買取Gを使用",
+          "T02/T03で修理依頼増、T13水不足で農具需要減",
+          "既存の戦闘在庫が村の広場に仮置きしていた『農具修理屋』を正式施設化。害獣の牙・皮等も通常公開で買い取る。人徳ルート専用ではない"
+        ]
+      ]
+    }
+  }
+}
