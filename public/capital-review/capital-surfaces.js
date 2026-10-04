@@ -32,7 +32,7 @@ export function edgeHeightAt(edge,position){
  return elevationAt(...position)+.28;
 }
 // Local queries must remain practical as neighbourhood lanes become a real mesh.
-const roadBuckets=new Map(),roadCell=.06;
+const roadBuckets=new Map(),roadCell=.06,courtPlots=CAPITAL.buildings.filter(b=>b.courtyardId);
 for(const e of CAPITAL.edges)for(let i=1;i<e.points.length;i++){const a=e.points[i-1],b=e.points[i],pad=(e.widthM/2+1)/1000;for(let x=Math.floor((Math.min(a[0],b[0])-pad)/roadCell);x<=Math.floor((Math.max(a[0],b[0])+pad)/roadCell);x++)for(let y=Math.floor((Math.min(a[1],b[1])-pad)/roadCell);y<=Math.floor((Math.max(a[1],b[1])+pad)/roadCell);y++){const key=x+','+y;if(!roadBuckets.has(key))roadBuckets.set(key,new Set());roadBuckets.get(key).add(e);}}
 export function surfaceAt(position){
  let best=null,min=Infinity;
@@ -41,6 +41,7 @@ export function surfaceAt(position){
   if(d<=e.widthM/2+.15&&d<min){best=e;min=d;}
  }
  let heightM=best?edgeHeightAt(best,position):elevationAt(...position);
+ if(!best&&courtPlots.some(b=>{const dx=(position[0]-b.position[0])*1000,dy=(position[1]-b.position[1])*1000,t=b.rotationRad;return Math.abs(dx*Math.cos(t)+dy*Math.sin(t))<b.widthM/2&&Math.abs(-dx*Math.sin(t)+dy*Math.cos(t))<b.depthM/2;}))heightM+=.28;
  if(!best?.bridgeId&&!best?.surfaceOffsetsM&&CAPITAL.negativeSpaces.some(s=>distance(position,s.position)<=s.radiusM))heightM=Math.max(heightM,elevationAt(...position)+.3);
  return {heightM,edgeId:best?.id||null,edge:best};
 }

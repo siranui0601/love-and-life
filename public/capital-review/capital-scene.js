@@ -2,6 +2,7 @@ import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,distanceToL
 import {pathPolyline,polylineLengthM} from './capital-routing.js';
 import {sampleLine,locateOnLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
 import {advanceElapsed} from './capital-clock.js';
+import {buildingParts,parcelPoint,courtyardHeight} from './capital-courtyards.js';
 import {trafficPlans,trafficAgents} from './capital-traffic.js';
 
 export function mountCapitalScene(getState,getRoute){
@@ -52,9 +53,9 @@ export function mountCapitalScene(getState,getRoute){
    for(const off of [-half,-e.widthM/2-1,-e.widthM/2,0,e.widthM/2,e.widthM/2+1,half]){paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}
    const patch=MeshBuilder.CreateRibbon('street-ground:'+e.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);patch.material=e.class==='world'?mat('outer-street-ground','#939a78'):mat('street-ground','#b3a78c');patch.isPickable=false;(e.class==='world'?outerStreetGroundParts:streetGroundParts).push(patch);
   }
-  const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
+  const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.courtyardId?'#aaa18b':e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';
   strip('road:'+e.id,e.points,e.widthM,mat('road:'+color,color),p=>edgeHeightAt(e,p));
-  if(!e.bridgeId&&!['roof','world'].includes(e.class))for(const side of [-1,1]){const ps=sampleLine(e.points,8),curb=ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=side*(e.widthM/2+.55)/1000;return [p[0]-dy/len*off,p[1]+dx/len*off];});strip('street-shoulder:'+e.id+':'+side,curb,.9,mat('sidewalk','#b4ae9c'),p=>elevationAt(...p)+.22);}
+  if(!e.bridgeId&&!e.courtyardId&&!['roof','world'].includes(e.class))for(const side of [-1,1]){const ps=sampleLine(e.points,8),curb=ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,off=side*(e.widthM/2+.55)/1000;return [p[0]-dy/len*off,p[1]+dx/len*off];});strip('street-shoulder:'+e.id+':'+side,curb,.9,mat('sidewalk','#b4ae9c'),p=>elevationAt(...p)+.22);}
   if(e.surfaceRampM){const total=polylineLengthM(e.points),up=e.surfaceOffsetsM[0]<e.surfaceOffsetsM[1],start=up?total-e.surfaceRampM:0,parts=[];
    for(let step=0;step<27;step++){const a=locateOnLine(e.points,start+e.surfaceRampM*step/27).position,b=locateOnLine(e.points,start+e.surfaceRampM*(step+1)/27).position;parts.push(segmentBox('stair-tread',a,b,e.widthM,.12,stone,p=>edgeHeightAt(e,p)-.06));}merge(parts,'physical-stair:'+e.id,stone);
   }
@@ -113,7 +114,7 @@ export function mountCapitalScene(getState,getRoute){
   const lintel=MeshBuilder.CreateBox('gate-vault:'+g.id,{width:36,height:11,depth:20},scene);lintel.position=V(x,elevationAt(...g.position)+29,z);lintel.rotation.y=-Math.atan2(dy,dx);lintel.material=stone;}
  for(const d of [...CAPITAL.districts,{id:'outside',color:'#b6a58c',profile:{roof:'#76644f'}}]){
   const parts=[],roofs=[];
-  for(const b of CAPITAL.buildings.filter(b=>b.district===d.id&&!b.facilityId)){
+  for(const b of CAPITAL.buildings.flatMap(buildingParts).filter(b=>b.district===d.id&&!b.facilityId)){
    if(b.royalPart){const [rx,rz]=toLocal(b.position);for(const side of [-1,1])tower('royal-wing-tower:'+b.id,rx+side*(b.widthM/2-12),rz,elevationAt(...b.position),b.heightM+26,12,stone);}
    const [x,z]=toLocal(b.position),y=elevationAt(...b.position),angle=b.rotationRad||0;
    const base=Math.min(y,...[[-1,-1],[-1,1],[1,-1],[1,1]].map(([u,v])=>{const dx=u*b.widthM/2,dz=v*b.depthM/2;return elevationAt(b.position[0]+(dx*Math.cos(angle)+dz*Math.sin(angle))/1000,b.position[1]+(dx*Math.sin(angle)-dz*Math.cos(angle))/1000);}))-.5;
@@ -129,8 +130,18 @@ export function mountCapitalScene(getState,getRoute){
  const facadeGroups=new Map();
  function facadeQuad(kind,b,along,base,width,height){if(!facadeGroups.has(kind))facadeGroups.set(kind,{positions:[],indices:[]});const group=facadeGroups.get(kind),[x,z]=toLocal(b.frontage.position),[dx,dy]=b.frontage.tangent,tx=dx,tz=-dy,nx=b.frontage.side*dy,nz=b.frontage.side*dx,start=group.positions.length/3;
   for(const [u,v]of [[-width/2,0],[width/2,0],[width/2,height],[-width/2,height]])group.positions.push(x+tx*(along+u)+nx*.045,base+v,z+tz*(along+u)+nz*.045);group.indices.push(start,start+1,start+2,start,start+2,start+3);}
- for(const b of CAPITAL.buildings.filter(b=>b.frontage)){const base=b.benchHeightM;facadeQuad('door',b,0,base+.15,1.6,2.7);facadeQuad('cornice',b,0,base+b.heightM-.45,b.widthM,.4);
+ for(const b of CAPITAL.buildings.filter(b=>b.frontage&&!b.courtyardId)){const base=b.benchHeightM;facadeQuad('door',b,0,base+.15,1.6,2.7);facadeQuad('cornice',b,0,base+b.heightM-.45,b.widthM,.4);
   for(let y=4;y<b.heightM-1;y+=3.2)for(const side of [-1,1])facadeQuad('window',b,side*Math.min(4,b.widthM*.28),base+y,1.2,1.7);}
+ for(const court of CAPITAL.courtyards){const b=CAPITAL.buildings.find(b=>b.id===court.parcelId),paths=[];
+  for(const u of [-b.widthM/2+3,b.widthM/2-3])paths.push([court.frontDepth,b.depthM-court.backDepth].map(v=>{const p=parcelPoint(b,u,v),[x,z]=toLocal(p);return V(x,courtyardHeight(b,p)+.24,z);}));
+  const floor=MeshBuilder.CreateRibbon('courtyard-floor:'+court.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);floor.material=mat('courtyard-paving','#aaa18b');floor.isPickable=false;
+  // Doors and windows face the shared court, making it an inhabited frontage.
+  for(const u of [-b.widthM/2+3,b.widthM/2-3]){const p=parcelPoint(b,u,b.depthM/2),[dx,dy]=b.frontage.tangent,s=b.frontage.side,inner={...b,frontage:{position:p,tangent:[-dy*s,dx*s],side:u<0?s:-s}};
+   facadeQuad('door',inner,0,courtyardHeight(b,p)+.15,1.6,2.7);
+   for(let y=4;y<Math.min(9.6,b.heightM)-1;y+=3.2)for(const along of [-7,0,7])facadeQuad('window',inner,along,courtyardHeight(b,p)+y,1.2,1.7);
+  }
+  for(const [v,height,side]of [[b.depthM-court.backDepth,6.4,b.frontage.side],[court.frontDepth,b.heightM,-b.frontage.side]]){const p=parcelPoint(b,0,v),inner={...b,frontage:{...b.frontage,position:p,side}};facadeQuad('door',inner,0,courtyardHeight(b,p)+.15,1.6,2.7);for(let y=4;y<height-1;y+=3.2)for(const u of [-2,2])facadeQuad('window',inner,u,courtyardHeight(b,parcelPoint(b,u,v))+y,1.2,1.7);}
+ }
  for(const [kind,g]of facadeGroups){const normals=[];VertexData.ComputeNormals(g.positions,g.indices,normals);const data=new VertexData();Object.assign(data,{...g,normals});const m=new Mesh('street-facades:'+kind,scene);data.applyToMesh(m);m.material=mat('facade:'+kind,kind==='cornice'?'#d0c5ae':kind==='door'?'#544636':'#53626a');m.material.backFaceCulling=false;m.isPickable=false;}
  const parcelMeshes=[];
  for(const f of CAPITAL.facilities.filter(f=>f.footprintM[0]&&f.id!=='LOC_CAP_BIG_STORE')){
@@ -161,7 +172,7 @@ export function mountCapitalScene(getState,getRoute){
  for(const f of CAPITAL.furnishings){
   const [x,z]=toLocal(f.position),y=surfaceAt(f.position).heightM;
   if(f.kind==='tree'){const trunk=MeshBuilder.CreateCylinder(f.id,{diameter:.6,height:3,tessellation:5},scene);trunk.position=V(x,y+1.5,z);trunk.material=mat('wood','#685a43');const crown=MeshBuilder.CreateSphere(f.id+':canopy',{diameter:5,segments:4},scene);crown.position=V(x,y+4.5,z);crown.material=mat('leaves','#587353');}
-  else{const m=MeshBuilder.CreateBox(f.id,{width:f.widthM,height:f.heightM,depth:f.depthM},scene);m.position=V(x,y+f.heightM/2,z);m.material=mat('fixture:'+f.kind,f.color);}
+  else{const m=MeshBuilder.CreateBox(f.id,{width:f.widthM,height:f.heightM,depth:f.depthM},scene);m.position=V(x,y+f.heightM/2,z);m.rotation.y=f.rotationRad||0;m.material=mat('fixture:'+f.kind,f.color);}
  }
  const closures=new Map();
  const orbit=new ArcRotateCamera('capital-orbit',Math.PI/2,1.02,3600,V(0,80,-380),scene);orbit.minZ=10;orbit.maxZ=18000;orbit.lowerRadiusLimit=80;orbit.upperRadiusLimit=9000;orbit.wheelPrecision=5;orbit.attachControl(canvas,true);scene.activeCamera=orbit;

@@ -6,7 +6,7 @@ import {locateOnLine,surfaceAt} from './capital-spatial.js';
 const activity={merchant:[3,5,1],guard:[3,2,3],clerk:[4,3,0],noble:[1,2,1],porter:[4,5,1],artisan:[3,4,1],coach:[5,2,1],carer:[2,2,2],news:[4,3,1],resident:[2,2,5],guest:[4,1,5]};
 export function trafficPlans(input={}){
  const s=normalizeState(input),period=s.hour<10?0:s.hour<18?1:2;
- return CAPITAL.npcFlows.map(flow=>{
+ const plans=CAPITAL.npcFlows.map(flow=>{
   let from=flow.from,to=flow.to,purpose=period===0?'朝の到着・出勤':period===1?'昼の仕事・買物':'夕方の帰宅・宿泊';
   if(period===2)[from,to]=[to,from];
   if(period===2&&flow.id==='guest'){from='market';to='inn';}
@@ -22,6 +22,13 @@ export function trafficPlans(input={}){
   const points=route?pathPolyline(route):[],lengthM=polylineLengthM(points);
   return {id:flow.id,name:flow.name,flow,from,to,purpose,count:activity[flow.id][period],route,points,lengthM,speedMps:['coach','porter','merchant'].includes(flow.id)?1.1:1.3,oneWay:s.events.T16==='active'&&['resident','carer','artisan'].includes(flow.id)};
  });
+ for(const district of ['lower','ajin','quay']){const court=CAPITAL.courtyards.find(c=>c.district===district);if(!court)continue;
+  const evacuation=district==='ajin'&&s.events.T16==='active',edges=court.edgeIds.map(id=>CAPITAL.edges.find(e=>e.id===id));
+  const route=evacuation?findAlternatives(court.innerFrom,'inn',{...s,access:'public'},CAPITAL,1)[0]:{edges,edgeIds:court.edgeIds,nodes:[court.from,...edges.map(e=>e.to)]};
+  const points=route?pathPolyline(route):[],purpose=evacuation?'共同庭から同じ街路を通って避難':period===2?'帰宅後の共同庭と路地の往来':district==='quay'?'荷役の合間に庭へ戻る':'共同庭での用事と近隣の往来';
+  plans.push({id:'courtyard-'+district,name:district==='quay'?'河岸の作業者':'共同庭の住民',flow:{reason:'二つの入口を使う生活回遊'},from:evacuation?court.innerFrom:court.from,to:evacuation?'inn':court.to,purpose,count:[2,1,3][period],route,points,lengthM:polylineLengthM(points),speedMps:1.1,oneWay:evacuation});
+ }
+ return plans;
 }
 export function trafficAgents(plans,seconds=0){
  const out=[];

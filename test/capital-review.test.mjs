@@ -219,7 +219,7 @@ test('traffic changes with time, reflects at endpoints without warps and reroute
   for(let i=0;i<a.length;i++)assert.ok(distance(a[i].position,b[i].position)<.15,'no endpoint teleport');
  }
  const evacuation=trafficPlans({events:{T16:'active'}});assert.ok(evacuation.filter(p=>p.oneWay).length>=3);
- for(const p of evacuation.filter(p=>p.oneWay)){assert.equal(p.from,'ajin');assert.ok(p.route);assert.equal(p.route.edgeIds.includes('ajin_east__ajin'),false);}
+ for(const p of evacuation.filter(p=>p.oneWay)){assert.equal(p.from,p.id==='courtyard-ajin'?CAPITAL.courtyards.find(c=>c.district==='ajin').innerFrom:'ajin');assert.ok(p.route);assert.equal(p.route.edgeIds.includes('ajin_east__ajin'),false);}
  const flood=trafficPlans({weather:'flood'});for(const p of flood)assert.ok(!p.route?.edgeIds.includes('west_bridge'));
 });
 test('state barriers span the full actual road width and manual movement cannot bypass a social boundary',()=>{

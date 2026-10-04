@@ -3,6 +3,7 @@
  */
 import {CAPITAL,distance,nearestOnSegment,distanceToLine,elevationAt,terrainBaseAt,pointInPolygon} from './capital-data.js';
 import {normalizeState,stateClosures,pathPolyline,polylineLengthM} from './capital-routing.js';
+import {buildingParts} from './capital-courtyards.js';
 
 import {sampleLine,locateOnLine,edgeHeightAt,surfaceAt} from './capital-surfaces.js';
 export {sampleLine,locateOnLine,edgeHeightAt,surfaceAt} from './capital-surfaces.js';
@@ -28,11 +29,12 @@ export function massFootprint(b){
  return {...b,widthM:b.widthM,depthM:b.depthM,heightM:castle?210:b.facilityId==='LOC_CAP_MAGE_TOWER'?157:b.royalPart?b.heightM+53:b.heightM+(b.roofHeightM||0)};
 }
 export function pointInMass(position,b,paddingM=0){
+ if(b.parts)return b.parts.some(part=>pointInMass(position,part,paddingM));
  const dx=(position[0]-b.position[0])*1000,dz=-(position[1]-b.position[1])*1000,angle=b.rotationRad||0;
  const x=dx*Math.cos(angle)-dz*Math.sin(angle),z=dx*Math.sin(angle)+dz*Math.cos(angle);
  return Math.abs(x)<b.widthM/2+paddingM&&Math.abs(z)<b.depthM/2+paddingM;
 }
-const masses=[...CAPITAL.buildings,...CAPITAL.furnishings,...(CAPITAL.fortifications||[])].map(massFootprint);
+const masses=[...CAPITAL.buildings.flatMap(buildingParts),...CAPITAL.furnishings,...(CAPITAL.fortifications||[])].map(massFootprint);
 // Spatial buckets keep eye-level movement independent of total city building count.
 const cellM=80,buckets=new Map();
 const key=p=>Math.floor(p[0]*1000/cellM)+','+Math.floor(p[1]*1000/cellM);
