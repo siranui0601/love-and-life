@@ -9,12 +9,12 @@ import crypto from 'node:crypto';
 const args=Object.fromEntries(process.argv.slice(2).map(v=>{const i=v.indexOf('=');return [v.slice(2,i),v.slice(i+1)];}));
 const source=new URL('../../public/capital-review/',import.meta.url);
 // Existing review evidence is not proof about a different deployment.
-const reportPath=args.report?pathToFileURL(path.resolve(args.report)):new URL('../../docs/trpg-world/qa/capital-pass-6/production/browser-audit.json',import.meta.url);
+const reportPath=args.report?pathToFileURL(path.resolve(args.report)):new URL('../../docs/trpg-world/qa/capital-pass-7/production/browser-audit.json',import.meta.url);
 const report=JSON.parse(await fs.readFile(reportPath,'utf8'));
 const targetOrigin=new URL(args.url||'https://siranui.jp').origin;
 if(new URL(report.url).origin!==targetOrigin)throw Error('Saved walking audit belongs to '+new URL(report.url).origin+'; supply --report from '+targetOrigin+' before claiming deployment verification');
 for(const name of (await fs.readdir(source)).filter(n=>/\.(js|css|html)$/.test(n))){
- const result=await fetch((args.url||'https://siranui.jp').replace(/\/$/,'')+'/capital-review/'+name+'?verify=capital-pass-6');
+ const result=await fetch((args.url||'https://siranui.jp').replace(/\/$/,'')+'/capital-review/'+name+'?verify=capital-pass-7');
  const actual=Buffer.from(await result.arrayBuffer()),expected=Buffer.from((await fs.readFile(new URL(name,source),'utf8')).replace(/\r\n/g,'\n')); // Git text files deploy with canonical LF, including from Windows checkouts.
  if(result.status!==200||!actual.equals(expected))throw Error(name+' content mismatch '+result.status);
  console.log('PUBLIC MATCH',name,crypto.createHash('sha256').update(actual).digest('hex'));
