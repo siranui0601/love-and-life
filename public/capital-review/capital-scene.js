@@ -1,4 +1,4 @@
-import {CAPITAL,toLocal,fromLocal,elevationAt,terrainBaseAt,distance,distanceToLine,pointInPolygon} from './capital-data.js';
+import {CAPITAL,toLocal,fromLocal,elevationAt,groundElevationAt,terrainBaseAt,distance,distanceToLine,pointInPolygon} from './capital-data.js';
 import {pathPolyline,polylineLengthM} from './capital-routing.js';
 import {sampleLine,locateOnLine,edgeHeightAt,surfaceAt,moveWalker,activeBarriers,massFootprint,landmarkVisibility} from './capital-spatial.js';
 import {advanceElapsed} from './capital-clock.js';
@@ -22,7 +22,7 @@ export function mountCapitalScene(getState,getRoute){
  for(const name of ['minX','minY'])outer[name]-=.5;for(const name of ['maxX','maxY'])outer[name]+=.5;
  function ground(name,b,nx,nz){
   const positions=[],indices=[],normals=[],uvs=[],colors=[];
-  for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const wx=b.minX+(b.maxX-b.minX)*ix/nx,wy=b.minY+(b.maxY-b.minY)*iz/nz,[x,z]=toLocal([wx,wy]);positions.push(x,elevationAt(wx,wy),z);uvs.push(ix/nx,iz/nz);const c=Color3.FromHexString(pointInPolygon([wx,wy],CAPITAL.core.polygon)?'#b3a78c':'#939a78');colors.push(c.r,c.g,c.b,1);}
+  for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const wx=b.minX+(b.maxX-b.minX)*ix/nx,wy=b.minY+(b.maxY-b.minY)*iz/nz,[x,z]=toLocal([wx,wy]);positions.push(x,groundElevationAt(wx,wy),z);uvs.push(ix/nx,iz/nz);const c=Color3.FromHexString(pointInPolygon([wx,wy],CAPITAL.core.polygon)?'#b3a78c':'#939a78');colors.push(c.r,c.g,c.b,1);}
   for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){const a=z*(nx+1)+x,c=a+nx+1,p=[b.minX+(b.maxX-b.minX)*(x+.5)/nx,b.minY+(b.maxY-b.minY)*(z+.5)/nz];
    // The finer channel surface owns this strip; a coarse triangle must not
    // cover the water again and create saw-tooth islands along its bank.
@@ -50,7 +50,7 @@ export function mountCapitalScene(getState,getRoute){
    const ps=sampleLine(e.points,4),paths=[],half=e.widthM/2+18;
    // Explicit road-edge rings preserve the carriageway without tessellating
    // every shoulder metre into millions of redundant vertices.
-   for(const off of [-half,-e.widthM/2-1,-e.widthM/2,0,e.widthM/2,e.widthM/2+1,half]){paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,elevationAt(...q)+.01,z);}));}
+   for(const off of [-half,-e.widthM/2-1,-e.widthM/2,0,e.widthM/2,e.widthM/2+1,half]){paths.push(ps.map((p,i)=>{const a=ps[Math.max(0,i-1)],b=ps[Math.min(ps.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1,q=[p[0]-dy/len*off/1000,p[1]+dx/len*off/1000],[x,z]=toLocal(q);return V(x,groundElevationAt(...q)+.01,z);}));}
    const patch=MeshBuilder.CreateRibbon('street-ground:'+e.id,{pathArray:paths,sideOrientation:Mesh.DOUBLESIDE},scene);patch.material=e.class==='world'?mat('outer-street-ground','#939a78'):mat('street-ground','#b3a78c');patch.isPickable=false;(e.class==='world'?outerStreetGroundParts:streetGroundParts).push(patch);
   }
   const d=CAPITAL.districts.find(d=>d.id===byNode(e.from)?.district),color=e.courtyardId?'#aaa18b':e.class==='ceremonial'?'#b79b68':e.class==='world'?'#928469':e.class==='roof'?'#655c52':d?.profile.paving||'#928469';

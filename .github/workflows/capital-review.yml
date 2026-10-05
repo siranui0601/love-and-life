@@ -2,6 +2,7 @@ name: Capital Review
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "public/capital-review/**"
       - "test/capital-*.test.mjs"
@@ -54,7 +55,11 @@ jobs:
             if curl --fail --silent http://127.0.0.1:9893/capital-review/ > /dev/null; then break; fi
             sleep 1
           done
-          node tools/trpg-world/audit-capital-browser.mjs --url=http://127.0.0.1:9893 --out=capital-webgl-qa --playwright="$RUNNER_TEMP/capital-browser/node_modules/playwright/index.mjs"
+          if [ '${{ github.event.pull_request.draft }}' = 'true' ]; then
+            node tools/trpg-world/review-capital-sections.mjs --url=http://127.0.0.1:9893 --out=capital-webgl-qa --playwright="$RUNNER_TEMP/capital-browser/node_modules/playwright/index.mjs"
+          else
+            node tools/trpg-world/audit-capital-browser.mjs --url=http://127.0.0.1:9893 --out=capital-webgl-qa --playwright="$RUNNER_TEMP/capital-browser/node_modules/playwright/index.mjs"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

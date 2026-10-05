@@ -92,7 +92,7 @@ const rawHill=(x,y)=>benchHill(x,y);
 // their cliff faces. Values are metres/metre, not cosmetic camera adjustments.
 function streetGradeAt(x,y){const riverDistance=distanceToLine([x,y],rivers[0].points);return Math.min(312,14+.14*Math.max(0,2200-hillRadius(x,y)),14+.195*Math.max(0,riverDistance-160));}
 const terraceDefs=[['market',88,230],['castle_court',48,200],['noble_square',48,200],['royal_approach',40,160],['office',35,155]].map(([id,flat,blend])=>({position:N(id).position,flat,blend,height:streetGradeAt(...N(id).position)}));
-export function terrainBaseAt(x,y){
+export function terrainBaseAt(x,y,includeParcels=true){
  // The entire urban ground follows the same regional rise as its streets.
  // Retaining terraces add bounded local relief; leaving the old 92m bench
  // beside a graded road created needle-shaped ground between neighbouring lots.
@@ -102,10 +102,11 @@ export function terrainBaseAt(x,y){
  for(const {position:c,flat,blend,height:level}of terraceDefs){const d=distance([x,y],c),t=Math.max(0,Math.min(1,(blend-d)/(blend-flat))),smooth=t*t*(3-2*t);h=h*(1-smooth)+level*smooth;}const bankDistance=distanceToLine([x,y],rivers[0].points),bt=Math.max(0,Math.min(1,(160-bankDistance)/130)),blend=bt*bt*(3-2*bt);h=h*(1-blend)+14*blend;
  for(const cut of terrainVistaCuts){const p=[x,y],q=nearestOnSegment(p,...cut.points),d=distance(p,q),t=distance(cut.points[0],q)/cut.lengthM;if(d>cut.widthM/2+8||t<.01||t>.98)continue;const ceiling=cut.eyeM+(cut.topM-cut.eyeM)*t-2,weight=Math.max(0,Math.min(1,(cut.widthM/2+8-d)/8));h-=Math.max(0,h-ceiling)*weight;}
  if(nearest){const t=Math.max(0,1-Math.max(0,min-nearest.widthM/2)/12),blend=t*t*(3-2*t),roadHeight=nearest.streetHeightsM?surveyedHeightAt(nearest,[x,y]):streetGradeAt(x,y);h=h*(1-blend)+roadHeight*blend;}
- for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.courtyardId?courtyardHeight(b,[x,y]):b.benchHeightM;}
+ if(includeParcels)for(const b of parcelLevels.get(Math.floor(x*20)+','+Math.floor(y*20))||[]){const dx=(x-b.position[0])*1000,dy=(y-b.position[1])*1000,c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);if(Math.abs(dx*c+dy*s)<=b.widthM/2&&Math.abs(-dx*s+dy*c)<=b.depthM/2)return b.courtyardId?courtyardHeight(b,[x,y]):b.benchHeightM;}
  return h;
 }
-export function elevationAt(x,y){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+10;cut=Math.max(cut,(r.context?Math.max(0,1-Math.max(0,d-r.widthM/2)/16)*8:Math.max(0,1-d/bank)*6));}return terrainBaseAt(x,y)-cut;}
+export function elevationAt(x,y,includeParcels=true){let cut=0;for(const r of rivers){const d=distanceToLine([x,y],r.points),bank=r.widthM/2+10;cut=Math.max(cut,(r.context?Math.max(0,1-Math.max(0,d-r.widthM/2)/16)*8:Math.max(0,1-d/bank)*6));}return terrainBaseAt(x,y,includeParcels)-cut;}
+export const groundElevationAt=(x,y)=>elevationAt(x,y,false);
 // Retaining faces follow the actual hill contours; roads create gaps/ramp cuts.
 const retainingFaces=terraceBands.map((band,i)=>({id:'castle_bench_'+i,radiusM:band.radiusM,riseM:band.riseM,points:Array.from({length:241},(_,j)=>{const a=j/240*Math.PI*2;return contourPoint(band.radiusM,a);})}));
 const bridges=[];
@@ -302,13 +303,16 @@ for(const side of [-1,1]){
   if(nearest&&distance(n.position,nearest.position)<330){const samples=Array.from({length:32},(_,j)=>[n.position[0]+(nearest.position[0]-n.position[0])*j/31,n.position[1]+(nearest.position[1]-n.position[1])*j/31]);if(samples.every(p=>distanceToLine(p,rivers[0].points)>14))edge(from,nearest.id,'橋詰から河岸へ降りる道','stairs',{widthM:4,fabric:true,fabricRole:'quay'});}
  }
 }
-const streetFabric=buildStreetFabric({contourPoint,nodes,edges,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
+const streetFabric=buildStreetFabric({contourPoint,nodes,edges,walls,districts,core:corePolygon,rivers,facilities,inside,distance,distanceToLine,node,edge});
 const streetSurvey=surveyStreetLevels(edges,streetGradeAt,distance);
 const surveyedRetainingFaces=surveyRetainingFaces({datum:streetGradeAt,core:corePolygon,inside});
 terrainStreets=edges.filter(e=>!e.bridgeId);
 for(const e of terrainStreets)for(let j=1;j<e.points.length;j++){
  const a=e.points[j-1],b=e.points[j];for(let x=Math.floor((Math.min(a[0],b[0])-.04)*10);x<=Math.floor((Math.max(a[0],b[0])+.04)*10);x++)for(let y=Math.floor((Math.min(a[1],b[1])-.04)*10);y<=Math.floor((Math.max(a[1],b[1])+.04)*10);y++){const k=x+','+y;if(!terrainBuckets.has(k))terrainBuckets.set(k,new Set());terrainBuckets.get(k).add(e);}
 }
+// Raised roof decks are structures with a surveyed base at their endpoints.
+// A later ground-level alley beneath one must not deform the deck itself.
+for(const e of edges.filter(e=>e.surfaceOffsetsM))e.deckBaseHeightsM=e.points.map(p=>terrainBaseAt(...p));
 const npcFlows=[
  {id:'merchant',name:'商人',profession:'merchant',from:'world_R06',to:'market',reason:'交易都市の荷を中央市場へ運ぶ。'},
  {id:'guard',name:'衛兵',profession:'guard',from:'west_gate',to:'castle',reason:'門の検問から王城の勤務交代。',access:{royalPermit:true,nobleStatus:true}},
@@ -377,6 +381,11 @@ const occupied=new Map(),cell=.06,key=(x,y)=>x+','+y;
 function near(p){const out=[],x=Math.floor(p[0]/cell),y=Math.floor(p[1]/cell);for(let i=x-1;i<=x+1;i++)for(let j=y-1;j<=y+1;j++)out.push(...(occupied.get(key(i,j))||[]));return out;}
 function corners(b,pad=0){const w=b.widthM/2+pad,h=b.depthM/2+pad,c=Math.cos(b.rotationRad),t=Math.sin(b.rotationRad);return [[-w,-h],[w,-h],[w,h],[-w,h]].map(([x,z])=>[b.position[0]+(x*c+z*t)/1000,b.position[1]+(x*t-z*c)/1000]);}
 function overlaps(a,b){const ac=corners(a,.3),bc=corners(b,.3);for(const angle of [a.rotationRad,b.rotationRad])for(const t of [angle,angle+Math.PI/2]){const axis=[Math.cos(t),Math.sin(t)],aa=ac.map(p=>p[0]*axis[0]+p[1]*axis[1]),bb=bc.map(p=>p[0]*axis[0]+p[1]*axis[1]);if(Math.max(...aa)<=Math.min(...bb)||Math.max(...bb)<=Math.min(...aa))return false;}return true;}
+function segmentClearance(a,b,c,d){
+ const rx=b[0]-a[0],ry=b[1]-a[1],sx=d[0]-c[0],sy=d[1]-c[1],den=rx*sy-ry*sx;
+ if(Math.abs(den)>1e-15){const t=((c[0]-a[0])*sy-(c[1]-a[1])*sx)/den,u=((c[0]-a[0])*ry-(c[1]-a[1])*rx)/den;if(t>=0&&t<=1&&u>=0&&u<=1)return 0;}
+ return Math.min(distance(a,nearestOnSegment(a,c,d)),distance(b,nearestOnSegment(b,c,d)),distance(c,nearestOnSegment(c,a,b)),distance(d,nearestOnSegment(d,a,b)));
+}
 function add(b){const p=b.position,r=Math.hypot(b.widthM,b.depthM)/2,cs=corners(b,.15);
  if(cs.some(q=>!inside(q,corePolygon))||distanceToLine(p,[...corePolygon,corePolygon[0]])<r+7)return false;
  if(distanceToLine(p,rivers[0].points)<r+14)return false;
@@ -387,7 +396,7 @@ function add(b){const p=b.position,r=Math.hypot(b.widthM,b.depthM)/2,cs=corners(
  // Footprint corners and dense edge samples protect every physical street ribbon.
  for(const e of edges){if(distanceToLine(p,e.points)>r+e.widthM/2+2)continue;
   if(cs.some(q=>distanceToLine(q,e.points)<e.widthM/2+1))return false;
-  for(let j=1;j<e.points.length;j++){const u=e.points[j-1],v=e.points[j],len=distance(u,v),steps=Math.ceil(len/5);for(let k=0;k<=steps;k++){const q=[u[0]+(v[0]-u[0])*k/steps,u[1]+(v[1]-u[1])*k/steps];if(inside(q,cs))return false;}}
+  for(let j=1;j<e.points.length;j++){const u=e.points[j-1],v=e.points[j];if(inside(u,cs)||inside(v,cs)||cs.some((a,i)=>segmentClearance(a,cs[(i+1)%cs.length],u,v)<e.widthM/2+.6))return false;}
  }
  if(near(p).some(q=>overlaps(b,q))||royalParts.some(q=>overlaps(b,q)))return false;
  buildings.push(b);const k=key(Math.floor(p[0]/cell),Math.floor(p[1]/cell));if(!occupied.has(k))occupied.set(k,[]);occupied.get(k).push(b);return true;
@@ -459,7 +468,7 @@ for(const o of outskirts)if(o.kind!=='farmland')for(let i=0;i<4;i++)furnish(o.id
 export const CAPITAL={version:'capital-street-terrain-pass-5',status:'review-proposal',worldFrame:WORLD,origin:ORIGIN,units:'km',metresPerUnit:1000,walkingSpeedMps:1.4,core,activityEnvelope,atlasSilhouette:{polygon:atlas.points,areaKm2:atlas.areaKm2},suburbBuildings,royalParts,urbanBlocks,walkingReviews,streetFabric:{rings:streetFabric.rings,laneCount:edges.filter(e=>e.fabric).length},retainingFaces,terraceBands,hillCentre,districts,nodes,edges,facilities,gates,walls,rivers,bridges,worldConnections,npcFlows,encounterStates,viewpoints,sightCorridors,levelDesignBeats,negativeSpaces,outskirts,furnishings,buildings,contextWaterways:waterways,sourceNotes:['正本IDと広域接続を継承。城丘・王城の量感・街区・副街路・水系曲率は参考画像/PDFに基づく設計提案。','activity envelopeは城壁の相似拡大ではなく、門外街道・河岸物流・郊外・王城背面の利用圏を約22km²で手描き。既存atlas silhouetteは原データを直接参照。','川幅は依頼の通常12–20m・増水22mを優先。既存広域本流は変更せず局所支流を提案。','12施設ID、T10失敗の孤児院用地再利用。建物意匠・副街路は実装提案。','実寸1:1、歩行1.4m/s。距離一覧の時間はマクロ設定であり物理経路から再計算しない。','Kevin Lynch型の認知地図を実地形に落とすため、西門→王城、南大橋→王城、亜人街→魔術塔の視線回廊は建築配置から明示的に抜く。','Deep Researchのcompression/release、prospect/refuge、desire path、social gateをlevelDesignBeatsとして都市topologyに明示する。']};
 
 Object.assign(CAPITAL,{version:'capital-terrain-streets-pass-8-candidate',frontageRows,courtyards,streetBlocks,streetSurvey,surveyedRetainingFaces});
-districts[0].identity='上層の段丘・擁壁と儀礼坂の頂点。王城地盤約312mから低地と市場を見下ろす。';
+districts[0].identity='上層の段丘・擁壁と儀礼坂の頂点。王城前の歩行面は約'+Math.round(elevationAt(...N('castle').position))+'m。低地と市場を見下ろす。';
 const fortifications=[];
 for(const w of walls){const [a,b]=w.points,steps=Math.ceil(distance(a,b)/110);for(let i=1;i<steps;i++){const p=[a[0]+(b[0]-a[0])*i/steps,a[1]+(b[1]-a[1])*i/steps];if(edges.some(e=>distanceToLine(p,e.points)<e.widthM/2+12))continue;fortifications.push({id:w.id+':tower:'+i,position:p,widthM:16,depthM:16,heightM:44,radiusM:8,kind:'wall-tower'});}}
 for(const g of gates){const a=corePolygon[g.wallIndex],b=corePolygon[(g.wallIndex+1)%corePolygon.length],len=distance(a,b),dx=(b[0]-a[0])*1000/len,dy=(b[1]-a[1])*1000/len;for(const side of [-1,1])fortifications.push({id:g.id+':tower:'+side,position:[g.position[0]+side*dx*.018,g.position[1]+side*dy*.018],widthM:16,depthM:16,heightM:53,radiusM:8,kind:'gate-tower'});}

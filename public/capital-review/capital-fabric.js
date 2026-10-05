@@ -1,15 +1,17 @@
+import {subdivideLowland} from './capital-neighborhoods.js';
 /** Streets surveyed around the castle's contours, before parcel placement.
  * Curved contour lanes, staggered cross-slope stairs and real intersections.
  * No canonical facilities, watercourses or cultures are added here.
  */
-export function buildStreetFabric({contourPoint,nodes,edges,districts,core,rivers,facilities,inside,distance,distanceToLine,node,edge}){
+export function buildStreetFabric({contourPoint,nodes,edges,walls,districts,core,rivers,facilities,inside,distance,distanceToLine,node,edge}){
  const originals=[...edges],centre=[22.70,22.62],rings=[],added=[],restricted=p=>districts.filter(d=>d.gateTag&&inside(p,d.polygon)).map(d=>d.id).join('|');
  const district=p=>districts.find(d=>inside(p,d.polygon))?.id||(p[1]>22.6?'castle':'lower');
- function valid(p){return inside(p,core)&&distanceToLine(p,[...core,core[0]])>25&&distanceToLine(p,rivers[0].points)>27&&facilities.every(f=>!f.footprintM[0]||Math.abs(p[0]-f.buildingPosition[0])*1000>f.footprintM[0]/2+24||Math.abs(p[1]-f.buildingPosition[1])*1000>f.footprintM[1]/2+24)&&!(p[1]>22.39&&p[1]<22.91&&p[0]>22.36&&p[0]<23.04);}
+ const raisedRoutes=originals.filter(e=>e.surfaceOffsetsM);
+ function valid(p){return inside(p,core)&&distanceToLine(p,[...core,core[0]])>25&&distanceToLine(p,rivers[0].points)>27&&raisedRoutes.every(e=>distanceToLine(p,e.points)>e.widthM/2+8)&&facilities.every(f=>!f.footprintM[0]||Math.abs(p[0]-f.buildingPosition[0])*1000>f.footprintM[0]/2+24||Math.abs(p[1]-f.buildingPosition[1])*1000>f.footprintM[1]/2+24)&&!(p[1]>22.39&&p[1]<22.91&&p[0]>22.36&&p[0]<23.04);}
  function legal(points){const region=restricted(points[0]);return points.every((p,i)=>valid(p)&&restricted(p)===region&&(!i||Array.from({length:12},(_,j)=>[points[i-1][0]+(p[0]-points[i-1][0])*(j+1)/12,points[i-1][1]+(p[1]-points[i-1][1])*(j+1)/12]).every(q=>valid(q)&&restricted(q)===region)));}
  // Rings follow the hill rather than a Cartesian grid. Each varies its survey
  // spacing and has different angular phase, so cross lanes form irregular blocks.
- for(let ring=0,r=340;r<3100;ring++,r+=ring%3===0?122:147){
+ for(let ring=0,r=340;r<1650;ring++,r+=ring%3===0?122:147){
   const count=Math.round(2*Math.PI*r/125),row=[];
   for(let i=0;i<count;i++){
    const a=2*Math.PI*(i+.27*(ring%2))/count,rr=r+17*Math.sin(i*2.7+ring),p=contourPoint(rr,a);
@@ -31,16 +33,24 @@ export function buildStreetFabric({contourPoint,nodes,edges,districts,core,river
   for(let i=0;i<row.length;i++)connect(row[i],row[(i+1)%row.length],'contour');
   if(ring)for(let i=0;i<row.length;i++){const n=row[i];if(!n)continue;const candidates=rings[ring-1].filter(Boolean).sort((a,b)=>distance(n.position,a.position)-distance(n.position,b.position));if(candidates[0]&&distance(n.position,candidates[0].position)<200)connect(n,candidates[0],'cross-slope');}
  }
+ // A real wall-side service street gives outer neighbourhoods a second edge.
+ // Keep water crossings and restricted district boundaries closed unless an
+ // authored bridge/gate supplies the connection.
+ const centreOfCore=core.reduce((s,p)=>s.map((v,i)=>v+p[i]/core.length),[0,0]),inset=core.map(p=>{const len=distance(p,centreOfCore);return p.map((v,i)=>v+(centreOfCore[i]-v)*42/len);});
+ const wallNodes=[];
+ for(let i=0;i<inset.length;i++){const a=inset[i],b=inset[(i+1)%inset.length],steps=Math.ceil(distance(a,b)/80);for(let j=0;j<steps;j++){const p=a.map((v,k)=>v+(b[k]-v)*j/steps);wallNodes.push(valid(p)?node('wall_lane_'+wallNodes.length,'城壁沿いの生活・保守路',p,district(p),'junction'):null);}}
+ for(let i=0;i<wallNodes.length;i++){const a=wallNodes[i],b=wallNodes[(i+1)%wallNodes.length];if(!a||!b||!legal([a.position,b.position]))continue;added.push(edge(a.id,b.id,'城壁沿いの保守・生活路','service',{id:'wall_lane_edge_'+i,widthM:5,fabric:true,fabricRole:'wall-road',reason:'外周の住宅裏口と壁の保守を結び、街区外縁をつくる。'}));}
+ const lowlandLaneCount=subdivideLowland({edges,walls,core,inside,distance,legal,node,edge,district,added});
  // The lanes meet existing streets at physical intersections. Both sides share
  // an actual graph junction, not crossing lines with disconnected NPC paths.
  const cuts=new Map(edges.map(e=>[e,[]]));let junction=0;
- function intersect(a,b,c,d){const rx=b[0]-a[0],ry=b[1]-a[1],sx=d[0]-c[0],sy=d[1]-c[1],den=rx*sy-ry*sx;if(Math.abs(den)<1e-12)return null;const t=((c[0]-a[0])*sy-(c[1]-a[1])*sx)/den,u=((c[0]-a[0])*ry-(c[1]-a[1])*rx)/den;return t>.0001&&t<.9999&&u>.0001&&u<.9999?{p:[a[0]+t*rx,a[1]+t*ry],t,u}:null;}
+ function intersect(a,b,c,d){const rx=b[0]-a[0],ry=b[1]-a[1],sx=d[0]-c[0],sy=d[1]-c[1],den=rx*sy-ry*sx;if(Math.abs(den)<1e-12)return null;const t=((c[0]-a[0])*sy-(c[1]-a[1])*sx)/den,u=((c[0]-a[0])*ry-(c[1]-a[1])*rx)/den;return t>=-1e-8&&t<=1+1e-8&&u>=-1e-8&&u<=1+1e-8&&(t>.0001&&t<.9999||u>.0001&&u<.9999)?{p:[a[0]+t*rx,a[1]+t*ry],t:Math.max(0,Math.min(1,t)),u:Math.max(0,Math.min(1,u))}:null;}
  const streets=edges.filter(e=>!e.bridgeId&&!['roof','world'].includes(e.class)&&!e.surfaceOffsetsM);
  for(let i=0;i<streets.length;i++)for(let j=i+1;j<streets.length;j++){
   const one=streets[i],two=streets[j];
   for(let a=1;a<one.points.length;a++)for(let b=1;b<two.points.length;b++){const hit=intersect(one.points[a-1],one.points[a],two.points[b-1],two.points[b]);if(!hit)continue;
    let n=nodes.find(n=>distance(n.position,hit.p)<.2);if(!n)n=node('fabric_junction_'+junction++,'生活路と街道の辻',hit.p,district(hit.p),'junction');
-   cuts.get(one).push({segment:a,t:hit.t,node:n});cuts.get(two).push({segment:b,t:hit.u,node:n});
+   if(n.id!==one.from&&n.id!==one.to)cuts.get(one).push({segment:a,t:hit.t,node:n});if(n.id!==two.from&&n.id!==two.to)cuts.get(two).push({segment:b,t:hit.u,node:n});
   }
  }
  const splitMap=new Map();
@@ -58,5 +68,5 @@ export function buildStreetFabric({contourPoint,nodes,edges,districts,core,river
  const reachable=new Set(['market']),queue=['market'];for(let i=0;i<queue.length;i++)for(const id of linked.get(queue[i])||[])if(!reachable.has(id)){reachable.add(id);queue.push(id);}
  for(let i=edges.length-1;i>=0;i--)if(edges[i].fabric&&!reachable.has(edges[i].from))edges.splice(i,1);
  for(let i=nodes.length-1;i>=0;i--)if(nodes[i].id.startsWith('fabric_')&&!edges.some(e=>e.from===nodes[i].id||e.to===nodes[i].id))nodes.splice(i,1);
- return {splitMap,surveyLines:[...originals,...added].filter(e=>!e.fabric||reachable.has(e.from)),lanes:edges.filter(e=>e.fabric),rings:rings.length,originals};
+ return {splitMap,surveyLines:[...originals,...added].filter(e=>!e.fabric||reachable.has(e.from)),lanes:edges.filter(e=>e.fabric),rings:rings.length,lowlandLaneCount,originals};
 }

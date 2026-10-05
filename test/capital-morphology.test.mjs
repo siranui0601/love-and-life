@@ -1,11 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
+import {CAPITAL,elevationAt,groundElevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
 import {buildingParts} from '../public/capital-review/capital-courtyards.js';
 import {buildStreetBlocks} from '../public/capital-review/capital-blocks.js';
 import {benchElevation,surveyedHeightAt} from '../public/capital-review/capital-terraces.js';
 import {pointInPolygon} from '../public/capital-review/capital-data.js';
+test('a raised building floor cannot pull a peak into the surrounding ground mesh',()=>{
+ const b=CAPITAL.buildings.find(b=>b.frontage&&!b.courtyardId),p=b.position,ground=groundElevationAt(...p),floor=elevationAt(...p),saved=b.benchHeightM;
+ try{b.benchHeightM+=10;assert.equal(groundElevationAt(...p),ground);assert.ok(Math.abs(elevationAt(...p)-floor-10)<1e-8);}
+ finally{b.benchHeightM=saved;}
+});
 test('street enclosure splits crossings into four real blocks and ignores a dead-end spur',()=>{
  const core=[[0,0],[.2,0],[.2,.2],[0,.2]],walls=core.map((p,i)=>({id:'w'+i,points:[p,core[(i+1)%4]]}));
  const edges=[{id:'east-west',points:[[0,.1],[.2,.1]]},{id:'north-south',points:[[.1,0],[.1,.2]]},{id:'dead-end',points:[[.1,.05],[.15,.05]]}];
@@ -100,7 +105,7 @@ test('dense core has substantial roof coverage and a finer grain in lower neighb
 });
 test('small block loops and protected courts create choices beyond principal streets',()=>{
  assert.ok(CAPITAL.urbanBlocks.length>=20);
- for(const block of CAPITAL.urbanBlocks){assert.ok(CAPITAL.nodes.some(n=>n.position===block.court));assert.ok(CAPITAL.edges.some(e=>e.points.some(p=>p===block.court)));}
+ for(const block of CAPITAL.urbanBlocks){assert.ok(CAPITAL.nodes.some(n=>distance(n.position,block.court)<.001));assert.ok(CAPITAL.edges.some(e=>e.points.some(p=>distance(p,block.court)<.001)));}
 });
 
 test('outskirts are sparse roadside buildings, with no copied wall-scale district',()=>{

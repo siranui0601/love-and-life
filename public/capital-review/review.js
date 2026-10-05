@@ -157,7 +157,7 @@ function renderRoads(){
  }
 }
 function renderWalls(){
- for(const face of CAPITAL.retainingFaces){el('path',{d:pathD(face.points.filter(p=>pointInPolygon(p,CAPITAL.core.polygon))),fill:'none',stroke:'#978b72','stroke-width':1.5,'stroke-opacity':.7},layers.elevation);}
+ for(const face of CAPITAL.surveyedRetainingFaces)for(const line of face.lines){el('path',{d:pathD(line),fill:'none',stroke:'#978b72','stroke-width':1.5,'stroke-opacity':.7},layers.elevation);}
  for(const w of CAPITAL.walls){
   el('path',{d:pathD(w.points),fill:'none',stroke:'#504f48','stroke-width':Math.max(2,metresPx(w.widthM)),'stroke-linecap':'square'},layers.walls);
  }
