@@ -162,3 +162,10 @@ test('road ground refinement shares every internal edge without overlapping shou
  assert.equal(area,2);
  for(const [key,count]of links){const p=key.split(',').map(Number).map(k=>[positions[k*3],positions[k*3+2]]),outer=[0,2].some(x=>p.every(q=>q[0]===x))||[0,1].some(y=>p.every(q=>q[1]===y));assert.equal(count,outer?1:2,key);}
 });
+
+test('terrain triangles are clipped out of the physical street ribbon',async()=>{
+ const {buildGroundMesh}=await import('../public/capital-review/capital-ground-mesh.js');
+ const road=[[.4,-1],[.6,-1],[.6,2],[.4,2]],{positions,indices}=buildGroundMesh({bounds:{minX:0,maxX:1,minY:0,maxY:1},nx:1,nz:1,heightAt:()=>0,localAt:p=>p,refineAt:()=>false,cutoutsAt:()=>[road]});
+ let area=0;for(let i=0;i<indices.length;i+=3){const p=indices.slice(i,i+3).map(k=>[positions[k*3],positions[k*3+2]]);area+=Math.abs((p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[2][0]-p[0][0])*(p[1][1]-p[0][1]))/2;assert.ok(Math.max(...p.map(q=>q[0]))<=.4+1e-9||Math.min(...p.map(q=>q[0]))>=.6-1e-9);}
+ assert.ok(Math.abs(area-.8)<1e-9);
+});

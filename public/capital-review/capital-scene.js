@@ -20,10 +20,16 @@ export function mountCapitalScene(getState,getRoute){
  const core=bounds(CAPITAL.core.polygon),outer=bounds([...CAPITAL.activityEnvelope.polygon,...CAPITAL.worldConnections.flatMap(c=>c.path)]);
  const roadGroundBuckets=new Map();
  for(const e of CAPITAL.edges.filter(e=>!e.bridgeId&&e.class!=='roof')){const pad=(e.widthM/2+24)/1000,b=bounds(e.points);for(let x=Math.floor((b.minX-pad)*20);x<=Math.floor((b.maxX+pad)*20);x++)for(let y=Math.floor((b.minY-pad)*20);y<=Math.floor((b.maxY+pad)*20);y++){const k=x+','+y;if(!roadGroundBuckets.has(k))roadGroundBuckets.set(k,[]);roadGroundBuckets.get(k).push(e);}}
+ const roadCutBuckets=new Map();
+ for(const e of CAPITAL.edges.filter(e=>!e.bridgeId&&e.class!=='roof'))for(let i=1;i<e.points.length;i++){
+  const a=e.points[i-1],b=e.points[i],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);if(!len)continue;const w=e.widthM/2000,ox=-dy/len*w,oy=dx/len*w,polygon=[[a[0]+ox,a[1]+oy],[b[0]+ox,b[1]+oy],[b[0]-ox,b[1]-oy],[a[0]-ox,a[1]-oy]],box=bounds(polygon),cut={polygon,...box};
+  for(let x=Math.floor(box.minX*20);x<=Math.floor(box.maxX*20);x++)for(let y=Math.floor(box.minY*20);y<=Math.floor(box.maxY*20);y++){const key=x+','+y;if(!roadCutBuckets.has(key))roadCutBuckets.set(key,[]);roadCutBuckets.get(key).push(cut);}
+ }
+ const roadCutsAt=triangle=>{const b=bounds(triangle),cuts=new Set();for(let x=Math.floor(b.minX*20);x<=Math.floor(b.maxX*20);x++)for(let y=Math.floor(b.minY*20);y<=Math.floor(b.maxY*20);y++)for(const c of roadCutBuckets.get(x+','+y)||[])if(c.minX<=b.maxX&&c.maxX>=b.minX&&c.minY<=b.maxY&&c.maxY>=b.minY)cuts.add(c);return [...cuts].map(c=>c.polygon);};
  for(const name of ['minX','minY'])outer[name]-=.5;for(const name of ['maxX','maxY'])outer[name]+=.5;
  function ground(name,b,nx,nz){
   const cellRadius=Math.hypot((b.maxX-b.minX)*1000/nx,(b.maxY-b.minY)*1000/nz)/2;
-  const {positions,indices,world}=buildGroundMesh({bounds:b,nx,nz,heightAt:groundElevationAt,localAt:toLocal,
+  const {positions,indices,world}=buildGroundMesh({bounds:b,nx,nz,heightAt:groundElevationAt,localAt:toLocal,cutoutsAt:roadCutsAt,
    refineAt:p=>(roadGroundBuckets.get(Math.floor(p[0]*20)+','+Math.floor(p[1]*20))||[]).some(e=>distanceToLine(p,e.points)<e.widthM/2+cellRadius+16),
    omitAt:p=>CAPITAL.rivers.some(r=>r.context&&distanceToLine(p,r.points)<r.widthM/2+20)});
   const normals=[],uvs=[],colors=[];
