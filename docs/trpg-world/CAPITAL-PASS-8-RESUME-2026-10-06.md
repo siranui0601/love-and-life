@@ -50,3 +50,25 @@
 6. 視覚的合格後にのみCI→merge→VPS安全更新→公開byte/ブラウザ確認。
 
 秘密鍵は既存パスをSSHへ渡すだけ。VPSのreset/clean/stash/未コミット削除は禁止。
+
+## 07:35 JST 接続復帰後の追記（こちらが最新）
+
+- さつまあげ Online、既存 checkout は main `81dc533` 相当、追跡ファイル変更なし。
+  多数の未追跡QA/helperは維持。独立 worktree `C:\Users\inaba\capital-pass-8-review` を作成。
+- `d5f7fbfa64afbfcfcb7a0bdce14c20ffd8501d43` を PR #342 branchへ保存。
+- exact segment clearanceで道路への建物食い込みを排除。その後、敷地の奥行きを
+  1m刻みでフィットさせた版で既存61テストすべて合格。基準27%は維持。
+- 追加の地盤メッシュ回帰テスト1件合格（内部辺共有、重複面積なし）。
+- `qa-pass8-sections` の部分WebGL監査は errors=[], floatingTowers=[]。
+  ただし画像は不合格。structure-westの地形突起、castle-approachの大きな三角形を確認。
+- 原因候補の、道路ごとに重ねた幅広い地盤リボンを削除し、共有境界を持つ
+  単一地盤へ置換。道路付近は細分、街区内部は中央から境界への三角形。
+  `capital-ground-mesh.js` は描画専用、歩行判定を緩めていない。
+- Windows `qa-pass8-stitched` で再撮影。overview-westで突起の減少を確認。
+  目線画像、壁・階段の接続、性能については未合格。
+- 最新ソースは core192セル×細分4（旧384セル×細分4は重いため削減）。
+  この解像度は別ディレクトリへ再撮影し、旧画像と取り違えないこと。
+- まだ merge / VPS反映なし。Windows preview PID20636/port9894。
+  既存EdgeやDesktopCommanderのnodeを停止しない。
+- ローカルの過去pass6 grade-audit.jsonに生成差分がある。過去の本番証拠を
+  上書きしてcommitしない。必要なら新しいpass8 QAパスへコピーして保存する。

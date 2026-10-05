@@ -28,7 +28,7 @@ export function buildFrontageRows({streets,edges,districtsAt,distance,distanceTo
     // hole in the street wall. Its surveyed facade and door remain fixed.
     // Fit the available land in small depth steps. Jumping directly from 44m
     // to 28m threw away usable rear land in curved and oblique street blocks.
-    const depths=Array.from({length:Math.ceil((depth-14)/2)+1},(_,j)=>Math.max(14,depth-j*2));
+    const depths=Array.from({length:Math.ceil(depth-14)+1},(_,j)=>Math.max(14,depth-j));
     for(const plotDepth of depths){const back=(plotDepth-depth)/2;
      const fitted={...parcel,depthM:plotDepth,position:[position[0]-dy*side*back/1000,position[1]+dx*side*back/1000]};
      if(add(fitted)){row.parcels.push(parcel.id);break;}

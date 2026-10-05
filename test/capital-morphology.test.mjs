@@ -151,3 +151,14 @@ test('royal investigation detours do not collide with duplicate checkpoints on s
   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],result=moveWalker(a,[(b[0]-a[0])*1000,(b[1]-a[1])*1000],state,{barriers});assert.equal(result.blocked,null,event+' '+b);}
  }
 });
+
+test('road ground refinement shares every internal edge without overlapping shoulder sheets',async()=>{
+ const {buildGroundMesh}=await import('../public/capital-review/capital-ground-mesh.js');
+ const {positions,indices}=buildGroundMesh({bounds:{minX:0,maxX:2,minY:0,maxY:1},nx:2,nz:1,heightAt:(x,y)=>x*y,localAt:p=>p,refineAt:p=>p[0]<1});
+ const links=new Map();let area=0;
+ for(let i=0;i<indices.length;i+=3){const ids=indices.slice(i,i+3),p=ids.map(k=>[positions[k*3],positions[k*3+2]]);area+=Math.abs((p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[2][0]-p[0][0])*(p[1][1]-p[0][1]))/2;
+  for(let j=0;j<3;j++){const pair=[ids[j],ids[(j+1)%3]].sort((a,b)=>a-b),key=pair.join(',');links.set(key,(links.get(key)||0)+1);}
+ }
+ assert.equal(area,2);
+ for(const [key,count]of links){const p=key.split(',').map(Number).map(k=>[positions[k*3],positions[k*3+2]]),outer=[0,2].some(x=>p.every(q=>q[0]===x))||[0,1].some(y=>p.every(q=>q[1]===y));assert.equal(count,outer?1:2,key);}
+});
