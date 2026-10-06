@@ -24,6 +24,13 @@ river=LineString([(-1220,-420),(-780,-570),(-400,-550),(-40,-740),(340,-670),(75
 channel=river.buffer(8,join_style=2)
 routes=[]
 def route(name,ps,width,kind,z0,z1=None):
+ if kind=='cart_ramp' and len(ps)>2:
+  curved=[ps[0]]
+  for a,b,c in zip(ps,ps[1:],ps[2:]):
+   incoming=math.dist(a,b);outgoing=math.dist(b,c);cut=min(35,incoming*.25,outgoing*.25)
+   start=[b[k]+(a[k]-b[k])*cut/incoming for k in range(2)];end=[b[k]+(c[k]-b[k])*cut/outgoing for k in range(2)]
+   curved.extend([[(1-t)**2*start[k]+2*(1-t)*t*b[k]+t*t*end[k] for k in range(2)]for t in [j/16 for j in range(17)]])
+  ps=curved+[ps[-1]]
  line=LineString(ps)
  if not line.is_simple:raise ValueError('Self-intersecting route: '+name)
  z1=z0 if z1 is None else z1;coords=[]
@@ -137,9 +144,15 @@ for name,z,poly in terraces:
 for r in routes:
  ps=r['points'];v=[];f=[];walls=[];wf=[]
  for i,p in enumerate(ps):
-  a=ps[max(0,i-1)];b=ps[min(len(ps)-1,i+1)];dx=b[0]-a[0];dy=b[1]-a[1];d=math.hypot(dx,dy)or 1
+  a=ps[max(0,i-1)];b=ps[min(len(ps)-1,i+1)]
+  d0=(p[0]-a[0],p[1]-a[1]);d1=(b[0]-p[0],b[1]-p[1])
+  if math.hypot(*d0)<1e-8:d0=d1
+  if math.hypot(*d1)<1e-8:d1=d0
+  l0=math.hypot(*d0)or 1;l1=math.hypot(*d1)or 1;n0=(-d0[1]/l0,d0[0]/l0);n1=(-d1[1]/l1,d1[0]/l1)
+  nx=n0[0]+n1[0];ny=n0[1]+n1[1];length=math.hypot(nx,ny)or 1;nx/=length;ny/=length
+  extent=r['width']/2/max(.25,nx*n0[0]+ny*n0[1])
   for side in [-1,1]:
-   x=p[0]-dy/d*(r['width']/2)*side;y=p[1]+dx/d*(r['width']/2)*side;v.append([x,y,p[2]+.15])
+   x=p[0]+nx*extent*side;y=p[1]+ny*extent*side;v.append([x,y,p[2]+.15])
   if i:f.append([2*i-2,2*i-1,2*i+1,2*i])
  mesh(r['id'],v,f,'primary'if r['kind'] in ['primary','cart_ramp']else 'stairs'if r['kind']=='stairs'else 'lane')
  if r['kind']in ['cart_ramp','stairs']:
@@ -162,7 +175,8 @@ for r in routes:
 # Outer fortification: actual width, parapets and wall towers. Gate openings
 # are projected from the three primary road endpoints, never arbitrary gaps.
 gates=[nearest_points(Point(ps[0]),core.boundary)[1] for _,ps in primary]
-wall_line=core.boundary.difference(unary_union([p.buffer(16) for p in gates]))
+gate_corridors=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2+3,join_style=2)for r in routes if r['kind']=='primary' or r['id'].endswith('_gate_market_landing_0')])
+wall_line=core.boundary.difference(gate_corridors)
 def prism(name,poly,bottom,top):
  v=[];f=[]
  for t in parts(constrained_delaunay_triangles(poly),'Polygon'):
@@ -175,7 +189,8 @@ def prism(name,poly,bottom,top):
 for i,line in enumerate(parts(wall_line,'LineString')):
  for j,p in enumerate(parts(line.buffer(4,cap_style=2,join_style=2),'Polygon')):prism('outer_wall_%s_%s'%(i,j),p,14,36)
  for k in range(0,int(line.length),120):
-  q=line.interpolate(k);prism('wall_tower_%s_%s'%(i,k),q.buffer(8,resolution=6),14,44)
+  q=line.interpolate(k);footprint=q.buffer(8,resolution=6)
+  if not footprint.intersects(gate_corridors):prism('wall_tower_%s_%s'%(i,k),footprint,14,44)
 # Stair treads are discrete geometry; smooth audit centreline is retained separately.
 for r in routes:
  if r['kind']!='stairs':continue
