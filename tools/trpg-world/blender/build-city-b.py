@@ -30,6 +30,11 @@ def camera(name,loc,look,scale=None):
  else:ca.lens=28
  return ob
 cams=[camera('Overview',(2900,-3800,2600),(100,100,70),3850),camera('Plan',(100,100,6000),(100,100,0),3500),camera('Section',(3900,600,480),(0,600,80),3150),camera('Market-eye',(0,-50,15.7),(250,1050,190))]
+cams.append(camera('West-wall-stair',(-925,520,15.7),(-888,670,34)))
+cams.append(camera('Court-stair',(220,1315,113.7),(250,1215,150)))
+for name in ['west_lower_wall_stairs','north_court_wall_stairs']:
+ r=route_by_id[name];p=r['points'][0];q=r['points'][min(20,len(r['points'])-1)]
+ cams.append(camera(name+'-entry',(p[0],p[1],p[2]+1.7),(q[0],q[1],q[2]+1.7)))
 s.camera=cams[0]
 for screen in bpy.data.screens:
  for a in screen.areas:

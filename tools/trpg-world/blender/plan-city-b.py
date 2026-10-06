@@ -24,7 +24,9 @@ river=LineString([(-1220,-420),(-780,-570),(-400,-550),(-40,-740),(340,-670),(75
 channel=river.buffer(8,join_style=2)
 routes=[]
 def route(name,ps,width,kind,z0,z1=None):
- line=LineString(ps);z1=z0 if z1 is None else z1;coords=[]
+ line=LineString(ps)
+ if not line.is_simple:raise ValueError('Self-intersecting route: '+name)
+ z1=z0 if z1 is None else z1;coords=[]
  for i in range(max(2,math.ceil(line.length/4))+1):
   t=i/max(2,math.ceil(line.length/4));p=line.interpolate(t,normalized=True);coords.append([p.x,p.y,z0+(z1-z0)*t])
  r=dict(id=name,kind=kind,width=width,points=coords,z0=z0,z1=z1);routes.append(r);return r
@@ -36,6 +38,27 @@ ramps=[('market_ascent',[(-650,100),(-400,100),(-220,160),(-100,250)],14,42),
  ('mage_civic_ramp',[(1220,60),(1390,120),(1460,310),(1350,510),(1150,510)],14,70)]
 for name,ps,a,b in ramps:route(name,ps,14,'cart_ramp',a,b)
 for name,ps,a,b in [('market_wall_stairs',[(0,80),(20,180),(0,240)],14,42),('upper_wall_stairs',[(0,350),(180,470),(200,530)],42,112),('court_wall_stairs',[(180,640),(100,770),(180,830)],112,156),('castle_wall_stairs',[(100,940),(130,1030),(200,1080)],156,204)]:route(name,ps,4,'stairs',a,b)
+# Wall-following service stairs connect pockets cut off by the original ramps.
+for name,ps,a,b in [
+ ('west_lower_wall_stairs',[(-882,570),(-901,605),(-899,690),(-875,754)],14,42),
+ ('west_noble_wall_stairs',[(-875,754),(-855,840),(-820,835),(-780,760)],42,78),
+ ('north_court_wall_stairs',[(185,1276),(340,1270),(355,1260),(350,1245),(168,1235)],112,156)]:
+ route(name,ps,4,'stairs',a,b)
+# Regular horizontal landings are part of the height profile, not surface decals.
+for r in routes:
+ if r['kind']!='stairs':continue
+ line=LineString([p[:2]for p in r['points']]);rise=r['z1']-r['z0'];flights=math.ceil(abs(rise)/3.06)
+ landing=2.5;run=(line.length-(flights-1)*landing)/flights
+ if run<=0:raise ValueError('Stair alignment too short for landings')
+ points=[];distance=0
+ for flight in range(flights):
+  z=r['z0']+rise*flight/flights;steps=math.ceil(abs(rise/flights)/.17)
+  for step in range(steps+1):
+   p=line.interpolate(distance+run*step/steps);points.append([p.x,p.y,z+rise/flights*step/steps])
+  distance+=run
+  if flight<flights-1:
+   distance+=landing;p=line.interpolate(distance);points.append([p.x,p.y,r['z0']+rise*(flight+1)/flights])
+ r['points']=[p for i,p in enumerate(points) if i==0 or math.dist(p,points[i-1])>1e-6];r['landingCount']=flights-1;r['landingLengthM']=landing
 cutters=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes])
 # Exact flat domains are established before any neighbourhood subdivision.
 domains={name:poly.difference(unary_union([q for _,h,q in terraces if h>z])).difference(channel).difference(cutters) for name,z,poly in terraces}
@@ -82,7 +105,13 @@ for r in list(routes):
  for k,p in enumerate([r['points'][0],r['points'][-1]]):
   candidates=[q for q in routes if q['kind']in ['contour','life','alley'] and abs(q['z0']-p[2])<.01]
   if not candidates:continue
-  lines=[LineString([v[:2]for v in q['points']])for q in candidates];line=min(lines,key=lambda l:l.distance(Point(p[:2])));q=nearest_points(Point(p[:2]),line)[1]
+  lines=[LineString([v[:2]for v in q['points']])for q in candidates]
+  options=[]
+  for line in lines:
+   q=nearest_points(Point(p[:2]),line)[1];link=LineString([p[:2],[q.x,q.y]])
+   if all(not core.covers(t) or height((t.x,t.y))<=p[2]+.01 for t in [link.interpolate(k/20,normalized=True)for k in range(21)]):options.append((q.distance(Point(p[:2])),q))
+  if not options:continue
+  q=min(options,key=lambda o:o[0])[1]
   if q.distance(Point(p[:2]))>.05:route(r['id']+'_landing_'+str(k),[p[:2],[q.x,q.y]],r['width'],'landing',p[2])
 meshes=[]
 def mesh(name,v,f,material):meshes.append(dict(name=name,vertices=v,faces=f,material=material))
@@ -116,7 +145,19 @@ for r in routes:
  if r['kind']in ['cart_ramp','stairs']:
   for i in range(1,len(ps)):
    for side in [0,1]:
-    a=v[(i-1)*2+side];b=v[i*2+side];za=height(a[:2]);zb=height(b[:2]);j=len(walls);walls.extend([a,b,[b[0],b[1],zb],[a[0],a[1],za]]);wf.append([j,j+1,j+2,j+3])
+    a=v[(i-1)*2+side];b=v[i*2+side];za=height(a[:2]);zb=height(b[:2])
+    # Two explicitly authored passages under the noble service ramp preserve
+    # the lower street and stair. Lift the support's bottom, not the road top.
+    if r['id']=='noble_service':
+     edge=LineString([a[:2],b[:2]])
+     for lower in [q for q in routes if q['id'] in ['west_lower_wall_stairs','west_lower_wall_stairs_landing_0']]:
+      lowerline=LineString([p[:2]for p in lower['points']])
+      if edge.distance(lowerline)<=lower['width']/2+1:
+       nearby=[p[2]for p in lower['points']if edge.distance(Point(p[:2]))<lower['width']/2+6]
+       if nearby:
+        ceiling=max(nearby)+5
+        if ceiling<min(a[2],b[2])-2:za=max(za,ceiling);zb=max(zb,ceiling)
+    j=len(walls);walls.extend([a,b,[b[0],b[1],zb],[a[0],a[1],za]]);wf.append([j,j+1,j+2,j+3])
   mesh(r['id']+'_support',walls,wf,'stone')
 # Outer fortification: actual width, parapets and wall towers. Gate openings
 # are projected from the three primary road endpoints, never arbitrary gaps.
@@ -138,14 +179,13 @@ for i,line in enumerate(parts(wall_line,'LineString')):
 # Stair treads are discrete geometry; smooth audit centreline is retained separately.
 for r in routes:
  if r['kind']!='stairs':continue
- line=LineString([p[:2]for p in r['points']]);n=math.ceil(abs(r['z1']-r['z0'])/.17)
  v=[];f=[]
- for i in range(n):
-  a=line.interpolate(i/n,normalized=True);b=line.interpolate((i+1)/n,normalized=True)
-  dx=b.x-a.x;dy=b.y-a.y;d=math.hypot(dx,dy)or 1;nx=-dy/d*r['width']/2;ny=dx/d*r['width']/2
-  z=r['z0']+(r['z1']-r['z0'])*(i+1)/n+.18;prev=r['z0']+(r['z1']-r['z0'])*i/n+.18
+ for pa,pb in zip(r['points'],r['points'][1:]):
+  a=Point(pa[:2]);b=Point(pb[:2]);dx=b.x-a.x;dy=b.y-a.y;d=math.hypot(dx,dy)or 1;nx=-dy/d*r['width']/2;ny=dx/d*r['width']/2
+  z=pb[2]+.18;prev=pa[2]+.18
   j=len(v);v.extend([[a.x-nx,a.y-ny,z],[a.x+nx,a.y+ny,z],[b.x+nx,b.y+ny,z],[b.x-nx,b.y-ny,z],[a.x-nx,a.y-ny,prev],[a.x+nx,a.y+ny,prev]])
-  f.extend([[j,j+1,j+2,j+3],[j+4,j+5,j+1,j]])
+  f.append([j,j+1,j+2,j+3])
+  if abs(z-prev)>.0001:f.append([j+4,j+5,j+1,j])
  mesh(r['id']+'_treads',v,f,'stairs')
 # Water and scale markers; do not add new canonical facilities.
 wv=[];wf=[]
@@ -160,5 +200,5 @@ for r in routes:
   if height(p[:2])>p[2]+.5:issues.append(dict(route=r['id'],problem='buried',position=p,ground=height(p[:2])));break
 for r in routes:
  r['lengthM']=sum(math.dist(a[:2],b[:2])for a,b in zip(r['points'],r['points'][1:]));r['grade']=abs(r['z1']-r['z0'])/r['lengthM']
-result=dict(status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair treads and refuges']))
+result=dict(status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
 out.write_text(json.dumps(result,separators=(',',':')));print(json.dumps(dict(file=str(out),area=result['coreAreaKm2'],routes=len(routes),buried=len(issues),maxCartGrade=result['audit']['maxCartGrade'])))
