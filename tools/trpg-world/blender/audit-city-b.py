@@ -4,7 +4,7 @@ This geometry audit does not certify playability or visual acceptance.
 import json,sys,pathlib,math,bisect
 from shapely.geometry import LineString,Point
 from shapely.strtree import STRtree
-source=pathlib.Path(sys.argv[1]);data=json.loads(source.read_text());rs=data['routes']
+source=pathlib.Path(sys.argv[1]);data=json.loads(source.read_text());rs=[r for r in data['routes']if not ('--flood'in sys.argv and r.get('floodClosed'))]
 lines=[LineString([p[:2]for p in r['points']])for r in rs];tree=STRtree(lines)
 parent=list(range(len(rs)))
 def root(i):
@@ -49,4 +49,4 @@ for r in rs:
  landings=[run for run,rise in segments if rise<1e-6 and run>1]
  stair_checks.append({'id':r['id'],'maxRiserM':max(rises),'minTreadRunM':min(runs),'landingCount':len(landings),'minLandingM':min(landings) if landings else None,'pass':max(rises)<=.170001 and min(runs)>=.28 and len(landings)==r.get('landingCount')})
 result={'status':'REQUIRES_3D_REVIEW'if len(groups)==1 and all(s['pass'] for s in stair_checks) else 'FAIL','centrelineConnectivityPass':len(groups)==1,'stairProfileChecks':stair_checks,'routeCount':len(rs),'componentCount':len(groups),'componentSizes':[len(g)for g in groups],'disconnectedGroups':groups[1:],'sameLevelIntersections':junctions,'gradeSeparatedCrossings':separated,'limitations':['Road centreline connectivity only; full-width collisions and ramp transitions require 3D checks.','No event state, social gate, NPC or canonical facility reachability certification.']}
-output=source.with_name('connectivity-audit.json');output.write_text(json.dumps(result,indent=2));print(json.dumps({k:v for k,v in result.items()if k not in ['disconnectedGroups','gradeSeparatedCrossings','limitations','stairProfileChecks']}))
+output=source.with_name('connectivity-flood-audit.json'if '--flood'in sys.argv else 'connectivity-audit.json');output.write_text(json.dumps(result,indent=2));print(json.dumps({k:v for k,v in result.items()if k not in ['disconnectedGroups','gradeSeparatedCrossings','limitations','stairProfileChecks']}))

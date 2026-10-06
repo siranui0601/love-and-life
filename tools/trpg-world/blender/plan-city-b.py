@@ -4,7 +4,7 @@ Exports editable Blender geometry and an explicitly provisional route audit.
 import json,math,sys,pathlib
 from shapely.geometry import Polygon,LineString,Point
 from shapely.ops import unary_union,split,nearest_points
-from shapely import constrained_delaunay_triangles
+from shapely import constrained_delaunay_triangles,set_precision
 out=pathlib.Path(sys.argv[1]);out.parent.mkdir(parents=True,exist_ok=True)
 core=Polygon([(-1190,-187),(-1028,-835),(-501,-1280),(268,-1401),(996,-1118),(1482,-592),(1604,96),(1442,825),(996,1351),(308,1554),(-461,1432),(-987,906),(-1230,299)])
 terraces=[('low_city',14,core),
@@ -48,16 +48,16 @@ for name,ps,a,b in [('market_wall_stairs',[(0,80),(20,180),(0,240)],14,42),('upp
 # Wall-following service stairs connect pockets cut off by the original ramps.
 for name,ps,a,b in [
  ('west_lower_wall_stairs',[(-882,570),(-901,605),(-899,690),(-875,754)],14,42),
- ('west_noble_wall_stairs',[(-875,754),(-855,840),(-820,835),(-780,760)],42,78),
+ ('west_noble_wall_stairs',[(-875,754),(-855,840),(-820,835),(-760,800)],42,78),
  ('north_court_wall_stairs',[(185,1276),(340,1270),(355,1260),(350,1245),(168,1235)],112,156)]:
  route(name,ps,4,'stairs',a,b)
 # Regular horizontal landings are part of the height profile, not surface decals.
 for r in routes:
  if r['kind']!='stairs':continue
  line=LineString([p[:2]for p in r['points']]);rise=r['z1']-r['z0'];flights=math.ceil(abs(rise)/3.06)
- landing=2.5;run=(line.length-(flights-1)*landing)/flights
+ landing=2.5;apron=8;run=(line.length-2*apron-(flights-1)*landing)/flights
  if run<=0:raise ValueError('Stair alignment too short for landings')
- points=[];distance=0
+ points=[[line.coords[0][0],line.coords[0][1],r['z0']]];distance=apron
  for flight in range(flights):
   z=r['z0']+rise*flight/flights;steps=math.ceil(abs(rise/flights)/.17)
   for step in range(steps+1):
@@ -65,58 +65,99 @@ for r in routes:
   distance+=run
   if flight<flights-1:
    distance+=landing;p=line.interpolate(distance);points.append([p.x,p.y,r['z0']+rise*(flight+1)/flights])
- r['points']=[p for i,p in enumerate(points) if i==0 or math.dist(p,points[i-1])>1e-6];r['landingCount']=flights-1;r['landingLengthM']=landing
-cutters=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes])
+ points.append([line.coords[-1][0],line.coords[-1][1],r['z1']])
+ r['points']=[p for i,p in enumerate(points) if i==0 or math.dist(p,points[i-1])>1e-6];r['landingCount']=flights+1;r['landingLengthM']=landing
+# Preserve the four existing local bridge IDs and their logistics roles.
+# The west low bridge alone closes in flood; locations are new morphology proposals.
+bridge_specs=[('west_bridge',-850,9,True),('south_bridge',-38,20,False),('news_bridge',550,12,False),('east_bridge',1130,12,False)]
+bridges=[]
+for ident,x,width,low in bridge_specs:
+ crossing=river.intersection(LineString([(x,-2000),(x,0)]));station=river.project(crossing)
+ a=river.interpolate(max(0,station-1));b=river.interpolate(min(river.length,station+1));dx=b.x-a.x;dy=b.y-a.y;length=math.hypot(dx,dy);normal=(-dy/length,dx/length)
+ def bankpoint(offset):return [crossing.x+normal[0]*offset,crossing.y+normal[1]*offset]
+ deck=11.2 if low else 14;span=12 if low else 32
+ south=bankpoint(-75);north=bankpoint(75)
+ r=route(ident,[bankpoint(-span),bankpoint(span)],width,'bridge',deck);r['bridgeId']=ident;r['floodClosed']=low
+ for suffix,start,end,z0,z1 in [('south',south,bankpoint(-span),14,deck),('north',bankpoint(span),north,deck,14)]:
+  r=route(ident+'_'+suffix+'_approach',[start,end],width,'river_ramp',z0,z1);r['bridgeId']=ident
+ bridges.append(dict(id=ident,stationM=station,position=[crossing.x,crossing.y],normal=normal,widthM=width,deckHeightM=deck,floodClosed=low,south=south,north=north,halfSpanM=span))
+# Both banks are traversable. The low-bridge landing pushes the bank walk inland
+# to meet the top of its approach, avoiding a same-plan/different-height crossing.
+west_station=bridges[0]['stationM']
+for side,label in [(-1,'south'),(1,'north')]:
+ ps=[]
+ stations=sorted(set([river.length*i/180 for i in range(181)]+[west_station]))
+ for d in stations:
+  c=river.interpolate(d);a=river.interpolate(max(0,d-1));b=river.interpolate(min(river.length,d+1));dx=b.x-a.x;dy=b.y-a.y;length=math.hypot(dx,dy)
+  offset=24+51*max(0,1-abs(d-west_station)/135)**2
+  ps.append([c.x-dy/length*offset*side,c.y+dx/length*offset*side])
+ for i,line in enumerate(parts(LineString(ps).intersection(core.buffer(-15)),'LineString')):route('river_walk_'+label+'_'+str(i),list(line.coords),6,'river_walk',14)
+cutters=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes if r['kind']!='river_walk'])
 # Exact flat domains are established before any neighbourhood subdivision.
 domains={name:poly.difference(unary_union([q for _,h,q in terraces if h>z])).difference(channel).difference(cutters) for name,z,poly in terraces}
-primary=[('west_gate_market',[(-1220,80),(-1050,20),(-500,10),(0,-50)]),('south_gate_market',[(0,-1380),(-100,-950),(0,-600),(0,-50)]),('east_gate_market',[(1580,80),(1330,-130),(950,-400),(500,-220),(0,-50)])]
+primary=[('west_gate_market',[(-1220,80),(-1050,20),(-500,10),(0,-50)]),('south_gate_market',[(0,-1380),(-100,-950),bridges[1]['south'],bridges[1]['north'],(0,-600),(0,-50)]),('east_gate_market',[(1580,80),(1330,-130),(950,-400),(500,-220),(0,-50)])]
 for name,ps in primary:route(name,ps,20,'primary',14)
+# Secondary streets follow the two bank settlements and their destinations.
+B={b['id']:b for b in bridges}
+for ident,ps,width,role in [
+ ('west_old_quay',[(-1220,80),(-1070,-80),(-1020,-310),B['west_bridge']['north']],8,'service-logistics'),
+ ('west_market_life',[B['west_bridge']['north'],(-760,-250),(-430,-180),(0,-50)],7,'optional-life'),
+ ('lower_daily_loop',[B['west_bridge']['south'],(-850,-780),(-630,-890),(-390,-960),B['south_bridge']['south']],7,'optional-life'),
+ ('ajin_daily_loop',[B['south_bridge']['south'],(200,-1020),(660,-970),(1010,-720),B['east_bridge']['south']],7,'optional-life'),
+ ('news_market',[B['news_bridge']['north'],(420,-320),(160,-180),(0,-50)],8,'information'),
+ ('east_quay_gate',[B['east_bridge']['north'],(1250,-100),(1580,80)],9,'service-logistics')]:
+ r=route(ident,ps,width,'secondary',14);r['role']=role
 # Public space and primary rights-of-way precede block subdivision.
 market=Point(0,-50).buffer(65)
-primary_reserve=unary_union([LineString(ps).buffer(10,join_style=2) for _,ps in primary]+[market])
+negative_spaces=[market,Point(-630,-890).buffer(28),Point(660,-970).buffer(24)]
+primary_reserve=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes if r['kind'] in ['primary','secondary','river_walk','bridge','river_ramp']]+negative_spaces)
 # Subdivision is confined to exposed flat land; setbacks reserve wall walks.
 # Long block dimensions, not a uniform city grid, determine local cuts.
 for name,z,poly in terraces:
- domain=domains[name];street_area=domain.buffer(-22,join_style=2).difference(primary_reserve.buffer(4,join_style=2))
- loops=[]
+ domain=domains[name];street_area=set_precision(domain.buffer(-22,join_style=2).difference(primary_reserve.buffer(4,join_style=2)),.001)
+ loops=[];serial=0
  for p in parts(street_area,'Polygon'):
   if p.area<2500:continue
   boundary=LineString(p.exterior.coords);loops.append(boundary)
   route(name+'_contour_'+str(len(loops)),list(boundary.coords),7,'contour',z)
-  queue=[(p,0)];serial=0
+  queue=[(p,0)]
   target=11000 if name=='low_city' else 18000 if name in ['civic_foot','mage_east'] else 35000
   while queue:
    block,depth=queue.pop(0)
    if block.area<target or depth>=16:continue
-   rect=list(block.minimum_rotated_rectangle.exterior.coords);a,b=max(zip(rect,rect[1:]),key=lambda ab:Point(ab[0]).distance(Point(ab[1])))
-   dx=b[0]-a[0];dy=b[1]-a[1];length=math.hypot(dx,dy);ux,uy=dx/length,dy/length;c=block.centroid;shift=((depth%3)-1)*.035*length
-   origin=(c.x+ux*shift,c.y+uy*shift);cut=LineString([(origin[0]-uy*5000,origin[1]+ux*5000),(origin[0]+uy*5000,origin[1]-ux*5000)])
+   rect=list(block.minimum_rotated_rectangle.exterior.coords);a,b=max(zip(rect,rect[1:]),key=lambda ab:round(Point(ab[0]).distance(Point(ab[1])),5))
+   dx=round(b[0]-a[0],6);dy=round(b[1]-a[1],6)
+   if dx<0 or (dx==0 and dy<0):dx=-dx;dy=-dy
+   length=math.hypot(dx,dy);ux,uy=dx/length,dy/length;c=block.centroid;shift=((depth%3)-1)*.035*length
+   origin=(round(c.x+ux*shift,3),round(c.y+uy*shift,3));cut=LineString([(origin[0]-uy*5000,origin[1]+ux*5000),(origin[0]+uy*5000,origin[1]-ux*5000)])
    sections=parts(cut.intersection(block),'LineString');children=parts(split(block,cut),'Polygon')
    if len(children)<2 or min(q.area for q in children)<1500:continue
    for line in sections:
     if line.length<25:continue
     serial+=1;route(name+'_lane_'+str(serial),list(line.coords),4 if depth>=4 else 6,'alley' if depth>=4 else 'life',z)
-   queue.extend((q,depth+1)for q in children)
+   queue.extend((set_precision(q,.001),depth+1)for q in children)
+approved_crossings=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2+.2)for r in routes if r['kind']in ['bridge','river_ramp']])
+def crosses_unbridged_water(line):return line.intersection(channel).difference(approved_crossings).length>.05
 # Give each block perimeter an explicit frontage connection to nearby main roads.
 for r in list(routes):
  if r['kind']!='contour':continue
  line=LineString([p[:2]for p in r['points']])
- for main in [q for q in routes if q['kind']=='primary' and q['z0']==r['z0']]:
+ for main in [q for q in routes if q['kind'] in ['primary','secondary','river_walk'] and q['z0']==r['z0']]:
   other=LineString([p[:2]for p in main['points']]);a,b=nearest_points(line,other)
-  if .05<a.distance(b)<35:
+  if .05<a.distance(b)<35 and not crosses_unbridged_water(LineString([a,b])):
    route(r['id']+'_frontage_'+main['id'],[[a.x,a.y],[b.x,b.y]],6,'life',r['z0'])
 # Connect every ascent endpoint to the nearest same-level neighbourhood street.
 # Connections are audited below; they are not silently assumed walkable.
 for r in list(routes):
- if r['kind']not in ['cart_ramp','stairs','primary']:continue
+ if r['kind']not in ['cart_ramp','stairs','primary','secondary','river_ramp','river_walk']:continue
  for k,p in enumerate([r['points'][0],r['points'][-1]]):
-  candidates=[q for q in routes if q['kind']in ['contour','life','alley'] and abs(q['z0']-p[2])<.01]
+  candidates=[q for q in routes if q['kind']in ['contour','life','alley','river_walk'] and abs(q['z0']-p[2])<.01]
   if not candidates:continue
   lines=[LineString([v[:2]for v in q['points']])for q in candidates]
   options=[]
   for line in lines:
    q=nearest_points(Point(p[:2]),line)[1];link=LineString([p[:2],[q.x,q.y]])
-   if all(not core.covers(t) or height((t.x,t.y))<=p[2]+.01 for t in [link.interpolate(k/20,normalized=True)for k in range(21)]):options.append((q.distance(Point(p[:2])),q))
+   if not crosses_unbridged_water(link) and all(not core.covers(t) or height((t.x,t.y))<=p[2]+.01 for t in [link.interpolate(k/20,normalized=True)for k in range(21)]):options.append((q.distance(Point(p[:2])),q))
   if not options:continue
   q=min(options,key=lambda o:o[0])[1]
   if q.distance(Point(p[:2]))>.05:route(r['id']+'_landing_'+str(k),[p[:2],[q.x,q.y]],r['width'],'landing',p[2])
@@ -155,7 +196,7 @@ for r in routes:
    x=p[0]+nx*extent*side;y=p[1]+ny*extent*side;v.append([x,y,p[2]+.15])
   if i:f.append([2*i-2,2*i-1,2*i+1,2*i])
  mesh(r['id'],v,f,'primary'if r['kind'] in ['primary','cart_ramp']else 'stairs'if r['kind']=='stairs'else 'lane')
- if r['kind']in ['cart_ramp','stairs']:
+ if r['kind']in ['cart_ramp','stairs','river_ramp']:
   for i in range(1,len(ps)):
    for side in [0,1]:
     a=v[(i-1)*2+side];b=v[i*2+side];za=height(a[:2]);zb=height(b[:2])
@@ -191,6 +232,22 @@ for i,line in enumerate(parts(wall_line,'LineString')):
  for k in range(0,int(line.length),120):
   q=line.interpolate(k);footprint=q.buffer(8,resolution=6)
   if not footprint.intersects(gate_corridors):prism('wall_tower_%s_%s'%(i,k),footprint,14,44)
+# River banks and bridge superstructure share the same centreline geometry.
+bridge_openings=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2+1)for r in routes if r['kind'] in ['bridge','river_ramp']])
+for side in [-1,1]:
+ line=river.offset_curve(8*side,join_style=2).intersection(core).difference(bridge_openings)
+ for j,part in enumerate(parts(line,'LineString')):
+  v=[];f=[]
+  for a,b in zip(list(part.coords),list(part.coords)[1:]):
+   i=len(v);v.extend([[*a,7],[*b,7],[*b,14],[*a,14]]);f.append([i,i+1,i+2,i+3])
+  mesh('river_bank_'+str(side)+'_'+str(j),v,f,'stone')
+for b in bridges:
+ c=b['position'];nx,ny=b['normal'];half=b['halfSpanM'];line=LineString([(c[0]-nx*half,c[1]-ny*half),(c[0]+nx*half,c[1]+ny*half)])
+ prism(b['id']+'_deck',line.buffer(b['widthM']/2,cap_style=2),b['deckHeightM']-1,b['deckHeightM']+.10)
+ for side in [-1,1]:
+  q=Point(c[0]+nx*11*side,c[1]+ny*11*side)
+  # Abutments stay outside the16m channel, below the deck walking surface.
+  prism(b['id']+'_abutment_'+str(side),q.buffer(2,resolution=4),6,b['deckHeightM']-1)
 # Stair treads are discrete geometry; smooth audit centreline is retained separately.
 for r in routes:
  if r['kind']!='stairs':continue
@@ -209,11 +266,13 @@ for t in parts(constrained_delaunay_triangles(channel.intersection(core)),'Polyg
 mesh('river_16m_channel',wv,wf,'water')
 issues=[]
 for r in routes:
- if r['kind']in ['cart_ramp','stairs']:continue
+ if r['kind']in ['cart_ramp','stairs','river_ramp','bridge']:continue
  for p in r['points']:
   if not core.covers(Point(p[:2])):continue
   if height(p[:2])>p[2]+.5:issues.append(dict(route=r['id'],problem='buried',position=p,ground=height(p[:2])));break
 for r in routes:
  r['lengthM']=sum(math.dist(a[:2],b[:2])for a,b in zip(r['points'],r['points'][1:]));r['grade']=abs(r['z1']-r['z0'])/r['lengthM']
-result=dict(status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
+assert len({r['id']for r in routes})==len(routes),'Duplicate route IDs'
+water_violations=[r['id']for r in routes if crosses_unbridged_water(LineString([p[:2]for p in r['points']]))]
+result=dict(bridges=bridges,status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(unbridgedWaterCrossings=water_violations,routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
 out.write_text(json.dumps(result,separators=(',',':')));print(json.dumps(dict(file=str(out),area=result['coreAreaKm2'],routes=len(routes),buried=len(issues),maxCartGrade=result['audit']['maxCartGrade'])))

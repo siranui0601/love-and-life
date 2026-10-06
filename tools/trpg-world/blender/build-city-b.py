@@ -15,10 +15,15 @@ for name in ['Terrain','Retaining','Primary','Life streets','Stairs','Water','Ca
 route_by_id={r['id']:r for r in data['routes']}
 for entry in data['meshes']:
  kind=entry['material'];group={'ground':'Terrain','stone':'Retaining','primary':'Primary','lane':'Life streets','stairs':'Stairs','water':'Water'}[kind]
- me=bpy.data.meshes.new(entry['name']);me.from_pydata(entry['vertices'],[],entry['faces']);me.update();bm=bmesh.new();bm.from_mesh(me);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces));bm.to_mesh(me);bm.free()
+ me=bpy.data.meshes.new(entry['name']);me.from_pydata(entry['vertices'],[],entry['faces']);me.update();bm=bmesh.new();bm.from_mesh(me);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
+ if kind in ['ground','primary','lane','stairs']:
+  for face in bm.faces:
+   if face.normal.z<-.1:face.normal_flip()
+ bm.to_mesh(me);bm.free()
  ob=bpy.data.objects.new(entry['name'],me);collections[group].objects.link(ob);me.materials.append(mats[kind])
  if entry['name'] in route_by_id:
   r=route_by_id[entry['name']];ob['route_id']=r['id'];ob['kind']=r['kind'];ob['width_m']=r['width'];ob['grade']=r['grade']
+  if 'bridgeId'in r:ob['bridge_id']=r['bridgeId'];ob['flood_closed']=r.get('floodClosed',False)
 survey=out.parent/'survey-pass8.json'
 if survey.exists():
  for f in json.loads(survey.read_text())['facilities']:
@@ -35,6 +40,10 @@ cams.append(camera('Court-stair',(220,1315,113.7),(250,1215,150)))
 for name in ['west_lower_wall_stairs','north_court_wall_stairs']:
  r=route_by_id[name];p=r['points'][0];q=r['points'][min(20,len(r['points'])-1)]
  cams.append(camera(name+'-entry',(p[0],p[1],p[2]+1.7),(q[0],q[1],q[2]+1.7)))
+if data.get('bridges'):
+ b=data['bridges'][0];p=b['south'];q=b['north']
+ cams.append(camera('West-low-bridge',(p[0],p[1],15.7),(q[0],q[1],14)))
+ cams.append(camera('River-districts',(-1400,-1900,1000),(0,-650,14),2800))
 s.camera=cams[0]
 for screen in bpy.data.screens:
  for a in screen.areas:
