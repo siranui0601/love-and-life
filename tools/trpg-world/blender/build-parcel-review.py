@@ -94,11 +94,11 @@ def box(name,loc,scale,mat):
 def tower(name,x,y,base,radius,height,spire):
  bpy.ops.mesh.primitive_cylinder_add(vertices=12,radius=radius,depth=height,location=(x,y,base+height/2));ob=bpy.context.object;ob.name=name;move_to_mass(ob);ob.data.materials.append(stone)
  bpy.ops.mesh.primitive_cone_add(vertices=12,radius1=radius*1.15,radius2=0,depth=spire,location=(x,y,base+height+spire/2));ob=bpy.context.object;ob.name=name+'_roof';move_to_mass(ob);ob.data.materials.append(blue)
-box('Proposed castle palace',(250,1100,220),(220,120,32),stone)['canonical_id']='LOC_CAP_CASTLE'
-box('Castle central keep',(250,1100,263),(58,56,54),stone)
-for x in [145,355]:
- for y in [1048,1152]:tower('Castle corner tower',x,y,204,12,56,22)
-tower('Castle highest tower',250,1100,236,20,65,28)
+box('Proposed castle palace',(315,1090,220),(120,100,32),stone)['canonical_id']='LOC_CAP_CASTLE'
+box('Castle central keep',(315,1090,263),(58,56,54),stone)
+for x in [263,367]:
+ for y in [1048,1132]:tower('Castle corner tower',x,y,204,12,56,22)
+tower('Castle highest tower',315,1090,236,20,65,28)
 tower('Proposed mage tower',1050,650,70,24,88,32)
 bpy.data.objects['Proposed mage tower']['canonical_id']='LOC_CAP_MAGE_TOWER'
 scene['parcel_status']='Review-only. No doors/collision/canonical facility reassignment acceptance.'
@@ -117,7 +117,7 @@ for district in ['noble_west','lower','market','quay']:
  a,b=p['frontagePoints'];cx=(a[0]+b[0])/2;cy=(a[1]+b[1])/2;length=math.dist(a,b);nx=-(b[1]-a[1])/length;ny=(b[0]-a[0])/length;z=p['groundM']
  for label,distance,height in [('eye',.8,1.7),('context',-12,70)]:
   camera_data=bpy.data.cameras.new(district+'-'+label);camera=bpy.data.objects.new(district+'-'+label,camera_data);scene.collection.objects.link(camera)
-  camera.location=(cx-nx*distance,cy-ny*distance,z+height);look=Vector((cx+nx*14,cy+ny*14,z+6));camera.rotation_euler=(look-camera.location).to_track_quat('-Z','Y').to_euler();camera_data.lens=24;camera_data.clip_end=10000;camera_data.clip_start=.05
+  camera.location=(cx-nx*distance,cy-ny*distance,z+height);look=Vector((cx+(b[0]-a[0])/length*25-nx*.8,cy+(b[1]-a[1])/length*25-ny*.8,z+1.7))if label=='eye'else Vector((cx+nx*14,cy+ny*14,z+6));camera.rotation_euler=(look-camera.location).to_track_quat('-Z','Y').to_euler();camera_data.lens=24;camera_data.clip_end=10000;camera_data.clip_start=.05
   scene.camera=camera;scene.render.filepath=str(out/('District-'+district+'-'+label+'.png'));bpy.ops.render.render(write_still=True)
 scene.camera=bpy.data.objects['Overview']
 # Save both layers available; keep massing off so it never conceals unfinished streets.
