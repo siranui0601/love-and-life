@@ -2,7 +2,7 @@
 Exports editable Blender geometry and an explicitly provisional route audit.
 """
 import json,math,sys,pathlib
-from shapely.geometry import Polygon,LineString,Point
+from shapely.geometry import Polygon,LineString,Point,mapping
 from shapely.ops import unary_union,split,nearest_points
 from shapely import constrained_delaunay_triangles,set_precision
 out=pathlib.Path(sys.argv[1]);out.parent.mkdir(parents=True,exist_ok=True)
@@ -274,5 +274,6 @@ for r in routes:
  r['lengthM']=sum(math.dist(a[:2],b[:2])for a,b in zip(r['points'],r['points'][1:]));r['grade']=abs(r['z1']-r['z0'])/r['lengthM']
 assert len({r['id']for r in routes})==len(routes),'Duplicate route IDs'
 water_violations=[r['id']for r in routes if crosses_unbridged_water(LineString([p[:2]for p in r['points']]))]
-result=dict(bridges=bridges,status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(unbridgedWaterCrossings=water_violations,routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
+land_domains=[dict(id=n,heightM=z,geometry=mapping(domains[n]))for n,z,_ in terraces]
+result=dict(landDomains=land_domains,negativeSpaces=[mapping(g)for g in negative_spaces],bridges=bridges,status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(unbridgedWaterCrossings=water_violations,routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
 out.write_text(json.dumps(result,separators=(',',':')));print(json.dumps(dict(file=str(out),area=result['coreAreaKm2'],routes=len(routes),buried=len(issues),maxCartGrade=result['audit']['maxCartGrade'])))

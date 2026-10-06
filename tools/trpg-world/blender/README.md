@@ -20,3 +20,4 @@ Reference images are morphology references. Author the whole capital's terrain a
 Windows source: C:\\Users\\inaba\\capital-pass-8-review\\tools\\trpg-world\\blender
 Windows survey export requested: C:\\Users\\inaba\\Documents\\TRPG-Capital-Blender\\survey-pass8.json
 Next: confirm installer exit and blender --version; create survey-v001.blend in that folder, verify object counts/units and save overview; then author whole-city terrace and street plan as a separate version. Preserve prior survey and all existing user files. No main merge or VPS update.
+
