@@ -6,8 +6,12 @@ import bpy,json,pathlib,sys,math
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 source=pathlib.Path(sys.argv[sys.argv.index('--')+1]);data=json.loads(source.read_text())
+# Hidden review collections otherwise retain unevaluated world transforms on load.
+for collection in bpy.data.collections:collection.hide_viewport=False
+bpy.context.view_layer.update()
 vertices=[];faces=[];owners=[]
-for group in ['Terrain','Retaining']:
+for group in ['Terrain','Retaining','Optional parcel massing - UNACCEPTED']:
+ if group not in bpy.data.collections:continue
  for ob in bpy.data.collections[group].objects:
   if ob.type!='MESH':continue
   offset=len(vertices);vertices.extend([ob.matrix_world@v.co for v in ob.data.vertices])

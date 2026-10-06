@@ -115,9 +115,9 @@ for district in ['noble_west','lower','market','quay']:
  if not candidates:continue
  p=min(candidates,key=lambda p:abs(p['frontageM']-({'noble_west':40,'lower':8,'market':11,'quay':23}[district])))
  a,b=p['frontagePoints'];cx=(a[0]+b[0])/2;cy=(a[1]+b[1])/2;length=math.dist(a,b);nx=-(b[1]-a[1])/length;ny=(b[0]-a[0])/length;z=p['groundM']
- for label,distance,height in [('eye',4,1.7),('context',45,32)]:
+ for label,distance,height in [('eye',.8,1.7),('context',-12,70)]:
   camera_data=bpy.data.cameras.new(district+'-'+label);camera=bpy.data.objects.new(district+'-'+label,camera_data);scene.collection.objects.link(camera)
-  camera.location=(cx-nx*distance,cy-ny*distance,z+height);look=Vector((cx+nx*14,cy+ny*14,z+6));camera.rotation_euler=(look-camera.location).to_track_quat('-Z','Y').to_euler();camera_data.lens=24
+  camera.location=(cx-nx*distance,cy-ny*distance,z+height);look=Vector((cx+nx*14,cy+ny*14,z+6));camera.rotation_euler=(look-camera.location).to_track_quat('-Z','Y').to_euler();camera_data.lens=24;camera_data.clip_end=10000;camera_data.clip_start=.05
   scene.camera=camera;scene.render.filepath=str(out/('District-'+district+'-'+label+'.png'));bpy.ops.render.render(write_still=True)
 scene.camera=bpy.data.objects['Overview']
 # Save both layers available; keep massing off so it never conceals unfinished streets.

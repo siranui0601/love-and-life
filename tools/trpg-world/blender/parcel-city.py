@@ -66,10 +66,23 @@ for domain in data['landDomains']:
     parcels.append(entry);bp.append(pid);taken.append(lot)
   courtyard=block.difference(unary_union(taken))if taken else block
   blocks.append(dict(id=bid,heightM=z,areaM2=block.area,geometry=mapping(block),courtyards=mapping(courtyard),parcelIds=bp))
-audit={'blockCount':len(blocks),'parcelCount':len(parcels),'status':'REVIEW_ONLY','buildingRoadOverlapM2':0,'limitations':['Massing only. Doors, courtyard access, roof collision, sight corridors, canonical facility reservations and density acceptance still required.']}
+audit={'blockCount':len(blocks),'parcelCount':len(parcels),'status':'REVIEW_ONLY','buildingFlatRoadOverlapM2':None,'limitations':['Massing only. Doors, courtyard access, roof collision, sight corridors, canonical facility reservations and density acceptance still required.']}
 # Construction invariant: no lot escapes its parent block or crosses reserved streets.
 B={b['id']:shape(b['geometry'])for b in blocks}
 for p in parcels:
  excess=shape(p['geometry']).difference(B[p['blockId']]).area
  if excess>1e-5:raise ValueError('Parcel escapes block: '+p['id'])
+# Measure flat-road overlap instead of reporting a presumed construction invariant.
+road_by_z={}
+for r in data['routes']:
+ if abs(r['z0']-r['z1'])<.01:
+  road_by_z.setdefault(round(r['z0'],2),[]).append(LineString([q[:2]for q in r['points']]).buffer(r['width']/2,join_style=2))
+road_by_z={z:unary_union(gs)for z,gs in road_by_z.items()}
+overlap=0
+for p in parcels:
+ roads=road_by_z.get(round(p['groundM'],2))
+ if roads is not None:
+  overlap+=sum(shape(f).intersection(roads).area for f in p['footprints'])
+audit['buildingFlatRoadOverlapM2']=round(overlap,6)
+if overlap>.01:raise ValueError('Buildings overlap flat roads: '+str(overlap))
 out=src.with_name('parcels.json');out.write_text(json.dumps(dict(blocks=blocks,parcels=parcels,audit=audit),separators=(',',':')));print(json.dumps(audit))
