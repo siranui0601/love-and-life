@@ -158,6 +158,20 @@ for name,z,poly in terraces:
       pocket=bend_center.buffer(9).intersection(block.buffer(-2))
       if pocket.area>150:negative_spaces.append(pocket)
    queue.extend((set_precision(q,.001),depth+1)for q in children)
+# One authored orientation refuge on the longest pilot street. The branch joins
+# the existing daily-life loop and frames the castle, rather than making every alley open.
+pilot_routes=[r for r in routes if r.get('reviewArea')=='lower-quarter-pilot']
+if pilot_routes:
+ pilot=max(pilot_routes,key=lambda r:LineString([p[:2]for p in r['points']]).length)
+ centre=LineString([p[:2]for p in pilot['points']]).interpolate(.5,normalized=True)
+ view_axis=LineString([(centre.x,centre.y),(300,1070)])
+ daily=next(r for r in routes if r['id']=='lower_daily_loop')
+ contacts=parts(view_axis.intersection(LineString([p[:2]for p in daily['points']])),'Point')
+ if contacts:
+  end=min(contacts,key=lambda p:p.distance(centre))
+  r=route('lower_pilot_view_lane',[(centre.x,centre.y),(end.x,end.y)],4,'alley',14)
+  r['role']='optional-life';r['beats']=['refuge','reveal'];r['reviewArea']='lower-quarter-pilot'
+  negative_spaces.append(centre.buffer(16))
 approved_crossings=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2+.2)for r in routes if r['kind']in ['bridge','river_ramp']])
 def crosses_unbridged_water(line):return line.intersection(channel).difference(approved_crossings).length>.05
 # Give each block perimeter an explicit frontage connection to nearby main roads.

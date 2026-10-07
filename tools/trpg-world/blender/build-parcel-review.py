@@ -140,7 +140,7 @@ parcel_collection.hide_render=False;mass_collection.hide_render=True
 scene.render.filepath=str(out/'Parcel-overview.png');bpy.ops.render.render(write_still=True)
 parcel_collection.hide_render=True;mass_collection.hide_render=False
 scene.render.filepath=str(out/'Massing-overview.png');bpy.ops.render.render(write_still=True)
-for camera_name in ['Market-eye','West-low-bridge','west_lower_wall_stairs-entry','Pilot-lower-overview','Pilot-lower-eye']:
+for camera_name in ['Market-eye','West-low-bridge','west_lower_wall_stairs-entry','Pilot-lower-overview','Pilot-lower-eye','Pilot-court-reveal']:
  if camera_name not in bpy.data.objects:continue
  scene.camera=bpy.data.objects[camera_name];scene.render.filepath=str(out/('Massing-'+camera_name+'.png'));bpy.ops.render.render(write_still=True)
 # Compare districts from street-side eye level and elevated close views.

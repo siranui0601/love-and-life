@@ -49,6 +49,9 @@ pilot=next((r for r in data['routes']if r.get('reviewArea')=='lower-quarter-pilo
 if pilot:
  p=pilot['points'][min(3,len(pilot['points'])-2)];q=pilot['points'][min(12,len(pilot['points'])-1)]
  cams.append(camera('Pilot-lower-eye',(p[0],p[1],p[2]+1.7),(q[0],q[1],q[2]+1.7)))
+refuge=next((r for r in data['routes']if r['id']=='lower_pilot_view_lane'),None)
+if refuge:
+ p=refuge['points'][0];cams.append(camera('Pilot-court-reveal',(p[0],p[1],p[2]+1.7),(300,1070,296)))
 s.camera=cams[0]
 for screen in bpy.data.screens:
  for a in screen.areas:
