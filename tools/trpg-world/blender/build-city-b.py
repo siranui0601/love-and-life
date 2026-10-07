@@ -35,6 +35,18 @@ for i,tree in enumerate(data.get('landscapeStudy',{}).get('trees',[])):
   if not trunk:ob.scale=(radius,radius,h*.4)
   for c in list(ob.users_collection):c.objects.unlink(ob)
   land.objects.link(ob);ob.data.materials.append(mats['stone'if trunk else 'garden'])
+# A visible transport animation is a review prototype, never a walking edge.
+for transport in data.get('verticalTransportStudy',[]):
+ platform=bpy.data.objects.get('castle_hoist_platform');weight=bpy.data.objects.get('castle_hoist_counterweight')
+ if platform and weight:
+  for ob in list(bpy.data.objects):
+   if ob.name.startswith('castle_hoist_platform_rail_'):ob.parent=platform
+  travel=transport['upperZ']-transport['lowerZ'];s.render.fps=24
+  for frame,offset in [(1,0),(241,0),(1777,travel),(2017,travel),(3553,0)]:
+   platform.location.z=offset;platform.keyframe_insert(data_path='location',frame=frame)
+   weight.location.z=-offset;weight.keyframe_insert(data_path='location',frame=frame)
+  platform['runtime_control']='UNIMPLEMENTED';platform['transport_id']=transport['id']
+  s.frame_end=3553;s.frame_set(1)
 survey=out.parent/'survey-pass8.json'
 if survey.exists():
  for f in json.loads(survey.read_text())['facilities']:
