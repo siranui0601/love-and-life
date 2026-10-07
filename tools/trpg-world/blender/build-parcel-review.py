@@ -19,6 +19,8 @@ walls_v=[];walls_f=[];roofs_v=[];roofs_f=[];parcel_v=[];parcel_f=[]
 district_meshes={};detail_v=[];detail_f=[];trim_v=[];trim_f=[]
 window_mat=material('Recessed window openings',(.12,.15,.15));trim_mat=material('Noble carved cornice',(.89,.85,.74))
 render_parcels=[dict(p,footprint=f,roofGeometry=p.get('roofs',[None]*len(p.get('footprints',[p['footprint']])))[j])for p in data['parcels']for j,f in enumerate(p.get('footprints',[p['footprint']]))]
+for wing in data.get('castleSite',{}).get('wings',[]):
+ render_parcels.append(dict(district='castle_compound',footprint=wing['geometry'],geometry=wing['geometry'],groundM=204,heightM=wing['heightM'],roofGeometry=wing['roof']))
 for p in render_parcels:
  district=p['district'];buffers=district_meshes.setdefault(district,[[],[],[],[]]);walls_v,walls_f,roofs_v,roofs_f=buffers
  xy=p['footprint']['coordinates'][0][:-1];base=p['groundM'];height=p['heightM'];n=len(xy)
@@ -26,7 +28,7 @@ for p in render_parcels:
  loop=[Vector((x,y,base+.21))for x,y in p['geometry']['coordinates'][0][:-1]]
  for tri in tessellate_polygon([loop]):
   i=len(parcel_v);parcel_v.extend([list(loop[v] if isinstance(v,int) else v)for v in tri]);parcel_f.append([i,i+1,i+2])
- for a,b in zip(xy,xy[1:]+xy[:1]):
+ for a,b in [(a,b)for ring in p['footprint']['coordinates']for a,b in zip(ring,ring[1:])]:
   i=len(walls_v);walls_v.extend([[*a,base],[*b,base],[*b,base+height],[*a,base+height]]);walls_f.append([i,i+1,i+2,i+3])
  # Facade rhythm follows each building wall, with richer noble cornices.
  for a,b in zip(xy,xy[1:]+xy[:1]):
@@ -58,7 +60,7 @@ for p in render_parcels:
   for tri in tessellate_polygon([loop]):
    i=len(roofs_v);roofs_v.extend([list(loop[v] if isinstance(v,int) else v)for v in tri]);roofs_f.append([i,i+1,i+2])
 build('Parcels - street frontage first',parcel_v,parcel_f,parcel_collection,foot)
-palette={'noble_west':((.81,.76,.63),(.17,.25,.34)),'lower':((.43,.39,.32),(.29,.22,.16)),'market':((.72,.61,.44),(.45,.21,.13)),'quay':((.49,.48,.41),(.29,.30,.29)),'ajin':((.61,.53,.42),(.40,.25,.17)),'civic_foot':((.71,.70,.62),(.24,.29,.32))}
+palette={'castle_compound':((.80,.78,.68),(.13,.22,.31)),'noble_west':((.81,.76,.63),(.17,.25,.34)),'lower':((.43,.39,.32),(.29,.22,.16)),'market':((.72,.61,.44),(.45,.21,.13)),'quay':((.49,.48,.41),(.29,.30,.29)),'ajin':((.61,.53,.42),(.40,.25,.17)),'civic_foot':((.71,.70,.62),(.24,.29,.32))}
 for district,(wv,wf,rv,rf)in district_meshes.items():
  wall_color,roof_color=palette.get(district,((.65,.63,.55),(.29,.32,.35)))
  build(district+' building walls',wv,wf,mass_collection,material(district+' masonry',wall_color))
@@ -151,6 +153,6 @@ for district in ['noble_west','lower','market','quay']:
   camera.location=(cx-nx*distance,cy-ny*distance,z+height);look=Vector((cx+(b[0]-a[0])/length*25-nx*.8,cy+(b[1]-a[1])/length*25-ny*.8,z+1.7))if label=='eye'else Vector((cx+nx*14,cy+ny*14,z+6));camera.rotation_euler=(look-camera.location).to_track_quat('-Z','Y').to_euler();camera_data.lens=24;camera_data.clip_end=10000;camera_data.clip_start=.05
   scene.camera=camera;scene.render.filepath=str(out/('District-'+district+'-'+label+'.png'));bpy.ops.render.render(write_still=True)
 scene.camera=bpy.data.objects['Overview']
-# Save both layers available; keep massing off so it never conceals unfinished streets.
-mass_collection.hide_render=True;mass_collection.hide_viewport=True;parcel_collection.hide_render=False
+# Save the reviewed city visible. Separate collections retain a building-free toggle.
+mass_collection.hide_render=False;mass_collection.hide_viewport=False;parcel_collection.hide_render=True;parcel_collection.hide_viewport=True
 bpy.ops.wm.save_as_mainfile(filepath=str(target));print('SAVED',target,'PARCELS',len(data['parcels']))

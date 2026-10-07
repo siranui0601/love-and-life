@@ -9,7 +9,8 @@ class RoofTests(unittest.TestCase):
     def test_irregular_roofs_cover_exact_footprints(self):
         examples=[Polygon([(0,0),(12,0),(12,20),(0,20)]),
                   Polygon([(0,0),(16,0),(14,9),(7,9),(7,20),(0,20)]),
-                  Polygon([(0,0),(9,2),(13,13),(2,17)])]
+                  Polygon([(0,0),(9,2),(13,13),(2,17)]),
+                  Polygon([(0,0),(30,0),(30,30),(0,30)],holes=[[(8,8),(8,22),(22,22),(22,8)]])]
         for footprint in examples:
             roof=geometry.pitched_roof(footprint,20,'noble_west')
             projection=unary_union([Polygon([v[:2]for v in face])for face in roof['surfaces']])

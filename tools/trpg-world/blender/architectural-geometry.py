@@ -26,7 +26,7 @@ def pitched_roof(footprint, eaves, district):
     for part in polygons(split(footprint,ridge)):
         for tri in constrained_delaunay_triangles(part).geoms:
             surfaces.append([vertex(x,y) for x,y in list(tri.exterior.coords)[:-1]])
-        for a,b in zip(list(part.exterior.coords),list(part.exterior.coords)[1:]):
+        for a,b in [(a,b)for ring in [part.exterior,*part.interiors]for a,b in zip(list(ring.coords),list(ring.coords)[1:])]:
             edge=LineString([a,b])
             if footprint.boundary.buffer(.001).covers(edge):
                 gables.append([[*a,eaves],[*b,eaves],vertex(*b),vertex(*a)])
@@ -46,4 +46,13 @@ def castle_site(plan):
         center=polylabel(part,tolerance=.25)
         candidates.append((center.distance(part.boundary),center))
     radius,center=max(candidates,key=lambda v:v[0])
-    return dict(center=[center.x,center.y],radiusM=radius,available=mapping(usable))
+    wings=[]
+    for part in sorted(polygons(usable),key=lambda p:-p.area):
+        if part.area<500:continue
+        court=part.buffer(-16,join_style=2)
+        ring=part.difference(court).buffer(-.5,join_style=2)
+        for wing in polygons(ring):
+            if wing.area<150:continue
+            height=32+min(14,part.area/1500)
+            wings.append(dict(geometry=mapping(wing),heightM=height,roof=pitched_roof(wing,204+height,'noble_west')))
+    return dict(center=[center.x,center.y],radiusM=radius,available=mapping(usable),wings=wings)
