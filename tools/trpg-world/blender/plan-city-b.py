@@ -44,7 +44,19 @@ ramps=[('market_ascent',[(-650,100),(-400,100),(-220,160),(-100,250)],14,42),
  ('castle_east_ramp',[(380,900),(465,1000),(485,1120),(440,1235),(340,1270),(275,1240),(270,1170)],156,204),
  ('noble_service',[(-720,410),(-900,470),(-930,700),(-780,760)],42,78),
  ('mage_civic_ramp',[(1220,60),(1390,120),(1460,310),(1350,510),(1150,510)],14,70)]
-for name,ps,a,b in ramps:route(name,ps,18 if name in ['court_west_ramp','civic_royal_ramp','castle_east_ramp']else 14,'cart_ramp',a,b)
+# Explicit study mode: pedestrian access follows the terrace wall instead of a
+# carriageway on a tall narrow support. Keep the default freight study separate
+# until a replacement logistics route has been accepted.
+pedestrian_study='--pedestrian-ascent-study' in sys.argv
+wall_stair_alignments={
+ 'court_west_ramp':[(-180,680),(-140,815),(-140,985),(-118,1090),(-70,1140),(0,1160)],
+ 'castle_east_ramp':[(380,900),(460,1020),(468,1095),(420,1150),(350,1210),(310,1240),(270,1210),(270,1170)]}
+for name,ps,a,b in ramps:
+ if pedestrian_study and name in wall_stair_alignments:
+  r=route(name,wall_stair_alignments[name],8,'stairs',a,b)
+  r['studyStatus']='PEDESTRIAN_ONLY_LOGISTICS_UNRESOLVED'
+  r['role']='wall-following pedestrian ascent; freight alternative required'
+ else:route(name,ps,18 if name in ['court_west_ramp','civic_royal_ramp','castle_east_ramp']else 14,'cart_ramp',a,b)
 for name,ps,a,b in [('market_wall_stairs',[(0,80),(20,180),(0,240)],14,42),('upper_wall_stairs',[(0,350),(180,470),(200,530)],42,112),('court_wall_stairs',[(180,640),(100,770),(180,830)],112,156),('castle_wall_stairs',[(100,940),(130,1030),(200,1080)],156,204)]:route(name,ps,4,'stairs',a,b)
 # Wall-following service stairs connect pockets cut off by the original ramps.
 for name,ps,a,b in [
@@ -97,7 +109,7 @@ for side,label in [(-1,'south'),(1,'north')]:
 # Reserve the entire graded bench before streets/parcels, not just a thin deck.
 earthworks={}
 for r in routes:
- target={'court_west_ramp':'forecourt','civic_royal_ramp':'upper_city','castle_east_ramp':'castle'}.get(r['id'])
+ target={'court_west_ramp':'forecourt','civic_royal_ramp':'upper_city','castle_east_ramp':'castle','market_ascent':'civic_foot','noble_service':'noble_west','mage_civic_ramp':'mage_east'}.get(r['id'])
  if not target:continue
  wall=next(poly.boundary for name,z,poly in terraces if name==target)
  line=LineString([p[:2]for p in r['points']]);pieces=[line.buffer(r['width']/2+4,join_style=2)]
@@ -284,9 +296,12 @@ for r in routes:
      za,zb=level(*a),level(*b)
      def stable_ground(q):return max(height((q[0]+dx,q[1]+dy))for dx,dy in [(0,0),(.1,0),(-.1,0),(0,.1),(0,-.1)])
      ga,gb=stable_ground(a),stable_ground(b)
-     if r['id']=='castle_east_ramp':
-      stair=next(q for q in routes if q['id']=='north_court_wall_stairs');edge=LineString([a,b])
-      nearby=[q[2]for q in stair['points']if edge.distance(Point(q[:2]))<stair['width']/2+4]
+     # Keep grade-separated pedestrian passages through every ascent bench.
+     # Height is checked locally; a crossing at the same height remains a junction.
+     edge=LineString([a,b])
+     for lower in routes:
+      if lower['id']==r['id'] or lower['kind']not in ['stairs','landing']:continue
+      nearby=[q[2]for q in lower['points']if edge.distance(Point(q[:2]))<lower['width']/2+4]
       if nearby and max(nearby)+6<min(za,zb):ga=max(ga,max(nearby)+4.5);gb=max(gb,max(nearby)+4.5)
      k=len(sv);sv.extend([[*a,za],[*b,zb],[*b,gb],[*a,ga]]);sf.append([k,k+1,k+2,k+3])
      middle=Point((a[0]+b[0])/2,(a[1]+b[1])/2)
