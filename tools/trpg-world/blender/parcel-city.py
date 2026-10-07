@@ -81,6 +81,10 @@ for domain in data['landDomains']:
     parcels.append(entry);bp.append(pid);taken.append(lot)
   courtyard=block.difference(unary_union(taken))if taken else block
   blocks.append(dict(id=bid,heightM=z,areaM2=block.area,geometry=mapping(block),courtyards=mapping(courtyard),parcelIds=bp))
+# Previously authored canonical plots were reserved before rebuilding ordinary lots.
+for original in data.get('facilityParcels',[]):
+ p=dict(original);p['blockId']='site_'+p['canonicalFacilityId'];parcels.append(p)
+ blocks.append(dict(id=p['blockId'],heightM=p['groundM'],areaM2=shape(p['geometry']).area,geometry=p['geometry'],courtyards=mapping(shape(p['geometry']).difference(unary_union([shape(f)for f in p['footprints']]))),parcelIds=[p['id']]))
 audit={'blockCount':len(blocks),'parcelCount':len(parcels),'status':'REVIEW_ONLY','buildingFlatRoadOverlapM2':None,'limitations':['Massing only. Doors, courtyard access, roof collision, sight corridors, canonical facility reservations and density acceptance still required.']}
 # Construction invariant: no lot escapes its parent block or crosses reserved streets.
 B={b['id']:shape(b['geometry'])for b in blocks}
@@ -106,4 +110,4 @@ for p in parcels:
    if len(near):overlap+=footprint.intersection(unary_union([gs[int(j)]for j in near])).area
 audit['buildingFlatRoadOverlapM2']=round(overlap,6)
 if overlap>.01:raise ValueError('Buildings overlap flat roads: '+str(overlap))
-out=src.with_name('parcels.json');out.write_text(json.dumps(dict(blocks=blocks,parcels=parcels,audit=audit,castleSite=arch_geometry.castle_site(data)),separators=(',',':')));print(json.dumps(audit))
+out=src.with_name('parcels.json');out.write_text(json.dumps(dict(blocks=blocks,parcels=parcels,audit=audit,castleSite=arch_geometry.castle_site(data),facilityStudy=data.get('facilityStudy')),separators=(',',':')));print(json.dumps(audit))
