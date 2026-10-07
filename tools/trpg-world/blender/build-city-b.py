@@ -5,7 +5,7 @@ target=out/'capital-city-b01.blend'
 if target.exists():raise RuntimeError('Existing version protected')
 data=json.loads(source.read_text());bpy.ops.wm.read_factory_settings(use_empty=True);s=bpy.context.scene
 s.unit_settings.system='METRIC';s.unit_settings.scale_length=1;s['status']=data['status'];s['core_area_km2']=data['coreAreaKm2']
-colors={'ground':(.64,.64,.52),'stone':(.48,.46,.40),'primary':(.85,.62,.29),'lane':(.38,.45,.39),'stairs':(.75,.51,.37),'water':(.14,.42,.53)}
+colors={'garden':(.31,.41,.24),'ground':(.64,.64,.52),'stone':(.48,.46,.40),'primary':(.85,.62,.29),'lane':(.38,.45,.39),'stairs':(.75,.51,.37),'water':(.14,.42,.53)}
 mats={}
 for name,color in colors.items():
  m=bpy.data.materials.new(name);m.diffuse_color=(*color,1);mats[name]=m
@@ -14,9 +14,9 @@ for name in ['Terrain','Retaining','Primary','Life streets','Stairs','Water','Ca
  c=bpy.data.collections.new(name);s.collection.children.link(c);collections[name]=c
 route_by_id={r['id']:r for r in data['routes']}
 for entry in data['meshes']:
- kind=entry['material'];group={'ground':'Terrain','stone':'Retaining','primary':'Primary','lane':'Life streets','stairs':'Stairs','water':'Water'}[kind]
+ kind=entry['material'];group={'garden':'Terrain','ground':'Terrain','stone':'Retaining','primary':'Primary','lane':'Life streets','stairs':'Stairs','water':'Water'}[kind]
  me=bpy.data.meshes.new(entry['name']);me.from_pydata(entry['vertices'],[],entry['faces']);me.update();bm=bmesh.new();bm.from_mesh(me);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
- if kind in ['ground','primary','lane','stairs']:
+ if kind in ['garden','ground','primary','lane','stairs']:
   for face in bm.faces:
    if face.normal.z<-.1:face.normal_flip()
  bm.to_mesh(me);bm.free()
@@ -24,6 +24,17 @@ for entry in data['meshes']:
  if entry['name'] in route_by_id:
   r=route_by_id[entry['name']];ob['route_id']=r['id'];ob['kind']=r['kind'];ob['width_m']=r['width'];ob['grade']=r['grade']
   if 'bridgeId'in r:ob['bridge_id']=r['bridgeId'];ob['flood_closed']=r.get('floodClosed',False)
+# Proposal landscape props live in a distinct collection; no canonical IDs added.
+land=bpy.data.collections.new('North garden landscape proposal');s.collection.children.link(land)
+for i,tree in enumerate(data.get('landscapeStudy',{}).get('trees',[])):
+ x,y,z=tree['position'];h=tree['heightM'];radius=tree['radiusM']
+ for trunk in [True,False]:
+  if trunk:bpy.ops.mesh.primitive_cylinder_add(vertices=6,radius=.4,depth=h*.65,location=(x,y,z+h*.325))
+  else:bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1,radius=1,location=(x,y,z+h*.68))
+  ob=bpy.context.object;ob.name=('Garden trunk 'if trunk else 'Garden crown ')+str(i)
+  if not trunk:ob.scale=(radius,radius,h*.4)
+  for c in list(ob.users_collection):c.objects.unlink(ob)
+  land.objects.link(ob);ob.data.materials.append(mats['stone'if trunk else 'garden'])
 survey=out.parent/'survey-pass8.json'
 if survey.exists():
  for f in json.loads(survey.read_text())['facilities']:

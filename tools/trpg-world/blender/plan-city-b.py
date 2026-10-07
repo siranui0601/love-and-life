@@ -1,10 +1,11 @@
 """Asymmetric terrain-first street proposal. Requires Shapely 2.1+.
 Exports editable Blender geometry and an explicitly provisional route audit.
 """
-import json,math,sys,pathlib
+import json,math,sys,pathlib,random
 from shapely.geometry import Polygon,LineString,Point,mapping
 from shapely.ops import unary_union,split,nearest_points
 from shapely import constrained_delaunay_triangles,set_precision
+from shapely.strtree import STRtree
 out=pathlib.Path(sys.argv[1]);out.parent.mkdir(parents=True,exist_ok=True)
 core=Polygon([(-1190,-187),(-1028,-835),(-501,-1280),(268,-1401),(996,-1118),(1482,-592),(1604,96),(1442,825),(996,1351),(308,1554),(-461,1432),(-987,906),(-1230,299)])
 terraces=[('low_city',14,core),
@@ -38,12 +39,12 @@ def route(name,ps,width,kind,z0,z1=None):
   t=i/max(2,math.ceil(line.length/4));p=line.interpolate(t,normalized=True);coords.append([p.x,p.y,z0+(z1-z0)*t])
  r=dict(id=name,kind=kind,width=width,points=coords,z0=z0,z1=z1);routes.append(r);return r
 ramps=[('market_ascent',[(-650,100),(-400,100),(-220,160),(-100,250)],14,42),
- ('civic_royal_ramp',[(400,320),(650,430),(710,580),(670,790),(560,880)],42,112),
- ('court_west_ramp',[(-180,680),(-240,840),(-220,1070),(0,1160)],112,156),
- ('castle_east_ramp',[(380,900),(510,1040),(450,1250),(270,1170)],156,204),
+ ('civic_royal_ramp',[(400,320),(560,480),(675,650),(695,900),(690,1080),(640,1120),(600,1050),(560,880)],42,112),
+ ('court_west_ramp',[(-180,680),(-178,805),(-160,945),(-140,1080),(-90,1130),(0,1160)],112,156),
+ ('castle_east_ramp',[(380,900),(465,1000),(485,1120),(440,1235),(340,1270),(275,1240),(270,1170)],156,204),
  ('noble_service',[(-720,410),(-900,470),(-930,700),(-780,760)],42,78),
  ('mage_civic_ramp',[(1220,60),(1390,120),(1460,310),(1350,510),(1150,510)],14,70)]
-for name,ps,a,b in ramps:route(name,ps,14,'cart_ramp',a,b)
+for name,ps,a,b in ramps:route(name,ps,18 if name in ['court_west_ramp','civic_royal_ramp','castle_east_ramp']else 14,'cart_ramp',a,b)
 for name,ps,a,b in [('market_wall_stairs',[(0,80),(20,180),(0,240)],14,42),('upper_wall_stairs',[(0,350),(180,470),(200,530)],42,112),('court_wall_stairs',[(180,640),(100,770),(180,830)],112,156),('castle_wall_stairs',[(100,940),(130,1030),(200,1080)],156,204)]:route(name,ps,4,'stairs',a,b)
 # Wall-following service stairs connect pockets cut off by the original ramps.
 for name,ps,a,b in [
@@ -92,7 +93,22 @@ for side,label in [(-1,'south'),(1,'north')]:
   offset=24+51*max(0,1-abs(d-west_station)/135)**2
   ps.append([c.x-dy/length*offset*side,c.y+dx/length*offset*side])
  for i,line in enumerate(parts(LineString(ps).intersection(core.buffer(-15)),'LineString')):route('river_walk_'+label+'_'+str(i),list(line.coords),6,'river_walk',14)
-cutters=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes if r['kind']!='river_walk'])
+# Authored ascent earthworks attach the carriageway to the receiving terrace.
+# Reserve the entire graded bench before streets/parcels, not just a thin deck.
+earthworks={}
+for r in routes:
+ target={'court_west_ramp':'forecourt','civic_royal_ramp':'upper_city','castle_east_ramp':'castle'}.get(r['id'])
+ if not target:continue
+ wall=next(poly.boundary for name,z,poly in terraces if name==target)
+ line=LineString([p[:2]for p in r['points']]);pieces=[line.buffer(r['width']/2+4,join_style=2)]
+ for a,b in zip(r['points'],r['points'][1:]):
+  qa=nearest_points(Point(a[:2]),wall)[1];qb=nearest_points(Point(b[:2]),wall)[1]
+  if max(qa.distance(Point(a[:2])),qb.distance(Point(b[:2])))>125:continue
+  patch=Polygon([a[:2],b[:2],(qb.x,qb.y),(qa.x,qa.y)]).buffer(0)
+  if not patch.is_empty:pieces.append(patch)
+ earthworks[r['id']]=unary_union(pieces).intersection(core)
+ r['earthworkAreaM2']=earthworks[r['id']].area;r['ascentDesign']='wall-attached graded bench with turning approach'
+cutters=unary_union([earthworks.get(r['id'],LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2))for r in routes if r['kind']!='river_walk'])
 # Exact flat domains are established before any neighbourhood subdivision.
 domains={name:poly.difference(unary_union([q for _,h,q in terraces if h>z])).difference(channel).difference(cutters) for name,z,poly in terraces}
 primary=[('west_gate_market',[(-1220,80),(-1050,20),(-500,10),(0,-50)]),('south_gate_market',[(0,-1380),(-100,-950),bridges[1]['south'],bridges[1]['north'],(0,-600),(0,-50)]),('east_gate_market',[(1580,80),(1330,-130),(950,-400),(500,-220),(0,-50)])]
@@ -110,7 +126,13 @@ for ident,ps,width,role in [
 # Public space and primary rights-of-way precede block subdivision.
 market=Point(0,-50).buffer(65)
 negative_spaces=[market,Point(-630,-890).buffer(28),Point(660,-970).buffer(24)]
-primary_reserve=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes if r['kind'] in ['primary','secondary','river_walk','bridge','river_ramp']]+negative_spaces)
+# Quiet landscape below the castle/mage terraces: existing-city open space, no new facility.
+north_garden=Polygon([(500,1240),(700,1030),(980,990),(1220,810),(1360,890),(1110,1220),(780,1400),(560,1390)]).intersection(domains['low_city'].buffer(-8)).intersection(core.buffer(-35))
+negative_spaces.append(north_garden)
+for i,line in enumerate(parts(LineString([(560,1320),(720,1280),(870,1140),(1040,1100),(1220,930)]).intersection(north_garden),'LineString')):
+ r=route('north_garden_walk_'+str(i),list(line.coords),5,'garden_walk',14);r['role']='optional-life';r['beats']=['refuge','prospect'];r['designStatus']='landscape proposal, no new canonical facility'
+
+primary_reserve=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2,join_style=2)for r in routes if r['kind'] in ['primary','secondary','river_walk','bridge','river_ramp','garden_walk']]+negative_spaces)
 # Subdivision is confined to exposed flat land; setbacks reserve wall walks.
 # Long block dimensions, not a uniform city grid, determine local cuts.
 for name,z,poly in terraces:
@@ -185,7 +207,7 @@ for r in list(routes):
 # Connect every ascent endpoint to the nearest same-level neighbourhood street.
 # Connections are audited below; they are not silently assumed walkable.
 for r in list(routes):
- if r['kind']not in ['cart_ramp','stairs','primary','secondary','river_ramp','river_walk']:continue
+ if r['kind']not in ['cart_ramp','stairs','primary','secondary','river_ramp','river_walk','garden_walk']:continue
  for k,p in enumerate([r['points'][0],r['points'][-1]]):
   candidates=[q for q in routes if q['kind']in ['contour','life','alley','river_walk'] and abs(q['z0']-p[2])<.01]
   if not candidates:continue
@@ -204,7 +226,7 @@ for i,space in enumerate(negative_spaces):
  verts=[];faces=[]
  for tri in parts(constrained_delaunay_triangles(space),'Polygon'):
   k=len(verts);verts.extend([[x,y,14.03]for x,y in list(tri.exterior.coords)[:3]]);faces.append([k,k+1,k+2])
- mesh('public_court_'+str(i),verts,faces,'lane')
+ mesh('public_court_'+str(i),verts,faces,'garden'if space.equals(north_garden)else 'lane')
 for name,z,poly in terraces:
  domain=domains[name]
  tris=parts(constrained_delaunay_triangles(domain),'Polygon');v=[];f=[]
@@ -213,7 +235,7 @@ for name,z,poly in terraces:
  mesh(name+'_ground',v,f,'ground')
  # A boundary has a stone retaining face down to the lower neighbour.
  v=[];f=[]
- for ring in parts(poly.boundary.difference(cutters).difference(channel),'LineString'):
+ for ring in parts(poly.boundary.difference(cutters.buffer(.05)).difference(channel),'LineString'):
   ps=list(ring.coords)
   for a,b in zip(ps,ps[1:]):
    dx=b[0]-a[0];dy=b[1]-a[1];d=math.hypot(dx,dy)
@@ -223,6 +245,9 @@ for name,z,poly in terraces:
    if bottom>=z:continue
    i=len(v);v.extend([[*a,bottom],[*b,bottom],[*b,z],[*a,z]]);f.append([i,i+1,i+2,i+3])
  mesh(name+'_retaining',v,f,'stone')
+# Spatial index keeps parapet junction detection independent of total street length.
+junction_samples=[(r['id'],r['width'],p)for r in routes for p in r['points']]
+junction_points=[Point(p[:2])for _,_,p in junction_samples];junction_tree=STRtree(junction_points)
 # Ramps own their footprint. Their side faces meet the original ground height.
 for r in routes:
  ps=r['points'];v=[];f=[];walls=[];wf=[]
@@ -238,7 +263,36 @@ for r in routes:
    x=p[0]+nx*extent*side;y=p[1]+ny*extent*side;v.append([x,y,p[2]+.15])
   if i:f.append([2*i-2,2*i-1,2*i+1,2*i])
  mesh(r['id'],v,f,'primary'if r['kind'] in ['primary','cart_ramp']else 'stairs'if r['kind']=='stairs'else 'lane')
- if r['kind']in ['cart_ramp','stairs','river_ramp']:
+ if r['id']in earthworks:
+  land=earthworks[r['id']];line=LineString([p[:2]for p in ps])
+  def level(x,y):return r['z0']+(r['z1']-r['z0'])*line.project(Point(x,y))/line.length+.04
+  ev=[];ef=[];sv=[];sf=[];pv=[];pf=[]
+  for poly in parts(land,'Polygon'):
+   for tri in parts(constrained_delaunay_triangles(poly.difference(line.buffer(r['width']/2-.05,join_style=2))),'Polygon'):
+    k=len(ev);ev.extend([[x,y,level(x,y)]for x,y in list(tri.exterior.coords)[:3]]);ef.append([k,k+1,k+2])
+   for ring in [poly.exterior,*poly.interiors]:
+    for a,b in zip(list(ring.coords),list(ring.coords)[1:]):
+     za,zb=level(*a),level(*b)
+     def stable_ground(q):return max(height((q[0]+dx,q[1]+dy))for dx,dy in [(0,0),(.1,0),(-.1,0),(0,.1),(0,-.1)])
+     ga,gb=stable_ground(a),stable_ground(b)
+     if r['id']=='castle_east_ramp':
+      stair=next(q for q in routes if q['id']=='north_court_wall_stairs');edge=LineString([a,b])
+      nearby=[q[2]for q in stair['points']if edge.distance(Point(q[:2]))<stair['width']/2+4]
+      if nearby and max(nearby)+6<min(za,zb):ga=max(ga,max(nearby)+4.5);gb=max(gb,max(nearby)+4.5)
+     k=len(sv);sv.extend([[*a,za],[*b,zb],[*b,gb],[*a,ga]]);sf.append([k,k+1,k+2,k+3])
+     middle=Point((a[0]+b[0])/2,(a[1]+b[1])/2)
+     # Keep approach mouths and same-level side junctions open.
+     if min(line.project(middle),line.length-line.project(middle))<22:continue
+     if min(za-ga,zb-gb)<2:continue
+     edge=LineString([a,b]);opening=False
+     for index in junction_tree.query(edge.buffer(25)):
+      other_id,other_width,q=junction_samples[int(index)]
+      if other_id==r['id']:continue
+      if edge.distance(junction_points[int(index)])<other_width/2+2 and abs(q[2]-level(q[0],q[1]))<2:opening=True;break
+     if opening:continue
+     k=len(pv);pv.extend([[*a,za],[*b,zb],[*b,zb+1.3],[*a,za+1.3]]);pf.append([k,k+1,k+2,k+3])
+  mesh(r['id']+'_graded_bench',ev,ef,'ground');mesh(r['id']+'_terrace_support',sv,sf,'stone');mesh(r['id']+'_outer_parapet',pv,pf,'stone')
+ elif r['kind']in ['cart_ramp','stairs','river_ramp']:
   for i in range(1,len(ps)):
    for side in [0,1]:
     a=v[(i-1)*2+side];b=v[i*2+side];za=height(a[:2]);zb=height(b[:2])
@@ -317,5 +371,10 @@ for r in routes:
 assert len({r['id']for r in routes})==len(routes),'Duplicate route IDs'
 water_violations=[r['id']for r in routes if crosses_unbridged_water(LineString([p[:2]for p in r['points']]))]
 land_domains=[dict(id=n,heightM=z,geometry=mapping(domains[n]))for n,z,_ in terraces]
-result=dict(landDomains=land_domains,negativeSpaces=[mapping(g)for g in negative_spaces],bridges=bridges,status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(unbridgedWaterCrossings=water_violations,routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
+# Sparse tree groups frame the path while retaining the distant walls/castle prospect.
+vegetation=[];rng=random.Random(7231);walk_reserve=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2+8)for r in routes])
+for i in range(320):
+ x=rng.uniform(500,1360);y=rng.uniform(810,1400);point=Point(x,y)
+ if north_garden.buffer(-9).covers(point)and not walk_reserve.covers(point):vegetation.append(dict(position=[x,y,14],heightM=rng.uniform(7,12),radiusM=rng.uniform(3,5)))
+result=dict(landscapeStudy=dict(status='PROPOSED',purpose='Quiet wall-base garden and maintenance walk; contrasts with dense commercial streets',geometry=mapping(north_garden),trees=vegetation),landDomains=land_domains,negativeSpaces=[mapping(g)for g in negative_spaces],bridges=bridges,status='UNACCEPTED DESIGN STUDY',coreAreaKm2=core.area/1e6,terraces=[dict(id=n,heightM=z,areaM2=p.area)for n,z,p in terraces],meshes=meshes,routes=routes,audit=dict(unbridgedWaterCrossings=water_violations,routeCount=len(routes),buriedRoutes=issues,maxCartGrade=max(r['grade']for r in routes if r['kind']=='cart_ramp'),pending=['3D intersection validation','landing domain clipping','gates and river bridge structures','all canonical anchors','full route connectivity and events','stair full-width collision and refuges']))
 out.write_text(json.dumps(result,separators=(',',':')));print(json.dumps(dict(file=str(out),area=result['coreAreaKm2'],routes=len(routes),buried=len(issues),maxCartGrade=result['audit']['maxCartGrade'])))
