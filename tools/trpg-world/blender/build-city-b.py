@@ -44,6 +44,11 @@ if data.get('bridges'):
  b=data['bridges'][0];p=b['south'];q=b['north']
  cams.append(camera('West-low-bridge',(p[0],p[1],15.7),(q[0],q[1],14)))
  cams.append(camera('River-districts',(-1400,-1900,1000),(0,-650,14),2800))
+cams.append(camera('Pilot-lower-overview',(-1300,-1800,650),(-650,-950,14),650))
+pilot=next((r for r in data['routes']if r.get('reviewArea')=='lower-quarter-pilot'),None)
+if pilot:
+ p=pilot['points'][min(3,len(pilot['points'])-2)];q=pilot['points'][min(12,len(pilot['points'])-1)]
+ cams.append(camera('Pilot-lower-eye',(p[0],p[1],p[2]+1.7),(q[0],q[1],q[2]+1.7)))
 s.camera=cams[0]
 for screen in bpy.data.screens:
  for a in screen.areas:

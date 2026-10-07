@@ -130,11 +130,33 @@ for name,z,poly in terraces:
    if dx<0 or (dx==0 and dy<0):dx=-dx;dy=-dy
    length=math.hypot(dx,dy);ux,uy=dx/length,dy/length;c=block.centroid;shift=((depth%3)-1)*.035*length
    origin=(round(c.x+ux*shift,3),round(c.y+uy*shift,3));cut=LineString([(origin[0]-uy*5000,origin[1]+ux*5000),(origin[0]+uy*5000,origin[1]-ux*5000)])
+   # Pilot lower quarter: inherited plot boundaries bend local routes around a
+   # shared court. Ends remain on existing streets, so this is a connected choice.
+   pilot=name=='low_city' and -1050<c.x<-200 and -1200<c.y<-740 and depth>=2
+   bend_center=None
+   if pilot:
+    spans=parts(cut.intersection(block),'LineString')
+    if len(spans)==1 and spans[0].length>65:
+     span=spans[0];mid=span.interpolate(.5,normalized=True);bend=min(16,span.length*.12)
+     if depth%2:bend=-bend
+     bend_center=Point(mid.x+ux*bend,mid.y+uy*bend)
+     q1=span.interpolate(.28,normalized=True);q2=span.interpolate(.72,normalized=True)
+     candidate=LineString([cut.coords[0],(q1.x,q1.y),(bend_center.x,bend_center.y),(q2.x+ux*bend*.5,q2.y+uy*bend*.5),cut.coords[-1]])
+     # Choose traversal direction consistently; intersection geometry may reverse.
+     if Point(cut.coords[0]).distance(Point(span.coords[0]))>Point(cut.coords[0]).distance(Point(span.coords[-1])):
+      candidate=LineString([cut.coords[0],(q2.x,q2.y),(bend_center.x,bend_center.y),(q1.x+ux*bend*.5,q1.y+uy*bend*.5),cut.coords[-1]])
+     if candidate.is_simple and block.buffer(-10).covers(bend_center):cut=candidate
+     else:bend_center=None
    sections=parts(cut.intersection(block),'LineString');children=parts(split(block,cut),'Polygon')
    if len(children)<2 or min(q.area for q in children)<1500:continue
    for line in sections:
     if line.length<25:continue
-    serial+=1;route(name+'_lane_'+str(serial),list(line.coords),4 if depth>=4 else 6,'alley' if depth>=4 else 'life',z)
+    serial+=1;r=route(name+'_lane_'+str(serial),list(line.coords),4 if depth>=4 else 6,'alley' if depth>=4 else 'life',z)
+    if bend_center is not None:
+     r['reviewArea']='lower-quarter-pilot';r['role']='optional-life'if depth<4 else 'desire-path'
+     if depth in [2,3]:
+      pocket=bend_center.buffer(9).intersection(block.buffer(-2))
+      if pocket.area>150:negative_spaces.append(pocket)
    queue.extend((set_precision(q,.001),depth+1)for q in children)
 approved_crossings=unary_union([LineString([p[:2]for p in r['points']]).buffer(r['width']/2+.2)for r in routes if r['kind']in ['bridge','river_ramp']])
 def crosses_unbridged_water(line):return line.intersection(channel).difference(approved_crossings).length>.05
@@ -163,6 +185,12 @@ for r in list(routes):
   if q.distance(Point(p[:2]))>.05:route(r['id']+'_landing_'+str(k),[p[:2],[q.x,q.y]],r['width'],'landing',p[2])
 meshes=[]
 def mesh(name,v,f,material):meshes.append(dict(name=name,vertices=v,faces=f,material=material))
+# Pocket courts are walkable paving, not only building-exclusion metadata.
+for i,space in enumerate(negative_spaces):
+ verts=[];faces=[]
+ for tri in parts(constrained_delaunay_triangles(space),'Polygon'):
+  k=len(verts);verts.extend([[x,y,14.03]for x,y in list(tri.exterior.coords)[:3]]);faces.append([k,k+1,k+2])
+ mesh('public_court_'+str(i),verts,faces,'lane')
 for name,z,poly in terraces:
  domain=domains[name]
  tris=parts(constrained_delaunay_triangles(domain),'Polygon');v=[];f=[]
