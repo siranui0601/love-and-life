@@ -67,6 +67,8 @@ for serial,(a,b) in enumerate(zip(track,track[1:])):
  end=start+1
  while end<len(ps)-1 and math.dist(ps[end][:2],b)>1e-6:end+=1
  walk('garden_watchtower_flight_'+str(serial),ps[start:end+1],2.8,'tower_stairs')
+ if serial<len(track)-2:
+  bx,by,bz=ps[end];surface('watchtower_turn_landing_'+str(serial),Polygon([(bx-1.4,by-1.4),(bx+1.4,by-1.4),(bx+1.4,by+1.4),(bx-1.4,by+1.4)]),bz+.16)
  start=end
 # Horizontal treads/risers, and an outside parapet following the same profile.
 v=[];f=[];outer=[];of=[]
@@ -78,6 +80,7 @@ for a,b in zip(ps,ps[1:]):
  f.extend([[k,k+1,k+3,k+2],[k+2,k+3,k+5,k+4]])
  # Choose outer face using the tower centre, never place a parapet in the walking strip.
  mx=(a[0]+b[0])/2;my=(a[1]+b[1])/2;sign=1 if (mx-x)*nx+(my-y)*ny>0 else -1
+ if a[2]<14.5 and math.dist(a[:2],track[0])<4:continue
  q=len(outer);outer.extend([[a[0]+sign*nx*1.55,a[1]+sign*ny*1.55,a[2]+.16],[b[0]+sign*nx*1.55,b[1]+sign*ny*1.55,b[2]+.16],[b[0]+sign*nx*1.55,b[1]+sign*ny*1.55,b[2]+1.36],[a[0]+sign*nx*1.55,a[1]+sign*ny*1.55,a[2]+1.36]]);of.append([q,q+1,q+2,q+3])
 # Replace diagonal route ribbon with physical treads.
 plan['meshes']=[m for m in plan['meshes']if not m['name'].startswith('garden_watchtower_flight_')]
@@ -86,7 +89,7 @@ plan['meshes'].append(dict(name='garden_watchtower_stair_parapet',vertices=outer
 deck=Polygon([(x-10,y-10),(x+10,y-10),(x+10,y+10),(x-10,y+10)])
 # Opening above the final two flights prevents the viewing deck becoming a roof
 # across the climbing route; the final top apron meets the deck outside the cut.
-opening=LineString([track[-3],track[-2],(x-2.2,y-8)]).buffer(1.65,cap_style=2,join_style=2)
+opening=LineString([track[-3],track[-2],(x+2.2,y-8)]).buffer(1.65,cap_style=2,join_style=2)
 surface('garden_watchtower_view_deck',deck.difference(opening),32.16)
 for side in [-1,1]:
  box('watchtower_deck_side_'+str(side),x+side*10,y,32.16,.5,20,1.2)
@@ -96,7 +99,10 @@ walk('garden_watchtower_deck_walk',[[x,y-8,32],[x,y,32],[x+7,y,32]],2.8)
 clear=Point(x,y).buffer(18).union(entry.buffer(6));plan['landscapeStudy']['trees']=[t for t in plan['landscapeStudy']['trees']if Point(t['position'][:2]).distance(clear)>t['radiusM']]
 report['destinations'].append(dict(id='garden_watchtower',position=[x,y,14],entryFrom=road['id'],heightM=18,experience='Find a narrow garden branch, climb enclosed turns, recover city orientation from the deck',stairs=risers))
 # Central market: leave all road corridors, trading courtyard and logistics approaches open.
-market=Point(0,-50).buffer(65);market_roads=[(r,l)for r,l in roads if l.distance(market)<r['width']/2+4]
+market=Point(0,-50).buffer(65)
+# One continuous plaza floor covers overlapping road ribbons at this shared node.
+surface('central_market_shared_paving',market,14.22)
+market_roads=[(r,l)for r,l in roads if l.distance(market)<r['width']/2+4]
 count=0
 for ring,radius in enumerate([37,51]):
  for i in range(14):
