@@ -3,10 +3,12 @@ import bpy,json,pathlib,sys,math
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 source=pathlib.Path(sys.argv[sys.argv.index('--')+1]);data=json.loads(source.read_text());vs=[];fs=[];names=[]
+for collection in bpy.data.collections:collection.hide_viewport=False
+bpy.context.view_layer.update()
 for ob in bpy.context.scene.objects:
  if ob.type!='MESH':continue
  # Water is not walkable.
- if any(c.name=='Water'for c in ob.users_collection):continue
+ if any(c.name in ['Water','Parcel footprints']for c in ob.users_collection):continue
  offset=len(vs);vs.extend([ob.matrix_world@v.co for v in ob.data.vertices])
  for f in ob.data.polygons:fs.append([offset+i for i in f.vertices]);names.append(ob.name)
 tree=BVHTree.FromPolygons(vs,fs);failures=[];counts={};samples=0

@@ -10,7 +10,7 @@ source=pathlib.Path(sys.argv[sys.argv.index('--')+1]);data=json.loads(source.rea
 for collection in bpy.data.collections:collection.hide_viewport=False
 bpy.context.view_layer.update()
 vertices=[];faces=[];owners=[]
-for group in ['Terrain','Retaining','Optional parcel massing - UNACCEPTED']:
+for group in ['Terrain','Retaining','Optional parcel massing - UNACCEPTED','North garden landscape proposal']:
  if group not in bpy.data.collections:continue
  for ob in bpy.data.collections[group].objects:
   if ob.type!='MESH':continue
