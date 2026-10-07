@@ -18,7 +18,7 @@ def build(name,verts,faces,collection,mat):
 walls_v=[];walls_f=[];roofs_v=[];roofs_f=[];parcel_v=[];parcel_f=[]
 district_meshes={};detail_v=[];detail_f=[];trim_v=[];trim_f=[]
 window_mat=material('Recessed window openings',(.12,.15,.15));trim_mat=material('Noble carved cornice',(.89,.85,.74))
-render_parcels=[dict(p,footprint=f)for p in data['parcels']for f in p.get('footprints',[p['footprint']])]
+render_parcels=[dict(p,footprint=f,roofGeometry=p.get('roofs',[None]*len(p.get('footprints',[p['footprint']])))[j])for p in data['parcels']for j,f in enumerate(p.get('footprints',[p['footprint']]))]
 for p in render_parcels:
  district=p['district'];buffers=district_meshes.setdefault(district,[[],[],[],[]]);walls_v,walls_f,roofs_v,roofs_f=buffers
  xy=p['footprint']['coordinates'][0][:-1];base=p['groundM'];height=p['heightM'];n=len(xy)
@@ -42,7 +42,12 @@ for p in render_parcels:
     detail_v.extend([[cx-ux*w+nx,cy-uy*w+ny,z],[cx+ux*w+nx,cy+uy*w+ny,z],[cx+ux*w+nx,cy+uy*w+ny,z+window_height],[cx-ux*w+nx,cy-uy*w+ny,z+window_height]]);detail_f.append([i,i+1,i+2,i+3])
   if district=='noble_west':
    i=len(trim_v);trim_v.extend([[a[0]+nx,a[1]+ny,base+height-.9],[b[0]+nx,b[1]+ny,base+height-.9],[b[0]+nx,b[1]+ny,base+height-.35],[a[0]+nx,a[1]+ny,base+height-.35]]);trim_f.append([i,i+1,i+2,i+3])
- if n==4:
+ if p.get('roofGeometry'):
+  for face in p['roofGeometry']['surfaces']:
+   i=len(roofs_v);roofs_v.extend(face);roofs_f.append(list(range(i,i+len(face))))
+  for face in p['roofGeometry']['gables']:
+   i=len(walls_v);walls_v.extend(face);walls_f.append(list(range(i,i+len(face))))
+ elif n==4:
   # Gabled roof stays inside the convex four-sided footprint.
   if (Vector(xy[1])-Vector(xy[0])).length>(Vector(xy[2])-Vector(xy[1])).length:xy=xy[1:]+xy[:1]
   a=[(xy[0][k]+xy[1][k])/2 for k in range(2)];b=[(xy[2][k]+xy[3][k])/2 for k in range(2)]
@@ -60,6 +65,22 @@ for district,(wv,wf,rv,rf)in district_meshes.items():
  build(district+' roofs',rv,rf,mass_collection,material(district+' roof material',roof_color))
 build('District facade openings',detail_v,detail_f,mass_collection,window_mat)
 build('Noble cornices',trim_v,trim_f,mass_collection,trim_mat)
+# Entrance proportions are district-specific and follow actual retained frontage.
+door_v=[];door_f=[];arch_v=[];arch_f=[]
+for p in data['parcels']:
+ door=p.get('door')
+ if not door:continue
+ x,y,z=door['point'];ux,uy=door['along'];nx,ny=door['outward'];noble=p['district']=='noble_west';warehouse=p['district']=='quay'
+ width,height=(3.2,4.6)if noble else (4.5,4.2)if warehouse else (1.1,2.2)
+ def dv(t,h,offset=.045):return [x+ux*t+nx*offset,y+uy*t+ny*offset,z+h]
+ i=len(door_v);door_v.extend([dv(-width/2,0),dv(width/2,0),dv(width/2,height),dv(-width/2,height)]);door_f.append([i,i+1,i+2,i+3])
+ if noble:
+  # Stone jambs and arch crown provide depth at the courtyard entrance.
+  for lo,hi in [(-width/2-.35,-width/2),(width/2,width/2+.35)]:
+   i=len(arch_v);arch_v.extend([dv(lo,0,.12),dv(hi,0,.12),dv(hi,height,.12),dv(lo,height,.12)]);arch_f.append([i,i+1,i+2,i+3])
+  i=len(arch_v);arch_v.extend([dv(-width/2-.35,height,.12),dv(width/2+.35,height,.12),dv(0,height+1.2,.12)]);arch_f.append([i,i+1,i+2])
+build('Frontage entrance doors - visual only',door_v,door_f,mass_collection,material('Entrance timber',(.18,.12,.075)))
+build('Noble entrance stonework',arch_v,arch_f,mass_collection,trim_mat)
 # Gardens and an open gate-to-house walk stay inside each noble parcel.
 garden_mat=material('Noble garden grass',(.27,.38,.22));path_mat=material('Noble garden paving',(.65,.61,.49))
 gv=[];gf=[];pv=[];pf=[];fv=[];ff=[]
@@ -74,6 +95,12 @@ for p in data['parcels']:
   flat=[v for loop in loops for v in loop]
   for tri in tessellate_polygon(loops):
    i=len(gv);gv.extend([list(flat[v]if isinstance(v,int)else v)for v in tri]);gf.append([i,i+1,i+2])
+ if p.get('entryWalk'):
+  walk=p['entryWalk'];walks=[walk['coordinates']]if walk['type']=='Polygon'else walk['coordinates']
+  for rings in walks:
+   loop=[Vector((x,y,z+.15))for x,y in rings[0][:-1]]
+   for tri in tessellate_polygon([loop]):
+    i=len(pv);pv.extend([list(loop[v]if isinstance(v,int)else v)for v in tri]);pf.append([i,i+1,i+2])
  # Only emit path and front fence on retained frontage, avoiding clipped corner lots.
  ring=p['geometry']['coordinates'][0];area=abs(sum(a[0]*b[1]-b[0]*a[1]for a,b in zip(ring,ring[1:])))/2
  if area>=p['frontageM']*p['depthM']*.98:
@@ -81,6 +108,7 @@ for p in data['parcels']:
   for lo,hi in [(1,length/2-2),(length/2+2,length-1)]:
    if hi<=lo:continue
    i=len(fv);fv.extend([pt(lo,.7),pt(hi,.7),pt(hi,.7,1.7),pt(lo,.7,1.7)]);ff.append([i,i+1,i+2,i+3])
+build('Noble entry paths',pv,pf,mass_collection,path_mat)
 build('Noble private gardens',gv,gf,mass_collection,garden_mat)
 build('Noble frontage walls with open gates',fv,ff,mass_collection,trim_mat)
 # Two canonical landmark volume studies, reserved before ordinary parcels.
@@ -94,11 +122,14 @@ def box(name,loc,scale,mat):
 def tower(name,x,y,base,radius,height,spire):
  bpy.ops.mesh.primitive_cylinder_add(vertices=12,radius=radius,depth=height,location=(x,y,base+height/2));ob=bpy.context.object;ob.name=name;move_to_mass(ob);ob.data.materials.append(stone)
  bpy.ops.mesh.primitive_cone_add(vertices=12,radius1=radius*1.15,radius2=0,depth=spire,location=(x,y,base+height+spire/2));ob=bpy.context.object;ob.name=name+'_roof';move_to_mass(ob);ob.data.materials.append(blue)
-box('Proposed castle palace',(315,1090,220),(120,100,32),stone)['canonical_id']='LOC_CAP_CASTLE'
-box('Castle central keep',(315,1090,263),(58,56,54),stone)
-for x in [263,367]:
- for y in [1048,1132]:tower('Castle corner tower',x,y,204,12,56,22)
-tower('Castle highest tower',315,1090,236,20,65,28)
+site=data.get('castleSite');cx,cy=site['center']if site else (315,1090);radius=site['radiusM']if site else 70
+# Entire palace and tower footprints remain inside the reserved street-free circle.
+half=radius*.58;tr=radius*.12
+box('Proposed castle palace',(cx,cy,220),(half*2,half*2,32),stone)['canonical_id']='LOC_CAP_CASTLE'
+box('Castle central keep',(cx,cy,259),(half*.85,half*.85,46),stone)
+for x in [cx-half+tr, cx+half-tr]:
+ for y in [cy-half+tr,cy+half-tr]:tower('Castle corner tower',x,y,204,tr,56,22)
+tower('Castle highest tower',cx,cy,236,min(20,half*.45),65,28)
 tower('Proposed mage tower',1050,650,70,24,88,32)
 bpy.data.objects['Proposed mage tower']['canonical_id']='LOC_CAP_MAGE_TOWER'
 scene['parcel_status']='Review-only. No doors/collision/canonical facility reassignment acceptance.'
