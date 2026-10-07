@@ -204,6 +204,15 @@ for r in list(routes):
   other=LineString([p[:2]for p in main['points']]);a,b=nearest_points(line,other)
   if .05<a.distance(b)<35 and not crosses_unbridged_water(LineString([a,b])):
    route(r['id']+'_frontage_'+main['id'],[[a.x,a.y],[b.x,b.y]],6,'life',r['z0'])
+# A garden can separate an existing neighbourhood island from the main streets.
+# Join nearby lowland perimeter streets to its public walk on real flat ground.
+for r in list(routes):
+ if r['kind']!='contour' or r['z0']!=14:continue
+ a=LineString([p[:2]for p in r['points']])
+ for walk in [q for q in routes if q['kind']=='garden_walk']:
+  b=LineString([p[:2]for p in walk['points']]);p,q=nearest_points(a,b);link=LineString([p,q])
+  if 1<link.length<180 and domains['low_city'].buffer(.01).covers(link.buffer(2.5)):
+   joined=route(r['id']+'_garden_access',list(link.coords),5,'life',14);joined['role']='optional-life';break
 # Connect every ascent endpoint to the nearest same-level neighbourhood street.
 # Connections are audited below; they are not silently assumed walkable.
 for r in list(routes):

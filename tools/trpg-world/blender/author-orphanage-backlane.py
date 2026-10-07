@@ -29,7 +29,11 @@ for q in data['parcels']:
  else:retained.append(q)
 data['parcels']=retained
 for block in data['blocks']:block['parcelIds']=[i for i in block['parcelIds']if i not in removed]
-rid=fid+'_backlane';ps=[[v.x,v.y,14]for v in [path.interpolate(i/max(2,math.ceil(path.length/2)),normalized=True)for i in range(max(2,math.ceil(path.length/2))+1)]]
+rid=fid+'_backlane';ps=[]
+for a,b in zip(list(path.coords),list(path.coords)[1:]):
+ n=max(1,math.ceil(math.dist(a,b)/2))
+ ps.extend([[a[0]+(b[0]-a[0])*i/n,a[1]+(b[1]-a[1])*i/n,14]for i in range(n)])
+ps.append([*path.coords[-1],14])
 plan['routes'].append(dict(id=rid,kind='alley',width=2.8,points=ps,z0=14,z1=14,lengthM=path.length,grade=0,role='optional-life',canonicalFacilityId=fid,endStreetIds=[entry['id'],target],beats=['refuge','decision'],purpose='Everyday child/caretaker access, witnesses in T10/T11; no secret information advertised'))
 v=[];f=[]
 for t in constrained_delaunay_triangles(corridor).geoms:
