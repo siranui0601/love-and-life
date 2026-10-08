@@ -5,7 +5,7 @@ target=out/'capital-city-b01.blend'
 if target.exists():raise RuntimeError('Existing version protected')
 data=json.loads(source.read_text());bpy.ops.wm.read_factory_settings(use_empty=True);s=bpy.context.scene
 s.unit_settings.system='METRIC';s.unit_settings.scale_length=1;s['status']=data['status'];s['core_area_km2']=data['coreAreaKm2']
-colors={'garden':(.31,.41,.24),'ground':(.64,.64,.52),'stone':(.48,.46,.40),'primary':(.85,.62,.29),'lane':(.38,.45,.39),'stairs':(.75,.51,.37),'water':(.14,.42,.53)}
+colors={'iron':(.12,.14,.15),'wood':(.35,.19,.09),'hot':(.95,.32,.05),'garden':(.31,.41,.24),'ground':(.64,.64,.52),'stone':(.48,.46,.40),'primary':(.85,.62,.29),'lane':(.38,.45,.39),'stairs':(.75,.51,.37),'water':(.14,.42,.53)}
 mats={}
 for name,color in colors.items():
  m=bpy.data.materials.new(name);m.diffuse_color=(*color,1);mats[name]=m
@@ -14,7 +14,7 @@ for name in ['Terrain','Retaining','Primary','Life streets','Stairs','Water','Ca
  c=bpy.data.collections.new(name);s.collection.children.link(c);collections[name]=c
 route_by_id={r['id']:r for r in data['routes']}
 for entry in data['meshes']:
- kind=entry['material'];group={'garden':'Terrain','ground':'Terrain','stone':'Retaining','primary':'Primary','lane':'Life streets','stairs':'Stairs','water':'Water'}[kind]
+ kind=entry['material'];group={'garden':'Terrain','ground':'Terrain','stone':'Retaining','primary':'Primary','lane':'Life streets','stairs':'Stairs','water':'Water','iron':'Retaining','wood':'Retaining','hot':'Retaining'}[kind]
  me=bpy.data.meshes.new(entry['name']);me.from_pydata(entry['vertices'],[],entry['faces']);me.update();bm=bmesh.new();bm.from_mesh(me);bmesh.ops.recalc_face_normals(bm,faces=list(bm.faces))
  if kind in ['garden','ground','primary','lane','stairs']:
   for face in bm.faces:
