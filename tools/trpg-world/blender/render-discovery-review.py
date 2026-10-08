@@ -17,6 +17,13 @@ if p.get('craftCourtStudy'):
  def orient_camera(v):
   dx=v[0]-x;dy=v[1]-y;return (x+dx*math.cos(angle)-dy*math.sin(angle),y+dx*math.sin(angle)+dy*math.cos(angle),v[2])
  cameras.extend([('Craft-court-context',(x+75,y-90,z+75),(x,y+6,z+5),150,1),('Craft-court-entry',(a[0],a[1],z+1.7),orient_camera((x,y+12,z+3)),None,1),('Craft-court-work',orient_camera((x,y+2,z+1.7)),orient_camera((x-5,y+12,z+2)),None,1)])
+for ca in p.get('craftBlockStudy',{}).get('cameras',[]):
+ cameras.append((ca['name'],ca['position'],ca['target'],ca.get('scale'),1))
+if p.get('craftBlockStudy'):
+ r=next((r for r in p['routes']if r['id']=='craft_block_rear_loading'),None)
+ if r:
+  a=r['points'][int((len(r['points'])-1)*.65)];b=r['points'][0]
+  cameras.append(('Craft-block-rear-eye',(a[0],a[1],a[2]+1.9),(b[0],b[1],b[2]+2.5),None,1))
 for t in p.get('verticalTransportStudy',[]):
  x,y,z=t['position'];cameras.extend([('Hoist-lower',(x+75,y-80,z+45),(x,y,z+24),140,1),('Hoist-upper-docked',(x+75,y-80,z+45),(x,y,z+24),140,1777)])
 if p.get('burialCourtStudy'):
