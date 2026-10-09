@@ -1,0 +1,34 @@
+{
+  "status": "LOCAL_QA_PENDING",
+  "base": "design-b104",
+  "shifts": [
+    {
+      "prefix": "eastern_royal_offices",
+      "dx": -18,
+      "dy": 0,
+      "meshNames": [
+        "b101_eastern_royal_offices_block",
+        "b101_eastern_royal_offices_high_roof",
+        "b101_eastern_royal_offices_face_pier_0",
+        "b101_eastern_royal_offices_face_pier_1",
+        "b101_eastern_royal_offices_window_bay_0",
+        "b101_eastern_royal_offices_window_bay_1",
+        "b101_eastern_royal_offices_window_bay_2"
+      ]
+    },
+    {
+      "prefix": "western_command_barracks",
+      "dx": 40,
+      "dy": 5,
+      "meshNames": [
+        "b101_western_command_barracks_block",
+        "b101_western_command_barracks_high_roof",
+        "b101_western_command_barracks_face_pier_0",
+        "b101_western_command_barracks_face_pier_1",
+        "b101_western_command_barracks_window_bay_0",
+        "b101_western_command_barracks_window_bay_1",
+        "b101_western_command_barracks_window_bay_2"
+      ]
+    }
+  ]
+}
