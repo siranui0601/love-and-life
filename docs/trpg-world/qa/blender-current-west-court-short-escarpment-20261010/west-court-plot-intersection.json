@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "meshes": 8,
+  "projectedFaces": 1124,
+  "testedParcelFaceCandidates": 0,
+  "detectedProtectedPlotIntersections": [],
+  "note": "Face projection intersection; no geometry linked to protected building parcels is intentionally deleted."
+}
