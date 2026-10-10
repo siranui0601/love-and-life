@@ -1,0 +1,18 @@
+{
+  "status": "LOCAL_PASS",
+  "appliedBoolean": true,
+  "towerFaces": 26,
+  "targetRoutes": 3,
+  "rays": 438,
+  "rayObstructions": 0,
+  "floorSamples": 219,
+  "unsupportedSamples": 0,
+  "obstacleExamples": [],
+  "floorExamples": [],
+  "warnings": [
+    "Not full collision capsule nor navmesh",
+    "Elevator to upper tower floors absent",
+    "No NPC, research stations or game interactions",
+    "Outside 3 routes and baseline legacy geometry not exhaustively tested"
+  ]
+}
