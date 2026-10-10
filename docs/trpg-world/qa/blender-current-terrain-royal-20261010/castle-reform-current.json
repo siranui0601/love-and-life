@@ -1,0 +1,78 @@
+﻿{
+    "status":  "LOCAL_ACCEPTANCE_ONLY_CASTLE_AXIAL_AND_EXISTING_ROUTE_GEOMETRY",
+    "base":  "current",
+    "movedGateObjects":  [
+
+                         ],
+    "originalGateShiftX":  0,
+    "shiftedOffices":  [
+
+                       ],
+    "relocatedCornerTowers":  [
+                                  [
+                                      "Castle corner tower",
+                                      -168.5,
+                                      -6.71
+                                  ],
+                                  [
+                                      "Castle corner tower_roof",
+                                      -168.5,
+                                      -6.71
+                                  ],
+                                  [
+                                      "Castle corner tower.001",
+                                      -63.5,
+                                      64.36
+                                  ],
+                                  [
+                                      "Castle corner tower_roof.001",
+                                      -63.5,
+                                      64.36
+                                  ],
+                                  [
+                                      "Castle corner tower.002",
+                                      48.57,
+                                      33.29
+                                  ],
+                                  [
+                                      "Castle corner tower_roof.002",
+                                      48.57,
+                                      33.29
+                                  ],
+                                  [
+                                      "Castle corner tower.003",
+                                      3.57,
+                                      31.36
+                                  ],
+                                  [
+                                      "Castle corner tower_roof.003",
+                                      3.57,
+                                      31.36
+                                  ]
+                              ],
+    "removedLegacy":  [
+                          "Proposed castle palace",
+                          "b101_principal_throne_hall_high_roof"
+                      ],
+    "throneSolidHollowed":  true,
+    "hallFaces":  22,
+    "roofAisles":  3,
+    "entranceAxisX":  265,
+    "entranceRouteId":  "royal_processional_throne_entry_current",
+    "batchedGeometry":  [
+                            "current_royal_masonry",
+                            "current_royal_cornice",
+                            "current_royal_roof",
+                            "current_royal_roof_dark",
+                            "current_royal_accent",
+                            "current_royal_window",
+                            "current_royal_floor"
+                        ],
+    "outerBattlements":  100,
+    "limitations":  [
+                        "No full palace second-floor player navigation yet",
+                        "Collision along new processional path and with legacy object required",
+                        "Palace court cinematic identity must be reviewed by user from eye-level",
+                        "Castle defensive structures require all-side corridor connectivity"
+                    ]
+}

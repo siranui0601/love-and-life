@@ -1,0 +1,13 @@
+{
+  "status": "LOCAL_PASS",
+  "scopedRoutes": 10,
+  "sampleRays": 3372,
+  "relocatedAndNewObjects": 14,
+  "collisions": 0,
+  "examples": [],
+  "caveats": [
+    "3D rays not swept actor capsule",
+    "Does not include unchanged building meshes",
+    "Roof line and architectural visual quality review separately"
+  ]
+}
