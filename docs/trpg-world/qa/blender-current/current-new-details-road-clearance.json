@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "routesNearNoble": 22,
+  "rays": 12486,
+  "addedMeshes": 7,
+  "collisions": 0,
+  "hitRoutes": [],
+  "examples": [],
+  "caveats": [
+    "Discrete body/head ray, no swept capsule",
+    "Current geometry only; baseline city obstructions checked separately",
+    "Sampling on listed routes, no NPC or actual game pathfinding"
+  ]
+}
