@@ -1,0 +1,19 @@
+{
+  "status": "LOCAL_PASS",
+  "routeLengthM": 273.97,
+  "maxGrade": 0.6087,
+  "roofless": true,
+  "stairPreserved": true,
+  "floorTests": 798,
+  "floorMissing": [],
+  "bodyHeadRayTests": 1596,
+  "routeBlockers": [],
+  "preexistingRouteTests": 144,
+  "preexistingRoadBlockers": [],
+  "obstacleMeshesTested": 570,
+  "limitations": [
+    "31\u00b0 ramp only winch-assisted cart concept; no physical cart load simulation",
+    "No pedestrian wheelchair-accessible 5% route",
+    "Curb/landing turns require swept cart body and NPC testing"
+  ]
+}
