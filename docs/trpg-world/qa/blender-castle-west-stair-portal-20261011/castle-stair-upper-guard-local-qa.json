@@ -1,0 +1,17 @@
+{
+  "status": "LOCAL_PASS",
+  "groundOpenAreaM2": 38.291,
+  "groundFacesRemoved": 34,
+  "newGuardFaces": 204,
+  "newStairFloorProbes": 170,
+  "floorFailures": [],
+  "newGuardBodyHeadObstructions": [],
+  "sideFallBarrierRays": 68,
+  "sideBarrierNotDetected": [],
+  "nearbyOriginalRoadIDs": [
+    "castle_wall_stairs_landing_1",
+    "castle_ring_west_stair_link"
+  ],
+  "nearbyRoadGuardIntersections": [],
+  "note": "Localized stair upper mouth; game swept capsule/citywide wall inspection remains untested"
+}
