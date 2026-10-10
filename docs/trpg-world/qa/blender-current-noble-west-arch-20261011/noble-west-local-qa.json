@@ -1,0 +1,17 @@
+{
+  "status": "LOCAL_PASS",
+  "bridgeM": 11.99,
+  "footProbes": 320,
+  "footFailures": [],
+  "bodyHeadRays": 640,
+  "bodyFailures": [],
+  "parapetProbes": 48,
+  "parapetFailures": [],
+  "preexistingRoadsUnchanged": true,
+  "roadMeshFaceCount": 579,
+  "caveats": [
+    "Game navmesh/capsule simulation not executed",
+    "Masonry arch structural load study not performed",
+    "Only a 12m west noble stretch and its immediate approaches were evaluated"
+  ]
+}
