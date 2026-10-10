@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "actualNewFaceSamples": 103,
+  "invalidNewFaceCount": 0,
+  "newFaceExamples": [],
+  "neighboringRoadFloorSamples": 216,
+  "neighborRoadFloorMissing": 0,
+  "neighborFailExamples": [],
+  "areaM2": 164.782,
+  "renderTarget": "current local ground replacement",
+  "caveat": "User-reported holes elsewhere, gameplay continuous capsules, citywide floors remain unverified"
+}
