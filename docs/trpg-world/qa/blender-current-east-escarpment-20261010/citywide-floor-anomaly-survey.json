@@ -1,0 +1,443 @@
+{
+  "status": "ANOMALIES_REQUIRE_TRIAGE",
+  "scenario": "entire city road center and side support probes",
+  "timestamp": "2026-10-10",
+  "routesVisited": 1221,
+  "routeLengthKm": 196.48,
+  "candidatesTested": 4715,
+  "candidateMeshFaces": 124045,
+  "surfaceRays": 175111,
+  "totalFailureRays": 33,
+  "uniqueRecordedFailures": 33,
+  "failureExamples": [
+    {
+      "route": "court_wall_stairs",
+      "kind": "stairs",
+      "x": 101.16,
+      "y": 769.8,
+      "z": 138.64,
+      "width": 4,
+      "nearestFloorZ": 139.23,
+      "lateral": -0.75,
+      "nearMesh": "court_wall_stairs_treads"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.07,
+      "y": 1072.91,
+      "z": 202.42,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.07,
+      "y": 1072.91,
+      "z": 202.42,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.07,
+      "y": 1072.91,
+      "z": 202.42,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.43,
+      "y": 1073.17,
+      "z": 202.58,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.43,
+      "y": 1073.17,
+      "z": 202.58,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.43,
+      "y": 1073.17,
+      "z": 202.58,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.79,
+      "y": 1073.42,
+      "z": 202.75,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.79,
+      "y": 1073.42,
+      "z": 202.75,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 190.79,
+      "y": 1073.42,
+      "z": 202.75,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.15,
+      "y": 1073.68,
+      "z": 202.92,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.15,
+      "y": 1073.68,
+      "z": 202.92,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.15,
+      "y": 1073.68,
+      "z": 202.92,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.51,
+      "y": 1073.94,
+      "z": 203.08,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.51,
+      "y": 1073.94,
+      "z": 203.08,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.51,
+      "y": 1073.94,
+      "z": 203.08,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.87,
+      "y": 1074.19,
+      "z": 203.25,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.87,
+      "y": 1074.19,
+      "z": 203.25,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 191.87,
+      "y": 1074.19,
+      "z": 203.25,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 192.23,
+      "y": 1074.45,
+      "z": 203.42,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.0,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 192.23,
+      "y": 1074.45,
+      "z": 203.42,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": -0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "castle_wall_stairs",
+      "kind": "stairs",
+      "x": 192.23,
+      "y": 1074.45,
+      "z": 203.42,
+      "width": 4,
+      "nearestFloorZ": 204.02,
+      "lateral": 0.75,
+      "nearMesh": "b104_castle_outer_ground_extension"
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -556.5,
+      "y": 557.31,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -556.5,
+      "y": 557.31,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -556.5,
+      "y": 557.31,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -560.4,
+      "y": 558.18,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -560.4,
+      "y": 558.18,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -560.4,
+      "y": 558.18,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -564.3,
+      "y": 559.05,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -564.3,
+      "y": 559.05,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": 76.9,
+      "lateral": -0.75,
+      "nearMesh": "distributed_access_freight_continuous_deck"
+    },
+    {
+      "route": "noble_west_contour_1",
+      "kind": "contour",
+      "x": -564.3,
+      "y": 559.05,
+      "z": 78.0,
+      "width": 7,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "civic_foot_contour_1_retained_1",
+      "kind": "contour",
+      "x": -593.16,
+      "y": 520.39,
+      "z": 42.0,
+      "width": 7,
+      "nearestFloorZ": 43.44,
+      "lateral": 0.75,
+      "nearMesh": "distributed_access_stair_tread_2_6"
+    },
+    {
+      "route": "civic_foot_contour_1_retained_1",
+      "kind": "contour",
+      "x": -591.21,
+      "y": 519.95,
+      "z": 42.0,
+      "width": 7,
+      "nearestFloorZ": 42.73,
+      "lateral": 0.75,
+      "nearMesh": "b116_noble_east_wall_stair_mitered_stone_step_lattice"
+    }
+  ],
+  "failCountsByKind": {
+    "stairs": 22,
+    "contour": 11
+  },
+  "topFailRoutes": [
+    {
+      "id": "castle_wall_stairs",
+      "failCount": 21,
+      "rayTotal": 915
+    },
+    {
+      "id": "noble_west_contour_1",
+      "failCount": 9,
+      "rayTotal": 1581
+    },
+    {
+      "id": "civic_foot_contour_1_retained_1",
+      "failCount": 2,
+      "rayTotal": 849
+    },
+    {
+      "id": "court_wall_stairs",
+      "failCount": 1,
+      "rayTotal": 858
+    }
+  ],
+  "spatialClusters": [
+    {
+      "gridX": 200,
+      "gridY": 1080,
+      "z": 205,
+      "failRayCount": 18
+    },
+    {
+      "gridX": -560,
+      "gridY": 560,
+      "z": 80,
+      "failRayCount": 9
+    },
+    {
+      "gridX": 200,
+      "gridY": 1080,
+      "z": 200,
+      "failRayCount": 3
+    },
+    {
+      "gridX": -600,
+      "gridY": 520,
+      "z": 40,
+      "failRayCount": 2
+    },
+    {
+      "gridX": 100,
+      "gridY": 760,
+      "z": 140,
+      "failRayCount": 1
+    }
+  ],
+  "sampleFailureCapped": false,
+  "seconds": 1.3,
+  "limitations": [
+    "Detection scope includes route centrelines with narrow shoulder probes, not full route area",
+    "Unmodeled special-purpose walkability surfaces not matching mesh name patterns may cause false positives",
+    "No NPC navigation, swept capsule, jumping, stairs comfort or cart movement simulation",
+    "Result not a certification of route safety"
+  ]
+}

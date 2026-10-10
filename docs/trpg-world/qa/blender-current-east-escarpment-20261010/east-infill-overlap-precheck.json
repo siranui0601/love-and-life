@@ -1,0 +1,42 @@
+{
+  "forecourt building walls": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 4456
+  },
+  "forecourt roofs": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 1413
+  },
+  "District facade openings": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 1680256
+  },
+  "forecourt_ground": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 6342
+  },
+  "castle_ground": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 2418
+  },
+  "castle_retaining": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 20
+  },
+  "current_royal_masonry": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 984
+  },
+  "b104_castle_integrated_outer_retaining": {
+    "verticesInsideNewInfill": 0,
+    "examples": [],
+    "vertexCount": 56
+  }
+}

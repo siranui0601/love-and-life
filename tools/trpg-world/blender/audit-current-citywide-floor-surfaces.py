@@ -13,7 +13,7 @@ surfaces=[]
 for obj in bpy.data.objects:
  if obj.type!='MESH' or not obj.data.polygons:continue
  nm=obj.name.lower()
- if (obj.name in routeMeshNames or any(p in nm for p in pats)) and not any(p in nm for p in ('roof','_window','_rail','_parapet','_support','roofing','_bench')):
+ if (obj.name in routeMeshNames or any(p in nm for p in pats) or nm in ('current_east_escarpment_rock','current_east_escarpment_stone')) and not any(p in nm for p in ('roof','_window','_rail','_parapet','_support','roofing','_bench')):
   surfaces.append(obj)
 vertices=[];faces=[];sources=[]
 for ob in surfaces:
