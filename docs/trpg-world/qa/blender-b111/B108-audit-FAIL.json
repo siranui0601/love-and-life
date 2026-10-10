@@ -1,0 +1,337 @@
+{
+  "status": "FAIL",
+  "route": "royal_civic_short_stone_stairs",
+  "rays": 3000,
+  "obstructions": 27,
+  "floorSamples": 1338,
+  "unsupported": 28,
+  "examples": [
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        653.2,
+        646.62,
+        43.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        653.2,
+        646.62,
+        43.8
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        654.24,
+        646.5,
+        43.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        653.51,
+        646.58,
+        43.8
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        639.97,
+        636.17,
+        56.42
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        634.93,
+        636.23,
+        57.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        614.77,
+        630.4,
+        70.22
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        614.18,
+        630.08,
+        70.61
+      ]
+    },
+    {
+      "obstacle": "b108_royal_stair_belvedere_70",
+      "at": [
+        614.0,
+        629.99,
+        69.98
+      ]
+    },
+    {
+      "obstacle": "b108_royal_stair_belvedere_70",
+      "at": [
+        613.88,
+        629.93,
+        70.06
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        609.69,
+        630.06,
+        71.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        609.27,
+        630.58,
+        71.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        590.67,
+        623.52,
+        84.16
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        590.1,
+        623.18,
+        84.56
+      ]
+    },
+    {
+      "obstacle": "b108_royal_stair_belvedere_84",
+      "at": [
+        590.0,
+        623.12,
+        83.88
+      ]
+    },
+    {
+      "obstacle": "b108_royal_stair_belvedere_84",
+      "at": [
+        589.75,
+        622.96,
+        84.06
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        587.65,
+        624.77,
+        85.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        587.22,
+        625.31,
+        85.05
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        600.34,
+        650.44,
+        98.56
+      ]
+    },
+    {
+      "obstacle": "b108_royal_gate_integrated_parapets",
+      "at": [
+        600.72,
+        650.98,
+        98.1
+      ]
+    }
+  ],
+  "floorExamples": [
+    {
+      "at": [
+        639.1,
+        635.6,
+        55.3
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        638.9,
+        635.5,
+        55.5
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        638.7,
+        635.4,
+        55.7
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        634.3,
+        636.8,
+        56.0
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        633.7,
+        637.5,
+        56.0
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        613.4,
+        629.7,
+        69.3
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        613.2,
+        629.5,
+        69.5
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        613.8,
+        628.4,
+        69.5
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        612.9,
+        629.4,
+        69.7
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        613.5,
+        628.3,
+        69.7
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        612.0,
+        627.2,
+        70.0
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        609.0,
+        630.9,
+        70.0
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        589.3,
+        622.7,
+        83.3
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        589.1,
+        622.5,
+        83.5
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        589.7,
+        621.4,
+        83.5
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        588.8,
+        622.4,
+        83.7
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        589.5,
+        621.3,
+        83.7
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        588.0,
+        620.2,
+        84.0
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        587.0,
+        625.6,
+        84.0
+      ],
+      "support": null
+    },
+    {
+      "at": [
+        586.5,
+        626.2,
+        84.0
+      ],
+      "support": null
+    }
+  ],
+  "limitations": [
+    "Only B108 and nearby new B107 surfaces",
+    "No continuity/capsule test",
+    "No manual walk or 415-step endurance test"
+  ]
+}
