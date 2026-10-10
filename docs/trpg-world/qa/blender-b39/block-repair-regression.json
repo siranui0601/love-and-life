@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "addedRoutes": 410,
+  "preservedRoutes": 661,
+  "errors": [],
+  "limitations": "Geometry/semantic regression only; not visual approval or gameplay certification"
+}

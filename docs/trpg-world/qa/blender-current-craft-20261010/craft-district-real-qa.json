@@ -1,0 +1,32 @@
+{
+  "status": "LOCAL_PASS",
+  "existingRoutesUnchanged": true,
+  "linkDistancesM": {
+    "current_craft_access_caravan_wheelwright": 0.0,
+    "current_craft_access_stonecutters_yard": 0.0,
+    "current_craft_access_craft_guild_hall": 0.0,
+    "current_craft_access_forgehall": 0.0,
+    "current_craft_access_dyeing_drying_yard": 0.0,
+    "current_craft_access_herbal_common": 0.0,
+    "current_craft_west_spine->market_ascent_short_lower": 0.0,
+    "current_craft_east_spine->market_arrival_court_link": 0.0
+  },
+  "siteCount": 6,
+  "newRoutes": 17,
+  "newRouteLenM": 694.21,
+  "testedColliders": 137,
+  "colliderFaces": 1577,
+  "castCount": 2556,
+  "collisions": 0,
+  "floorSamples": 1278,
+  "unsupported": 0,
+  "colliderBreakdown": [],
+  "collisionExamples": [],
+  "floorExamples": [],
+  "limitations": [
+    "Discrete rays not full collision capsule or cart radius",
+    "Legacy render-only immense aggregate facades excluded",
+    "No player/NPC service loop logic or in-game interaction tests",
+    "Facilities provisional and do not modify authoritative TRPG spreadsheet"
+  ]
+}

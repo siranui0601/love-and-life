@@ -1,0 +1,40 @@
+{
+  "status": "PENDING_VISUAL_COLLISION_QA",
+  "replacedOldRoute": "castle_east_ramp",
+  "oldLengthM": 523.3743139869699,
+  "removedOldMeshes": [
+    "castle_east_ramp",
+    "castle_east_ramp_graded_bench",
+    "castle_east_ramp_terrace_support",
+    "castle_east_ramp_outer_parapet",
+    "castle_east_ramp_treads"
+  ],
+  "newMeshes": [
+    "current_east_escarpment_rock",
+    "current_east_escarpment_stone",
+    "current_east_escarpment_treads",
+    "current_east_escarpment_rails",
+    "current_east_escarpment_iron",
+    "current_east_escarpment_brass"
+  ],
+  "newRoutes": [
+    "current_castle_east_stone_stairs",
+    "current_castle_east_winch_ramp",
+    "current_castle_east_overlook_1",
+    "current_castle_east_overlook_2"
+  ],
+  "stairRiseM": 48,
+  "stairRunsM": 116,
+  "stairTreadCount": 240,
+  "freightInclinationDeg": 22.5,
+  "noRoof": true,
+  "sideParapets": true,
+  "parcelOverlayM2": 0,
+  "scope": "east royal terrace only",
+  "caveats": [
+    "Real in-game winch machinery absent",
+    "Stair/masonry terrain may intersect existing castle wall below top until tested",
+    "Old landing road geometry and wider connectivity must be audited",
+    "Castle west and upper city other ramps not fixed by this pass"
+  ]
+}

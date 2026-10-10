@@ -1,4 +1,5 @@
 import {CAPITAL,distance,nearestOnSegment,distanceToLine,elevationAt,terrainBaseAt} from './capital-data.js';
+import {surveyedHeightAt} from './capital-terraces.js';
 export function sampleLine(points,spacingM=8){
  const out=[points[0]];
  for(let i=1;i<points.length;i++){
@@ -27,9 +28,10 @@ export function edgeHeightAt(edge,position){
  }
  if(edge.surfaceOffsetsM){
   const a=edge.points[0],b=edge.points.at(-1),total=distance(a,b),travel=distance(a,nearestOnSegment(position,a,b));let t=travel/(total||1);if(edge.surfaceRampM)t=edge.surfaceOffsetsM[0]<edge.surfaceOffsetsM[1]?Math.max(0,(travel-total+edge.surfaceRampM)/edge.surfaceRampM):Math.min(1,travel/edge.surfaceRampM);
-  return elevationAt(...position)+.28+edge.surfaceOffsetsM[0]*(1-t)+edge.surfaceOffsetsM[1]*t;
+  const u=travel/(total||1),base=edge.deckBaseHeightsM?edge.deckBaseHeightsM[0]*(1-u)+edge.deckBaseHeightsM.at(-1)*u:elevationAt(...position);
+  return base+.28+edge.surfaceOffsetsM[0]*(1-t)+edge.surfaceOffsetsM[1]*t;
  }
- return elevationAt(...position)+.28;
+ return (edge.streetHeightsM?surveyedHeightAt(edge,position):elevationAt(...position))+.28;
 }
 // Local queries must remain practical as neighbourhood lanes become a real mesh.
 const roadBuckets=new Map(),roadCell=.06,courtPlots=CAPITAL.buildings.filter(b=>b.courtyardId);

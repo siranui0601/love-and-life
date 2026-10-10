@@ -1,0 +1,23 @@
+{
+  "status": "LOCAL_PASS",
+  "testedRoutes": 6,
+  "preservedPriorRoutes": true,
+  "newBatchedMeshes": 8,
+  "floorRays": 402,
+  "floorFailures": [],
+  "preexistingRouteFloorHeightDiscrepancy": [
+    [
+      "castle_east_ramp_landing_1",
+      276.93,
+      1159.67,
+      205.0
+    ]
+  ],
+  "bodyHeadRays": 804,
+  "collisions": [],
+  "caveats": [
+    "No whole-castle capsule sweep, building interior room navigation, royal NPC scripting or playable doors",
+    "Palace rooftop visual/artistic acceptance requires aerial/eye review",
+    "No actual castle east or western court ramp rework in this stage"
+  ]
+}

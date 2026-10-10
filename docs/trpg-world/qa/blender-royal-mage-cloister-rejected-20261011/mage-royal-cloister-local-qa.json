@@ -1,0 +1,22 @@
+{
+  "status": "LOCAL_PASS",
+  "newRoutes": [
+    "royal_arcane_tower_archive_open_cloister",
+    "royal_arcane_summoning_garden_route"
+  ],
+  "existingRoadsPreserved": 1222,
+  "oldWallsRemoved": [
+    "b100_scribe_archive_wall_3",
+    "b100_royal_ritual_annex_wall_0"
+  ],
+  "floorProbes": 123,
+  "bodyHeadRays": 762,
+  "floorFailures": [],
+  "newPathCollisions": [],
+  "oldRoadNewCollisions": [],
+  "caveats": [
+    "Only 6 routes were checked, not all city routes",
+    "No playable interiors or navigation mesh",
+    "No NPC academy magic events"
+  ]
+}

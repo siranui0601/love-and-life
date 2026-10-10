@@ -1,0 +1,80 @@
+﻿{
+    "status":  "BLENDER_LOCAL_PASS_FREIGHT_MOTOR_AND_GAMEPLAY_PENDING",
+    "center":  [
+                   628.0,
+                   670.0
+               ],
+    "lowerRoad":  [
+                      613.5238261246353,
+                      648.0571956008304,
+                      "civic_wall_gallery_lower"
+                  ],
+    "upperRoad":  [
+                      580.7319078686697,
+                      672.4882839793448,
+                      "upper_city_contour_1"
+                  ],
+    "stationLandParcelIntersectionSqm":  0,
+    "routeId":  "current_civic_upper_short_stair_east",
+    "routeLength3dM":  251.8,
+    "oldCartRampPreserved":  false,
+    "riseM":  70,
+    "stairFlights":  5,
+    "steps":  350,
+    "riserM":  0.2,
+    "treadM":  0.329,
+    "distinctMeshObjects":  [
+                                "current_civic_upper_short_stair",
+                                "current_civic_upper_short_support",
+                                "current_civic_upper_short_bridge",
+                                "current_civic_upper_short_rail",
+                                "current_civic_upper_short_stone",
+                                "current_civic_royal_hoist_masonry",
+                                "current_civic_royal_hoist_iron",
+                                "current_civic_royal_hoist_platform"
+                            ],
+    "caveats":  [
+                    "Actual freight hoist platform movement not implemented in Blender static scene",
+                    "Gallery wall must be verified closed after removing the old ramp abutments",
+                    "Check upper and lower access and approach for walking collisions",
+                    "Cargo throughput, lift machinery and game logic need follow-on development"
+                ],
+    "sourceRampRemoved":  true,
+    "oldRampRemovedRouteIds":  [
+                                   "civic_royal_ramp",
+                                   "civic_royal_ramp_landing_0",
+                                   "civic_royal_ramp_landing_1"
+                               ],
+    "oldRampRemovedMeshNames":  [
+                                    "civic_royal_ramp",
+                                    "civic_royal_ramp_graded_bench",
+                                    "civic_royal_ramp_terrace_support",
+                                    "civic_royal_ramp_outer_parapet",
+                                    "civic_royal_ramp_landing_0",
+                                    "civic_royal_ramp_landing_1",
+                                    "wall_gallery_abutment_civic_royal_ramp_167",
+                                    "wall_gallery_abutment_civic_royal_ramp_168",
+                                    "wall_gallery_abutment_civic_royal_ramp_169",
+                                    "wall_gallery_abutment_civic_royal_ramp_170",
+                                    "wall_gallery_abutment_civic_royal_ramp_171",
+                                    "wall_gallery_abutment_civic_royal_ramp_172"
+                                ],
+    "openedGalleryDoorPanels":  [
+                                    "wall_gallery_civic_wall_gallery_lower_40_wall_-1",
+                                    "wall_gallery_civic_wall_gallery_lower_41_wall_-1"
+                                ],
+    "hoistPosition":  [
+                          605.0,
+                          692.0
+                      ],
+    "freightAccessLower":  [
+                               611.0,
+                               650.0
+                           ],
+    "freightAccessUpper":  [
+                               582.0,
+                               692.0
+                           ],
+    "freightHoistModeled":  true,
+    "freightHoistGameMotionImplemented":  false
+}

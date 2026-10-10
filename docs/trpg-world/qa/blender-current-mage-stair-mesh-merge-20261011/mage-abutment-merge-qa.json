@@ -1,0 +1,19 @@
+{
+  "status": "LOSSLESS_STATIC_MESH_PASS",
+  "sourceObjects": 362,
+  "mergedObjects": 1,
+  "oldFaces": 5205,
+  "newFaces": 5205,
+  "sourceVertices": 20789,
+  "newVertices": 20789,
+  "maxCoordinateDifferenceMeters": 6.100728478486417e-05,
+  "faceVertexSetMismatches": 0,
+  "unchangedRoutes": 1222,
+  "materialPreserved": true,
+  "artQualityUnchanged": true,
+  "limitations": [
+    "Stair structural gaps and unusual geometry were preserved exactly, not repaired",
+    "No player/vehicle swept validation",
+    "No performance benchmark or in-game navmesh test"
+  ]
+}

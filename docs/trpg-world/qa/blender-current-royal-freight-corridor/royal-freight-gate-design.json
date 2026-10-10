@@ -1,0 +1,23 @@
+{
+  "status": "PENDING_FREIGHT_PATH_QA",
+  "modifiedMesh": "current_civic_upper_short_stone",
+  "modifiedObjectCount": 1,
+  "priorSouthPierCenter": [
+    619.1,
+    645.5
+  ],
+  "newSouthPierCenter": [
+    619.1,
+    639.5
+  ],
+  "northPierUnchanged": [
+    619.1,
+    652.5
+  ],
+  "overheadLintelM": [
+    639.1,
+    652.9
+  ],
+  "preservedOriginalStairGeometry": true,
+  "caveat": "Ancillary gallery route swept capsule and visual review still pending"
+}

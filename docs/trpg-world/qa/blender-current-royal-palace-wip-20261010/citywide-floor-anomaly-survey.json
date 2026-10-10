@@ -1,0 +1,4935 @@
+{
+  "status": "ANOMALIES_REQUIRE_TRIAGE",
+  "scenario": "entire city road center and side support probes",
+  "timestamp": "2026-10-10",
+  "routesVisited": 1214,
+  "routeLengthKm": 196.62,
+  "candidatesTested": 3681,
+  "candidateMeshFaces": 84371,
+  "surfaceRays": 175351,
+  "totalFailureRays": 2439,
+  "uniqueRecordedFailures": 400,
+  "failureExamples": [
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -178.86,
+      "y": 683.84,
+      "z": 112.0,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -178.86,
+      "y": 683.84,
+      "z": 112.0,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -178.86,
+      "y": 683.84,
+      "z": 112.0,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -177.46,
+      "y": 688.57,
+      "z": 112.08,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -177.46,
+      "y": 688.57,
+      "z": 112.08,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -177.46,
+      "y": 688.57,
+      "z": 112.08,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -176.92,
+      "y": 690.38,
+      "z": 112.24,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -176.92,
+      "y": 690.38,
+      "z": 112.24,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -176.92,
+      "y": 690.38,
+      "z": 112.24,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -176.39,
+      "y": 692.19,
+      "z": 112.41,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -176.39,
+      "y": 692.19,
+      "z": 112.41,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -176.39,
+      "y": 692.19,
+      "z": 112.41,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -175.85,
+      "y": 694.0,
+      "z": 112.57,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -175.85,
+      "y": 694.0,
+      "z": 112.57,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -175.85,
+      "y": 694.0,
+      "z": 112.57,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -175.32,
+      "y": 695.8,
+      "z": 112.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -175.32,
+      "y": 695.8,
+      "z": 112.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -175.32,
+      "y": 695.8,
+      "z": 112.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -174.78,
+      "y": 697.61,
+      "z": 112.9,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -174.78,
+      "y": 697.61,
+      "z": 112.9,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -174.78,
+      "y": 697.61,
+      "z": 112.9,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -174.25,
+      "y": 699.42,
+      "z": 113.06,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -174.25,
+      "y": 699.42,
+      "z": 113.06,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -174.25,
+      "y": 699.42,
+      "z": 113.06,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -173.71,
+      "y": 701.22,
+      "z": 113.22,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -173.71,
+      "y": 701.22,
+      "z": 113.22,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -173.71,
+      "y": 701.22,
+      "z": 113.22,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -173.18,
+      "y": 703.03,
+      "z": 113.39,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -173.18,
+      "y": 703.03,
+      "z": 113.39,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -173.18,
+      "y": 703.03,
+      "z": 113.39,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -172.64,
+      "y": 704.84,
+      "z": 113.55,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -172.64,
+      "y": 704.84,
+      "z": 113.55,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -172.64,
+      "y": 704.84,
+      "z": 113.55,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -172.1,
+      "y": 706.65,
+      "z": 113.71,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -172.1,
+      "y": 706.65,
+      "z": 113.71,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -172.1,
+      "y": 706.65,
+      "z": 113.71,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -171.57,
+      "y": 708.45,
+      "z": 113.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -171.57,
+      "y": 708.45,
+      "z": 113.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -171.57,
+      "y": 708.45,
+      "z": 113.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -171.03,
+      "y": 710.26,
+      "z": 114.04,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -171.03,
+      "y": 710.26,
+      "z": 114.04,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -171.03,
+      "y": 710.26,
+      "z": 114.04,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -170.5,
+      "y": 712.07,
+      "z": 114.2,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -170.5,
+      "y": 712.07,
+      "z": 114.2,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -170.5,
+      "y": 712.07,
+      "z": 114.2,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -169.96,
+      "y": 713.87,
+      "z": 114.36,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -169.96,
+      "y": 713.87,
+      "z": 114.36,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -169.96,
+      "y": 713.87,
+      "z": 114.36,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -169.43,
+      "y": 715.68,
+      "z": 114.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -169.43,
+      "y": 715.68,
+      "z": 114.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -169.43,
+      "y": 715.68,
+      "z": 114.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -168.89,
+      "y": 717.49,
+      "z": 114.69,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -168.89,
+      "y": 717.49,
+      "z": 114.69,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -168.89,
+      "y": 717.49,
+      "z": 114.69,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -168.36,
+      "y": 719.3,
+      "z": 114.85,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -168.36,
+      "y": 719.3,
+      "z": 114.85,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -168.36,
+      "y": 719.3,
+      "z": 114.85,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -167.73,
+      "y": 721.4,
+      "z": 114.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -167.73,
+      "y": 721.4,
+      "z": 114.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -167.73,
+      "y": 721.4,
+      "z": 114.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -167.11,
+      "y": 723.5,
+      "z": 115.01,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -167.11,
+      "y": 723.5,
+      "z": 115.01,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -167.11,
+      "y": 723.5,
+      "z": 115.01,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -166.58,
+      "y": 725.31,
+      "z": 115.18,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -166.58,
+      "y": 725.31,
+      "z": 115.18,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -166.58,
+      "y": 725.31,
+      "z": 115.18,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -166.04,
+      "y": 727.11,
+      "z": 115.34,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -166.04,
+      "y": 727.11,
+      "z": 115.34,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -166.04,
+      "y": 727.11,
+      "z": 115.34,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -165.5,
+      "y": 728.92,
+      "z": 115.5,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -165.5,
+      "y": 728.92,
+      "z": 115.5,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -165.5,
+      "y": 728.92,
+      "z": 115.5,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -164.97,
+      "y": 730.73,
+      "z": 115.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -164.97,
+      "y": 730.73,
+      "z": 115.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -164.97,
+      "y": 730.73,
+      "z": 115.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -164.43,
+      "y": 732.54,
+      "z": 115.83,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -164.43,
+      "y": 732.54,
+      "z": 115.83,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -164.43,
+      "y": 732.54,
+      "z": 115.83,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -163.9,
+      "y": 734.34,
+      "z": 115.99,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -163.9,
+      "y": 734.34,
+      "z": 115.99,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -163.9,
+      "y": 734.34,
+      "z": 115.99,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -163.36,
+      "y": 736.15,
+      "z": 116.16,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -163.36,
+      "y": 736.15,
+      "z": 116.16,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -163.36,
+      "y": 736.15,
+      "z": 116.16,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -162.83,
+      "y": 737.96,
+      "z": 116.32,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -162.83,
+      "y": 737.96,
+      "z": 116.32,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -162.83,
+      "y": 737.96,
+      "z": 116.32,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -162.29,
+      "y": 739.77,
+      "z": 116.48,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -162.29,
+      "y": 739.77,
+      "z": 116.48,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -162.29,
+      "y": 739.77,
+      "z": 116.48,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -161.76,
+      "y": 741.57,
+      "z": 116.64,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -161.76,
+      "y": 741.57,
+      "z": 116.64,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -161.76,
+      "y": 741.57,
+      "z": 116.64,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -161.22,
+      "y": 743.38,
+      "z": 116.81,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -161.22,
+      "y": 743.38,
+      "z": 116.81,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -161.22,
+      "y": 743.38,
+      "z": 116.81,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -160.69,
+      "y": 745.19,
+      "z": 116.97,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -160.69,
+      "y": 745.19,
+      "z": 116.97,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -160.69,
+      "y": 745.19,
+      "z": 116.97,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -160.15,
+      "y": 746.99,
+      "z": 117.13,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -160.15,
+      "y": 746.99,
+      "z": 117.13,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -160.15,
+      "y": 746.99,
+      "z": 117.13,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -159.61,
+      "y": 748.8,
+      "z": 117.3,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -159.61,
+      "y": 748.8,
+      "z": 117.3,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -159.61,
+      "y": 748.8,
+      "z": 117.3,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -159.08,
+      "y": 750.61,
+      "z": 117.46,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -159.08,
+      "y": 750.61,
+      "z": 117.46,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -159.08,
+      "y": 750.61,
+      "z": 117.46,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -158.54,
+      "y": 752.42,
+      "z": 117.62,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -158.54,
+      "y": 752.42,
+      "z": 117.62,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -158.54,
+      "y": 752.42,
+      "z": 117.62,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -158.01,
+      "y": 754.22,
+      "z": 117.79,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -158.01,
+      "y": 754.22,
+      "z": 117.79,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -158.01,
+      "y": 754.22,
+      "z": 117.79,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -157.39,
+      "y": 756.32,
+      "z": 117.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -157.39,
+      "y": 756.32,
+      "z": 117.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -157.39,
+      "y": 756.32,
+      "z": 117.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -156.76,
+      "y": 758.43,
+      "z": 117.95,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -156.76,
+      "y": 758.43,
+      "z": 117.95,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -156.76,
+      "y": 758.43,
+      "z": 117.95,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -156.23,
+      "y": 760.23,
+      "z": 118.11,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -156.23,
+      "y": 760.23,
+      "z": 118.11,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -156.23,
+      "y": 760.23,
+      "z": 118.11,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -155.69,
+      "y": 762.04,
+      "z": 118.27,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -155.69,
+      "y": 762.04,
+      "z": 118.27,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -155.69,
+      "y": 762.04,
+      "z": 118.27,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -155.16,
+      "y": 763.85,
+      "z": 118.44,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -155.16,
+      "y": 763.85,
+      "z": 118.44,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -155.16,
+      "y": 763.85,
+      "z": 118.44,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -154.62,
+      "y": 765.66,
+      "z": 118.6,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -154.62,
+      "y": 765.66,
+      "z": 118.6,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -154.62,
+      "y": 765.66,
+      "z": 118.6,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -154.09,
+      "y": 767.46,
+      "z": 118.76,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -154.09,
+      "y": 767.46,
+      "z": 118.76,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -154.09,
+      "y": 767.46,
+      "z": 118.76,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -153.55,
+      "y": 769.27,
+      "z": 118.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -153.55,
+      "y": 769.27,
+      "z": 118.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -153.55,
+      "y": 769.27,
+      "z": 118.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -153.01,
+      "y": 771.08,
+      "z": 119.09,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -153.01,
+      "y": 771.08,
+      "z": 119.09,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -153.01,
+      "y": 771.08,
+      "z": 119.09,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -152.48,
+      "y": 772.88,
+      "z": 119.25,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -152.48,
+      "y": 772.88,
+      "z": 119.25,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -152.48,
+      "y": 772.88,
+      "z": 119.25,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -151.94,
+      "y": 774.69,
+      "z": 119.41,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -151.94,
+      "y": 774.69,
+      "z": 119.41,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -151.94,
+      "y": 774.69,
+      "z": 119.41,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -151.41,
+      "y": 776.5,
+      "z": 119.58,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -151.41,
+      "y": 776.5,
+      "z": 119.58,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -151.41,
+      "y": 776.5,
+      "z": 119.58,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -150.87,
+      "y": 778.31,
+      "z": 119.74,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -150.87,
+      "y": 778.31,
+      "z": 119.74,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -150.87,
+      "y": 778.31,
+      "z": 119.74,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -150.34,
+      "y": 780.11,
+      "z": 119.9,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -150.34,
+      "y": 780.11,
+      "z": 119.9,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -150.34,
+      "y": 780.11,
+      "z": 119.9,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -149.8,
+      "y": 781.92,
+      "z": 120.07,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -149.8,
+      "y": 781.92,
+      "z": 120.07,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -149.8,
+      "y": 781.92,
+      "z": 120.07,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -149.27,
+      "y": 783.73,
+      "z": 120.23,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -149.27,
+      "y": 783.73,
+      "z": 120.23,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -149.27,
+      "y": 783.73,
+      "z": 120.23,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -148.73,
+      "y": 785.53,
+      "z": 120.39,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -148.73,
+      "y": 785.53,
+      "z": 120.39,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -148.73,
+      "y": 785.53,
+      "z": 120.39,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -148.2,
+      "y": 787.34,
+      "z": 120.56,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -148.2,
+      "y": 787.34,
+      "z": 120.56,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -148.2,
+      "y": 787.34,
+      "z": 120.56,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -147.66,
+      "y": 789.15,
+      "z": 120.72,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -147.66,
+      "y": 789.15,
+      "z": 120.72,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -147.66,
+      "y": 789.15,
+      "z": 120.72,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -147.04,
+      "y": 791.25,
+      "z": 120.8,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -147.04,
+      "y": 791.25,
+      "z": 120.8,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -147.04,
+      "y": 791.25,
+      "z": 120.8,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -146.41,
+      "y": 793.35,
+      "z": 120.88,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -146.41,
+      "y": 793.35,
+      "z": 120.88,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -146.41,
+      "y": 793.35,
+      "z": 120.88,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -145.88,
+      "y": 795.16,
+      "z": 121.04,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -145.88,
+      "y": 795.16,
+      "z": 121.04,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -145.88,
+      "y": 795.16,
+      "z": 121.04,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -145.34,
+      "y": 796.97,
+      "z": 121.21,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -145.34,
+      "y": 796.97,
+      "z": 121.21,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -145.34,
+      "y": 796.97,
+      "z": 121.21,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -144.81,
+      "y": 798.77,
+      "z": 121.37,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -144.81,
+      "y": 798.77,
+      "z": 121.37,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -144.81,
+      "y": 798.77,
+      "z": 121.37,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -144.27,
+      "y": 800.58,
+      "z": 121.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -144.27,
+      "y": 800.58,
+      "z": 121.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -144.27,
+      "y": 800.58,
+      "z": 121.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -143.74,
+      "y": 802.39,
+      "z": 121.7,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -143.74,
+      "y": 802.39,
+      "z": 121.7,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -143.74,
+      "y": 802.39,
+      "z": 121.7,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -143.2,
+      "y": 804.2,
+      "z": 121.86,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -143.2,
+      "y": 804.2,
+      "z": 121.86,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -143.2,
+      "y": 804.2,
+      "z": 121.86,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -142.67,
+      "y": 806.0,
+      "z": 122.02,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -142.67,
+      "y": 806.0,
+      "z": 122.02,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -142.67,
+      "y": 806.0,
+      "z": 122.02,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -142.13,
+      "y": 807.81,
+      "z": 122.19,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -142.13,
+      "y": 807.81,
+      "z": 122.19,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -142.13,
+      "y": 807.81,
+      "z": 122.19,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -141.59,
+      "y": 809.62,
+      "z": 122.35,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -141.59,
+      "y": 809.62,
+      "z": 122.35,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -141.59,
+      "y": 809.62,
+      "z": 122.35,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -141.06,
+      "y": 811.43,
+      "z": 122.51,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -141.06,
+      "y": 811.43,
+      "z": 122.51,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -141.06,
+      "y": 811.43,
+      "z": 122.51,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.59,
+      "y": 813.25,
+      "z": 122.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.59,
+      "y": 813.25,
+      "z": 122.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.59,
+      "y": 813.25,
+      "z": 122.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.27,
+      "y": 815.1,
+      "z": 122.84,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.27,
+      "y": 815.1,
+      "z": 122.84,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.27,
+      "y": 815.1,
+      "z": 122.84,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.08,
+      "y": 816.97,
+      "z": 123.0,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.08,
+      "y": 816.97,
+      "z": 123.0,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.08,
+      "y": 816.97,
+      "z": 123.0,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 818.85,
+      "z": 123.16,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 818.85,
+      "z": 123.16,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 818.85,
+      "z": 123.16,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 820.74,
+      "z": 123.33,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 820.74,
+      "z": 123.33,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 820.74,
+      "z": 123.33,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 822.62,
+      "z": 123.49,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 822.62,
+      "z": 123.49,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 822.62,
+      "z": 123.49,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 824.51,
+      "z": 123.65,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 824.51,
+      "z": 123.65,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 824.51,
+      "z": 123.65,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 826.7,
+      "z": 123.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 826.7,
+      "z": 123.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 826.7,
+      "z": 123.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 828.89,
+      "z": 123.81,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 828.89,
+      "z": 123.81,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 828.89,
+      "z": 123.81,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 830.78,
+      "z": 123.98,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 830.78,
+      "z": 123.98,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 830.78,
+      "z": 123.98,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 832.66,
+      "z": 124.14,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 832.66,
+      "z": 124.14,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 832.66,
+      "z": 124.14,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 834.55,
+      "z": 124.3,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 834.55,
+      "z": 124.3,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 834.55,
+      "z": 124.3,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 836.43,
+      "z": 124.47,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 836.43,
+      "z": 124.47,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 836.43,
+      "z": 124.47,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 838.32,
+      "z": 124.63,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 838.32,
+      "z": 124.63,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 838.32,
+      "z": 124.63,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 840.2,
+      "z": 124.79,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 840.2,
+      "z": 124.79,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 840.2,
+      "z": 124.79,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 842.08,
+      "z": 124.96,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 842.08,
+      "z": 124.96,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 842.08,
+      "z": 124.96,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 843.97,
+      "z": 125.12,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 843.97,
+      "z": 125.12,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 843.97,
+      "z": 125.12,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 845.85,
+      "z": 125.28,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 845.85,
+      "z": 125.28,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 845.85,
+      "z": 125.28,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 847.74,
+      "z": 125.44,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 847.74,
+      "z": 125.44,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 847.74,
+      "z": 125.44,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 849.62,
+      "z": 125.61,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 849.62,
+      "z": 125.61,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 849.62,
+      "z": 125.61,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 851.51,
+      "z": 125.77,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 851.51,
+      "z": 125.77,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 851.51,
+      "z": 125.77,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 853.39,
+      "z": 125.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 853.39,
+      "z": 125.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 853.39,
+      "z": 125.93,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 855.28,
+      "z": 126.1,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 855.28,
+      "z": 126.1,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 855.28,
+      "z": 126.1,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 857.16,
+      "z": 126.26,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 857.16,
+      "z": 126.26,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 857.16,
+      "z": 126.26,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 859.05,
+      "z": 126.42,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 859.05,
+      "z": 126.42,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 859.05,
+      "z": 126.42,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 860.93,
+      "z": 126.59,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 860.93,
+      "z": 126.59,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 860.93,
+      "z": 126.59,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 863.13,
+      "z": 126.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 863.13,
+      "z": 126.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 863.13,
+      "z": 126.67,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 865.32,
+      "z": 126.75,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 865.32,
+      "z": 126.75,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 865.32,
+      "z": 126.75,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 867.2,
+      "z": 126.91,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 867.2,
+      "z": 126.91,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 867.2,
+      "z": 126.91,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 869.09,
+      "z": 127.07,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 869.09,
+      "z": 127.07,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 869.09,
+      "z": 127.07,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 870.97,
+      "z": 127.24,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 870.97,
+      "z": 127.24,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 870.97,
+      "z": 127.24,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 872.86,
+      "z": 127.4,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 872.86,
+      "z": 127.4,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 872.86,
+      "z": 127.4,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 874.74,
+      "z": 127.56,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 874.74,
+      "z": 127.56,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 874.74,
+      "z": 127.56,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 876.63,
+      "z": 127.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 876.63,
+      "z": 127.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 876.63,
+      "z": 127.73,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 878.51,
+      "z": 127.89,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 878.51,
+      "z": 127.89,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 878.51,
+      "z": 127.89,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 880.4,
+      "z": 128.05,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 880.4,
+      "z": 128.05,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 880.4,
+      "z": 128.05,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 882.28,
+      "z": 128.21,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 882.28,
+      "z": 128.21,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 882.28,
+      "z": 128.21,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 884.17,
+      "z": 128.38,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 884.17,
+      "z": 128.38,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 884.17,
+      "z": 128.38,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 886.05,
+      "z": 128.54,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 886.05,
+      "z": 128.54,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 886.05,
+      "z": 128.54,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 887.94,
+      "z": 128.7,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 887.94,
+      "z": 128.7,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 887.94,
+      "z": 128.7,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 889.82,
+      "z": 128.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 889.82,
+      "z": 128.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 889.82,
+      "z": 128.87,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 891.71,
+      "z": 129.03,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 891.71,
+      "z": 129.03,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 891.71,
+      "z": 129.03,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 893.59,
+      "z": 129.19,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 893.59,
+      "z": 129.19,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 893.59,
+      "z": 129.19,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 895.48,
+      "z": 129.36,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 895.48,
+      "z": 129.36,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 895.48,
+      "z": 129.36,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 897.36,
+      "z": 129.52,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 897.36,
+      "z": 129.52,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 897.36,
+      "z": 129.52,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 899.55,
+      "z": 129.6,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 899.55,
+      "z": 129.6,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 899.55,
+      "z": 129.6,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 901.75,
+      "z": 129.68,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 901.75,
+      "z": 129.68,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 901.75,
+      "z": 129.68,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 903.63,
+      "z": 129.84,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 903.63,
+      "z": 129.84,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 903.63,
+      "z": 129.84,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 905.52,
+      "z": 130.01,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 905.52,
+      "z": 130.01,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 905.52,
+      "z": 130.01,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 907.4,
+      "z": 130.17,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 907.4,
+      "z": 130.17,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 907.4,
+      "z": 130.17,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 909.28,
+      "z": 130.33,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 909.28,
+      "z": 130.33,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 909.28,
+      "z": 130.33,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 911.17,
+      "z": 130.5,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 911.17,
+      "z": 130.5,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 911.17,
+      "z": 130.5,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 913.05,
+      "z": 130.66,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 913.05,
+      "z": 130.66,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 913.05,
+      "z": 130.66,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 914.94,
+      "z": 130.82,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 914.94,
+      "z": 130.82,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 914.94,
+      "z": 130.82,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 916.82,
+      "z": 130.99,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 916.82,
+      "z": 130.99,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 916.82,
+      "z": 130.99,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 918.71,
+      "z": 131.15,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 918.71,
+      "z": 131.15,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 918.71,
+      "z": 131.15,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 920.59,
+      "z": 131.31,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 920.59,
+      "z": 131.31,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 920.59,
+      "z": 131.31,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 922.48,
+      "z": 131.47,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 922.48,
+      "z": 131.47,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 922.48,
+      "z": 131.47,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 924.36,
+      "z": 131.64,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 924.36,
+      "z": 131.64,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 924.36,
+      "z": 131.64,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 926.25,
+      "z": 131.8,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 926.25,
+      "z": 131.8,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 926.25,
+      "z": 131.8,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 928.13,
+      "z": 131.96,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 928.13,
+      "z": 131.96,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 928.13,
+      "z": 131.96,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 930.02,
+      "z": 132.13,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 930.02,
+      "z": 132.13,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 930.02,
+      "z": 132.13,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 931.9,
+      "z": 132.29,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 931.9,
+      "z": 132.29,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 931.9,
+      "z": 132.29,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 933.79,
+      "z": 132.45,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 933.79,
+      "z": 132.45,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": -0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 933.79,
+      "z": 132.45,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.75,
+      "nearMesh": null
+    },
+    {
+      "route": "court_west_ramp",
+      "kind": "stairs",
+      "x": -140.0,
+      "y": 935.98,
+      "z": 132.53,
+      "width": 8,
+      "nearestFloorZ": null,
+      "lateral": 0.0,
+      "nearMesh": null
+    }
+  ],
+  "failCountsByKind": {
+    "stairs": 1783,
+    "primary": 10,
+    "secondary": 31,
+    "alley": 124,
+    "contour": 98,
+    "life": 124,
+    "tower_stairs": 269
+  },
+  "topFailRoutes": [
+    {
+      "id": "castle_east_ramp",
+      "failCount": 903,
+      "rayTotal": 915
+    },
+    {
+      "id": "court_west_ramp",
+      "failCount": 858,
+      "rayTotal": 858
+    },
+    {
+      "id": "mage_east_contour_1",
+      "failCount": 87,
+      "rayTotal": 1476
+    },
+    {
+      "id": "mage_east_lane_9",
+      "failCount": 69,
+      "rayTotal": 84
+    },
+    {
+      "id": "interior_life_design-b52_mage_east_11",
+      "failCount": 57,
+      "rayTotal": 72
+    },
+    {
+      "id": "interior_life_design-b52_mage_east_7",
+      "failCount": 45,
+      "rayTotal": 75
+    },
+    {
+      "id": "mage_east_lane_2",
+      "failCount": 27,
+      "rayTotal": 189
+    },
+    {
+      "id": "castle_wall_stairs",
+      "failCount": 21,
+      "rayTotal": 915
+    },
+    {
+      "id": "interior_life_design-b52_civic_foot_3",
+      "failCount": 12,
+      "rayTotal": 75
+    },
+    {
+      "id": "ajin_daily_loop",
+      "failCount": 11,
+      "rayTotal": 1149
+    },
+    {
+      "id": "upper_watchtower_flight_1",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_2",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_3",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_4",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_5",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_6",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_7",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_8",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_9",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_10",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_11",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_12",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_13",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_14",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_15",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_16",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_17",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_18",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_19",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_20",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_21",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_22",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "upper_watchtower_flight_23",
+      "failCount": 11,
+      "rayTotal": 11
+    },
+    {
+      "id": "south_gate_market",
+      "failCount": 10,
+      "rayTotal": 1038
+    },
+    {
+      "id": "lower_daily_loop",
+      "failCount": 9,
+      "rayTotal": 792
+    },
+    {
+      "id": "civic_foot_lane_21",
+      "failCount": 9,
+      "rayTotal": 81
+    },
+    {
+      "id": "noble_west_contour_1",
+      "failCount": 9,
+      "rayTotal": 1581
+    },
+    {
+      "id": "low_city_contour_10_frontage_ajin_daily_loop",
+      "failCount": 9,
+      "rayTotal": 27
+    },
+    {
+      "id": "upper_watchtower_flight_24",
+      "failCount": 9,
+      "rayTotal": 9
+    },
+    {
+      "id": "low_city_contour_12_frontage_lower_daily_loop",
+      "failCount": 7,
+      "rayTotal": 24
+    }
+  ],
+  "spatialClusters": [
+    {
+      "gridX": 360,
+      "gridY": 1200,
+      "z": 190,
+      "failRayCount": 48
+    },
+    {
+      "gridX": 280,
+      "gridY": 1220,
+      "z": 200,
+      "failRayCount": 45
+    },
+    {
+      "gridX": 460,
+      "gridY": 1020,
+      "z": 170,
+      "failRayCount": 39
+    },
+    {
+      "gridX": 460,
+      "gridY": 1100,
+      "z": 175,
+      "failRayCount": 39
+    },
+    {
+      "gridX": 460,
+      "gridY": 1040,
+      "z": 170,
+      "failRayCount": 36
+    },
+    {
+      "gridX": 440,
+      "gridY": 1120,
+      "z": 180,
+      "failRayCount": 36
+    },
+    {
+      "gridX": -20,
+      "gridY": -820,
+      "z": 15,
+      "failRayCount": 36
+    },
+    {
+      "gridX": -160,
+      "gridY": 740,
+      "z": 115,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -140,
+      "gridY": 800,
+      "z": 120,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -140,
+      "gridY": 840,
+      "z": 125,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -140,
+      "gridY": 980,
+      "z": 135,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -140,
+      "gridY": 1020,
+      "z": 140,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -120,
+      "gridY": 1080,
+      "z": 145,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -60,
+      "gridY": 1140,
+      "z": 150,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -20,
+      "gridY": 1160,
+      "z": 155,
+      "failRayCount": 33
+    },
+    {
+      "gridX": 400,
+      "gridY": 940,
+      "z": 160,
+      "failRayCount": 33
+    },
+    {
+      "gridX": 440,
+      "gridY": 980,
+      "z": 165,
+      "failRayCount": 33
+    },
+    {
+      "gridX": 440,
+      "gridY": 1000,
+      "z": 165,
+      "failRayCount": 33
+    },
+    {
+      "gridX": 460,
+      "gridY": 1080,
+      "z": 175,
+      "failRayCount": 33
+    },
+    {
+      "gridX": 400,
+      "gridY": 1160,
+      "z": 185,
+      "failRayCount": 33
+    },
+    {
+      "gridX": -160,
+      "gridY": 760,
+      "z": 120,
+      "failRayCount": 30
+    },
+    {
+      "gridX": -140,
+      "gridY": 820,
+      "z": 125,
+      "failRayCount": 30
+    },
+    {
+      "gridX": -140,
+      "gridY": 860,
+      "z": 125,
+      "failRayCount": 30
+    },
+    {
+      "gridX": -140,
+      "gridY": 900,
+      "z": 130,
+      "failRayCount": 30
+    },
+    {
+      "gridX": -140,
+      "gridY": 920,
+      "z": 130,
+      "failRayCount": 30
+    },
+    {
+      "gridX": -140,
+      "gridY": 960,
+      "z": 135,
+      "failRayCount": 30
+    },
+    {
+      "gridX": 420,
+      "gridY": 960,
+      "z": 160,
+      "failRayCount": 30
+    },
+    {
+      "gridX": 280,
+      "gridY": 1200,
+      "z": 200,
+      "failRayCount": 30
+    },
+    {
+      "gridX": -180,
+      "gridY": 700,
+      "z": 115,
+      "failRayCount": 27
+    },
+    {
+      "gridX": -160,
+      "gridY": 720,
+      "z": 115,
+      "failRayCount": 27
+    },
+    {
+      "gridX": -140,
+      "gridY": 880,
+      "z": 130,
+      "failRayCount": 27
+    },
+    {
+      "gridX": -120,
+      "gridY": 1040,
+      "z": 140,
+      "failRayCount": 27
+    },
+    {
+      "gridX": 340,
+      "gridY": 1220,
+      "z": 195,
+      "failRayCount": 27
+    },
+    {
+      "gridX": 320,
+      "gridY": 1240,
+      "z": 195,
+      "failRayCount": 27
+    },
+    {
+      "gridX": 1120,
+      "gridY": 440,
+      "z": 90,
+      "failRayCount": 27
+    },
+    {
+      "gridX": 1120,
+      "gridY": 440,
+      "z": 95,
+      "failRayCount": 27
+    },
+    {
+      "gridX": -140,
+      "gridY": 940,
+      "z": 135,
+      "failRayCount": 24
+    },
+    {
+      "gridX": -100,
+      "gridY": 1100,
+      "z": 145,
+      "failRayCount": 24
+    },
+    {
+      "gridX": -80,
+      "gridY": 1120,
+      "z": 150,
+      "failRayCount": 24
+    },
+    {
+      "gridX": 400,
+      "gridY": 920,
+      "z": 160,
+      "failRayCount": 24
+    },
+    {
+      "gridX": 460,
+      "gridY": 1060,
+      "z": 175,
+      "failRayCount": 24
+    },
+    {
+      "gridX": 300,
+      "gridY": 1240,
+      "z": 195,
+      "failRayCount": 24
+    },
+    {
+      "gridX": 1120,
+      "gridY": 440,
+      "z": 100,
+      "failRayCount": 23
+    },
+    {
+      "gridX": 1120,
+      "gridY": 440,
+      "z": 70,
+      "failRayCount": 22
+    },
+    {
+      "gridX": -140,
+      "gridY": 1000,
+      "z": 140,
+      "failRayCount": 21
+    },
+    {
+      "gridX": -80,
+      "gridY": 1140,
+      "z": 150,
+      "failRayCount": 21
+    },
+    {
+      "gridX": -40,
+      "gridY": 1140,
+      "z": 155,
+      "failRayCount": 21
+    },
+    {
+      "gridX": 440,
+      "gridY": 1140,
+      "z": 180,
+      "failRayCount": 21
+    },
+    {
+      "gridX": 420,
+      "gridY": 1160,
+      "z": 185,
+      "failRayCount": 21
+    },
+    {
+      "gridX": 380,
+      "gridY": 1180,
+      "z": 190,
+      "failRayCount": 21
+    }
+  ],
+  "sampleFailureCapped": true,
+  "seconds": 1.1,
+  "limitations": [
+    "Detection scope includes route centrelines with narrow shoulder probes, not full route area",
+    "Unmodeled special-purpose walkability surfaces not matching mesh name patterns may cause false positives",
+    "No NPC navigation, swept capsule, jumping, stairs comfort or cart movement simulation",
+    "Result not a certification of route safety"
+  ]
+}

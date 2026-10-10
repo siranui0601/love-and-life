@@ -1,0 +1,82 @@
+{
+  "status": "PENDING_STREET_VISUAL_AND_QA",
+  "newParkCount": 2,
+  "names": [
+    "Lower People Green",
+    "Upper Terrace Reflection Garden"
+  ],
+  "locations": [
+    [
+      -550,
+      -900,
+      14
+    ],
+    [
+      200,
+      610,
+      112
+    ]
+  ],
+  "newMeshes": [
+    "current_two_new_parks_stone",
+    "current_two_new_parks_walk",
+    "current_two_new_parks_grass",
+    "current_two_new_parks_leaf",
+    "current_two_new_parks_wood",
+    "current_two_new_parks_water"
+  ],
+  "newRoutes": 5,
+  "entrancesLower": 3,
+  "entrancesUpper": 2,
+  "parkRoles": [
+    "water/social shade",
+    "view/rest reflection"
+  ],
+  "caveats": [
+    "Aesthetic acceptance, continuous NPC movement and all-city public greens remain unfinished"
+  ],
+  "parks": [
+    {
+      "name": "Lower People Green",
+      "footprint": [
+        32,
+        25
+      ],
+      "z": 14,
+      "openGates": 3
+    },
+    {
+      "name": "Upper City Grand Botanical Gardens",
+      "footprint": [
+        105,
+        95
+      ],
+      "z": 112,
+      "openGates": 3
+    }
+  ],
+  "grandGardenNewMeshes": [
+    "current_upper_grand_garden_stone",
+    "current_upper_grand_garden_path",
+    "current_upper_grand_garden_turf",
+    "current_upper_grand_garden_tree",
+    "current_upper_grand_garden_timber",
+    "current_upper_grand_garden_water",
+    "current_upper_grand_garden_bronze"
+  ],
+  "grandGardenNewRoutes": [
+    "current_upper_garden_great_walk",
+    "current_upper_garden_south_gate",
+    "current_upper_garden_east_court",
+    "current_upper_garden_record_branch",
+    "current_upper_garden_eastern_prospect"
+  ],
+  "features": [
+    "arbor and shade walks",
+    "central reflection court",
+    "surveyers sundial",
+    "open-access records portico",
+    "stone eastern prospect terrace",
+    "three separated public approaches"
+  ]
+}

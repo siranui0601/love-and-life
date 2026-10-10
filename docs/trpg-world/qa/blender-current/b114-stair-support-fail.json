@@ -1,0 +1,165 @@
+{
+  "status": "FAIL",
+  "routes": [
+    "west_noble_wall_stairs",
+    "west_noble_wall_stairs_landing_0",
+    "west_noble_wall_stairs_landing_1",
+    "noble_east_wall_stair"
+  ],
+  "supportMeshCount": 7,
+  "samples": {
+    "west_noble_wall_stairs": 798,
+    "west_noble_wall_stairs_landing_0": 120,
+    "west_noble_wall_stairs_landing_1": 72,
+    "noble_east_wall_stair": 843
+  },
+  "supported": {
+    "west_noble_wall_stairs": 792,
+    "west_noble_wall_stairs_landing_0": 120,
+    "west_noble_wall_stairs_landing_1": 72,
+    "noble_east_wall_stair": 834
+  },
+  "unsupported": 15,
+  "examples": [
+    {
+      "route": "west_noble_wall_stairs",
+      "at": [
+        -854.58,
+        837.38,
+        57.83
+      ],
+      "down": 58.26
+    },
+    {
+      "route": "west_noble_wall_stairs",
+      "at": [
+        -856.01,
+        839.07,
+        58.0
+      ],
+      "down": null
+    },
+    {
+      "route": "west_noble_wall_stairs",
+      "at": [
+        -853.19,
+        840.5,
+        58.67
+      ],
+      "down": null
+    },
+    {
+      "route": "west_noble_wall_stairs",
+      "at": [
+        -852.23,
+        840.61,
+        58.83
+      ],
+      "down": null
+    },
+    {
+      "route": "west_noble_wall_stairs",
+      "at": [
+        -821.2,
+        836.16,
+        65.17
+      ],
+      "down": null
+    },
+    {
+      "route": "west_noble_wall_stairs",
+      "at": [
+        -817.88,
+        834.83,
+        66.0
+      ],
+      "down": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -572.28,
+        514.62,
+        42.0
+      ],
+      "down": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -582.0,
+        521.0,
+        42.0
+      ],
+      "down": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -590.85,
+        519.47,
+        42.0
+      ],
+      "down": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -608.62,
+        551.68,
+        59.52
+      ],
+      "down": 60.1
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -608.8,
+        551.96,
+        59.68
+      ],
+      "down": 60.1
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -606.8,
+        558.6,
+        60.0
+      ],
+      "down": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.84,
+        588.55,
+        77.52
+      ],
+      "down": 78.1
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.62,
+        588.83,
+        77.68
+      ],
+      "down": 78.1
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.4,
+        590.8,
+        78.0
+      ],
+      "down": null
+    }
+  ],
+  "limitations": [
+    "Only route/ground support meshes included",
+    "No swept actor capsule",
+    "All buildings/railings not included"
+  ]
+}

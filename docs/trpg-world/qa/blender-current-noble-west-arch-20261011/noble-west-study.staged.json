@@ -1,0 +1,40 @@
+{
+  "status": "PENDING_LOCAL_QA",
+  "changedMesh": "noble_west_contour_1",
+  "oldFaces": 537,
+  "newFaces": 579,
+  "newVerts": 2195,
+  "routeIDsChanged": [],
+  "stitchedSamples": [
+    [
+      -554.5475720375906,
+      556.8808250192694,
+      78.0
+    ],
+    [
+      -558.4501523687545,
+      557.7480630168131,
+      78.0
+    ],
+    [
+      -562.3527326999189,
+      558.6153010143571,
+      78.0
+    ],
+    [
+      -566.2553130310829,
+      559.4825390119009,
+      78.0
+    ]
+  ],
+  "bridgeLengthM": 11.99,
+  "widthM": 7,
+  "vaultDepthAtHaunchM": 6.06,
+  "voidZ": 78.0,
+  "undersideType": "stone arch vault",
+  "guardWalls": "integrated both sides",
+  "limitations": [
+    "Masonry physical spans are schematic; no structural engineering",
+    "Local travel and side fall protection still require ray and gameplay review"
+  ]
+}

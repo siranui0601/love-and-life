@@ -1,8 +1,43 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CAPITAL,elevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
+import {CAPITAL,elevationAt,groundElevationAt,terrainBaseAt,distance,distanceToLine} from '../public/capital-review/capital-data.js';
 import {findAlternatives} from '../public/capital-review/capital-routing.js';
 import {buildingParts} from '../public/capital-review/capital-courtyards.js';
+import {buildStreetBlocks} from '../public/capital-review/capital-blocks.js';
+import {benchElevation,surveyedHeightAt} from '../public/capital-review/capital-terraces.js';
+import {pointInPolygon} from '../public/capital-review/capital-data.js';
+test('a raised building floor cannot pull a peak into the surrounding ground mesh',()=>{
+ const b=CAPITAL.buildings.find(b=>b.frontage&&!b.courtyardId),p=b.position,ground=groundElevationAt(...p),floor=elevationAt(...p),saved=b.benchHeightM;
+ try{b.benchHeightM+=10;assert.equal(groundElevationAt(...p),ground);assert.ok(Math.abs(elevationAt(...p)-floor-10)<1e-8);}
+ finally{b.benchHeightM=saved;}
+});
+test('street enclosure splits crossings into four real blocks and ignores a dead-end spur',()=>{
+ const core=[[0,0],[.2,0],[.2,.2],[0,.2]],walls=core.map((p,i)=>({id:'w'+i,points:[p,core[(i+1)%4]]}));
+ const edges=[{id:'east-west',points:[[0,.1],[.2,.1]]},{id:'north-south',points:[[.1,0],[.1,.2]]},{id:'dead-end',points:[[.1,.05],[.15,.05]]}];
+ const blocks=buildStreetBlocks({core,walls,edges,inside:pointInPolygon});
+ assert.equal(blocks.length,4);assert.ok(blocks.every(b=>Math.abs(b.areaM2-10000)<.01));
+});
+test('ordinary buildings occupy a surveyed street block before their footprint is accepted',()=>{
+ const blocks=new Map(CAPITAL.streetBlocks.map(b=>[b.id,b]));assert.ok(blocks.size>300);
+ for(const b of CAPITAL.buildings.filter(b=>b.frontage)){
+  const block=blocks.get(b.blockId);assert.ok(block,b.id+' has no enclosed land parcel');
+  const c=Math.cos(b.rotationRad),s=Math.sin(b.rotationRad);
+  for(const [u,v]of [[-1,-1],[1,-1],[1,1],[-1,1]])assert.ok(pointInPolygon([b.position[0]+(u*b.widthM*c-v*b.depthM*s)/2000,b.position[1]+(u*b.widthM*s+v*b.depthM*c)/2000],block.polygon),b.id+' crosses its street block');
+ }
+});
+test('bench levels contain actual flat land and continuous retaining transitions',()=>{
+ assert.equal(benchElevation(36),46);assert.equal(benchElevation(55),46);
+ assert.equal(benchElevation(68),78);assert.equal(benchElevation(88),78);
+ for(let h=14;h<300;h+=.01)assert.ok(Math.abs(benchElevation(h+.001)-benchElevation(h))<.061,'discontinuous datum at '+h);
+});
+test('switchback stairs have two-metre level landings in the physical surface',()=>{
+ const e={points:[[0,0],[.06,0]],streetHeightsM:[0,18],stairLayout:'contour-switchback'};
+ assert.ok(surveyedHeightAt(e,[.008,0])<surveyedHeightAt(e,[.010,0]));
+ assert.equal(surveyedHeightAt(e,[.010,0]),surveyedHeightAt(e,[.012,0]));
+ assert.equal(surveyedHeightAt(e,[.060,0]),18);
+ assert.ok(CAPITAL.edges.some(e=>e.stairLayout==='contour-switchback'));
+ for(const e of CAPITAL.edges.filter(e=>e.streetHeightsM)){assert.equal(e.points.length,e.streetHeightsM.length,e.id);assert.ok(e.streetHeightsM.every(Number.isFinite),e.id);}
+});
 test('courtyard residents share the physical pedestrian graph and evacuate through city streets',async()=>{
  const {trafficPlans,trafficAgents}=await import('../public/capital-review/capital-traffic.js'),{obstacleAt}=await import('../public/capital-review/capital-spatial.js');
  for(const hour of [7,12,18]){const plans=trafficPlans({hour}).filter(p=>p.id.startsWith('courtyard-'));assert.equal(plans.length,3);
@@ -70,7 +105,7 @@ test('dense core has substantial roof coverage and a finer grain in lower neighb
 });
 test('small block loops and protected courts create choices beyond principal streets',()=>{
  assert.ok(CAPITAL.urbanBlocks.length>=20);
- for(const block of CAPITAL.urbanBlocks){assert.ok(CAPITAL.nodes.some(n=>n.position===block.court));assert.ok(CAPITAL.edges.some(e=>e.points.some(p=>p===block.court)));}
+ for(const block of CAPITAL.urbanBlocks){assert.ok(CAPITAL.nodes.some(n=>distance(n.position,block.court)<.001));assert.ok(CAPITAL.edges.some(e=>e.points.some(p=>distance(p,block.court)<.001)));}
 });
 
 test('outskirts are sparse roadside buildings, with no copied wall-scale district',()=>{
@@ -100,8 +135,8 @@ test('all neighbourhood lanes connect to the authored graph at real junctions',(
  for(const e of lanes){assert.ok(found.has(e.from)&&found.has(e.to));assert.equal(e.points[0],CAPITAL.nodes.find(n=>n.id===e.from).position);}
 });
 test('castle benches expose substantial local relief and the distributary stays on one river datum',()=>{
- const faces=CAPITAL.retainingFaces.flatMap(f=>f.points),centre=CAPITAL.hillCentre;
- const readable=faces.filter(p=>{const dx=p[0]-centre[0],dy=p[1]-centre[1],len=Math.hypot(dx,dy);return elevationAt(p[0]-dx/len*.012,p[1]-dy/len*.012)-elevationAt(p[0]+dx/len*.012,p[1]+dy/len*.012)>15;});
+ const faces=CAPITAL.surveyedRetainingFaces.flatMap(f=>f.lines);
+ const readable=faces.filter(([a,b])=>{const p=[(a[0]+b[0])/2,(a[1]+b[1])/2],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);return Math.abs(elevationAt(p[0]-dy/len*.012,p[1]+dx/len*.012)-elevationAt(p[0]+dy/len*.012,p[1]-dx/len*.012))>15;});
  assert.ok(readable.length>60,'terraces need exposed relief, not just endpoint height metadata');
  const water=CAPITAL.rivers[0];for(const p of water.points)assert.ok(Math.abs(terrainBaseAt(...p)-14)<.001,'river climbs the hill');
  const n=id=>CAPITAL.nodes.find(n=>n.id===id);assert.ok(elevationAt(...n('castle').position)-elevationAt(...n('market').position)>190);
@@ -115,4 +150,22 @@ test('royal investigation detours do not collide with duplicate checkpoints on s
   const barriers=activeBarriers(state),points=sampleLine(pathPolyline(route),3);
   for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],result=moveWalker(a,[(b[0]-a[0])*1000,(b[1]-a[1])*1000],state,{barriers});assert.equal(result.blocked,null,event+' '+b);}
  }
+});
+
+test('road ground refinement shares every internal edge without overlapping shoulder sheets',async()=>{
+ const {buildGroundMesh}=await import('../public/capital-review/capital-ground-mesh.js');
+ const {positions,indices}=buildGroundMesh({bounds:{minX:0,maxX:2,minY:0,maxY:1},nx:2,nz:1,heightAt:(x,y)=>x*y,localAt:p=>p,refineAt:p=>p[0]<1});
+ const links=new Map();let area=0;
+ for(let i=0;i<indices.length;i+=3){const ids=indices.slice(i,i+3),p=ids.map(k=>[positions[k*3],positions[k*3+2]]);area+=Math.abs((p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[2][0]-p[0][0])*(p[1][1]-p[0][1]))/2;
+  for(let j=0;j<3;j++){const pair=[ids[j],ids[(j+1)%3]].sort((a,b)=>a-b),key=pair.join(',');links.set(key,(links.get(key)||0)+1);}
+ }
+ assert.equal(area,2);
+ for(const [key,count]of links){const p=key.split(',').map(Number).map(k=>[positions[k*3],positions[k*3+2]]),outer=[0,2].some(x=>p.every(q=>q[0]===x))||[0,1].some(y=>p.every(q=>q[1]===y));assert.equal(count,outer?1:2,key);}
+});
+
+test('terrain triangles are clipped out of the physical street ribbon',async()=>{
+ const {buildGroundMesh}=await import('../public/capital-review/capital-ground-mesh.js');
+ const road=[[.4,-1],[.6,-1],[.6,2],[.4,2]],{positions,indices}=buildGroundMesh({bounds:{minX:0,maxX:1,minY:0,maxY:1},nx:1,nz:1,heightAt:()=>0,localAt:p=>p,refineAt:()=>false,cutoutsAt:()=>[road]});
+ let area=0;for(let i=0;i<indices.length;i+=3){const p=indices.slice(i,i+3).map(k=>[positions[k*3],positions[k*3+2]]);area+=Math.abs((p[1][0]-p[0][0])*(p[2][1]-p[0][1])-(p[2][0]-p[0][0])*(p[1][1]-p[0][1]))/2;assert.ok(Math.max(...p.map(q=>q[0]))<=.4+1e-9||Math.min(...p.map(q=>q[0]))>=.6-1e-9);}
+ assert.ok(Math.abs(area-.8)<1e-9);
 });

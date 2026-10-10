@@ -1,0 +1,14 @@
+{
+  "status": "LOCAL_PASS",
+  "rays": 2568,
+  "roads": 9,
+  "hits": 0,
+  "examples": [],
+  "canonicalParcelsPreserved": true,
+  "roadCenterlinesPreserved": true,
+  "warnings": [
+    "No full actor capsule or NPC logic",
+    "Other legacy district geometry not included",
+    "No automated proof of interior existence or evocative ceremonial experience"
+  ]
+}

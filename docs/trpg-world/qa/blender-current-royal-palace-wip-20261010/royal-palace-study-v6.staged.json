@@ -1,0 +1,43 @@
+{
+  "status": "PENDING_3D_VISUAL_QA",
+  "purpose": "Royal palace proper: private apartments, chapel, decorated state hall",
+  "palace": [
+    300,
+    1173,
+    204
+  ],
+  "chapel": [
+    195,
+    1129,
+    204
+  ],
+  "newMeshBatches": [
+    "current_palace_royal_limestone",
+    "current_palace_royal_buttress",
+    "current_palace_royal_slate",
+    "current_palace_royal_wood",
+    "current_palace_royal_glass",
+    "current_palace_royal_gold",
+    "current_palace_royal_crimson",
+    "current_palace_royal_copper"
+  ],
+  "newRouteIds": [
+    "royal_palace_west_service",
+    "royal_palace_east_service",
+    "royal_palace_south_procession",
+    "royal_chapel_west_approach"
+  ],
+  "entrancesClaimed": 3,
+  "features": [
+    "royal residence interior with private record stacks",
+    "ritual chapel and bell lantern",
+    "two monumental residential towers",
+    "state hall Gothic facade tracery",
+    "dual servant/service approaches"
+  ],
+  "caveats": [
+    "Actual player-capable portal and chapel door opening QA required",
+    "NPC royal households, inventory and event logic not yet implemented",
+    "Entire castle precinct, royal ramps, retaining walls and external urban fabric remain open"
+  ]
+}

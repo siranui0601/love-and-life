@@ -1,3 +1,4 @@
+import {surveyedHeightAt} from './capital-terraces.js';
 /** Parcel-local metres: u follows the street, v goes inward from its facade.
  * The same component boxes drive 2D, 3D, collision and landmark occlusion. */
 export function parcelPoint(b,u,v){
@@ -39,7 +40,7 @@ export function buildCourtyards({buildings,edges,node,edge,distance,distanceToLi
   const court=makeCourtyard(b),portNodes=ports.map((p,i)=>node(court.id+'_street_'+i,'中庭入口の辻',p,b.district,'junction'));
   const ordered=portNodes.sort((a,c)=>distance(road.points[0],a.position)-distance(road.points[0],c.position));
   const chain=[{id:road.from,position:road.points[0]},...ordered,{id:road.to,position:road.points[1]}],parts=[];
-  for(let i=1;i<chain.length;i++)parts.push({...road,id:road.id+'_courtpart_'+i,from:chain[i-1].id,to:chain[i].id,points:[chain[i-1].position,chain[i].position],parentEdgeId:road.parentEdgeId||road.id});
+  for(let i=1;i<chain.length;i++){const points=[chain[i-1].position,chain[i].position];parts.push({...road,id:road.id+'_courtpart_'+i,from:chain[i-1].id,to:chain[i].id,points,streetHeightsM:road.streetHeightsM?points.map(p=>surveyedHeightAt(road,p)):undefined,parentEdgeId:road.parentEdgeId||road.id});}
   edges.splice(edges.indexOf(road),1,...parts);replaced.set(road.id,parts);usedRoads.add(road.id);
   const inner=[-1,1].map((s,i)=>node(court.id+'_inner_'+i,'建物に囲まれた共同庭',parcelPoint(b,s*court.entranceU,court.frontDepth+8),b.district,'court'));
   // Recover physical left/right after ordering the road intersections.

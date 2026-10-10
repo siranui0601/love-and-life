@@ -1,0 +1,7 @@
+{
+  "status": "SAMPLE_PASS",
+  "sampleCount": 18337,
+  "failureCounts": {},
+  "examples": [],
+  "limitations": "Centreline samples only; downward ray starts2m above route. Not continuous capsule, side clearance or gameplay validation."
+}

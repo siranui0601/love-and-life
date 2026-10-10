@@ -1,0 +1,30 @@
+{
+  "status": "PENDING_LOCAL_QA",
+  "scope": "Royal Mage tower massing and 2 functional compound halls",
+  "tower": "LOC_CAP_MAGE_TOWER",
+  "canon": "Research/summoning, mage corps, ancient studies, T17 guard; NOT an academy setting",
+  "southHall": "court divination hall (1118,620)",
+  "northHall": "ancient studies records and ward lab (1100,696)",
+  "createdMeshBatches": [
+    "current_royal_mage_monument_ashlar",
+    "current_royal_mage_monument_rib",
+    "current_royal_mage_monument_blue_slate",
+    "current_royal_mage_monument_glass",
+    "current_royal_mage_monument_brass",
+    "current_royal_mage_monument_porphyry",
+    "current_royal_mage_monument_interior",
+    "current_royal_mage_monument_floor"
+  ],
+  "newRouteIds": [
+    "royal_mage_south_divination_access",
+    "royal_mage_north_research_access",
+    "royal_mage_archive_courtyard"
+  ],
+  "purpose": "Replace isolated unornamented tower with palace-grade multi-wing institution",
+  "caveats": [
+    "No player access to new tower upper galleries yet",
+    "Lighting, high-detail materials, NPC interactive roles and true instanced magic effects unimplemented",
+    "No source-proven school or student dormitories added",
+    "Court households beyond selected free lots not yet redesigned"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "status": "STAGED_UNVERIFIED",
+  "previousRampM": 559.8110972073679,
+  "removedRoutes": [
+    "court_west_ramp",
+    "court_west_ramp_landing_0",
+    "court_west_ramp_landing_1"
+  ],
+  "removedMeshes": [
+    "court_west_ramp",
+    "court_west_ramp_graded_bench",
+    "court_west_ramp_terrace_support",
+    "court_west_ramp_outer_parapet",
+    "court_west_ramp_treads",
+    "court_west_ramp_landing_0",
+    "court_west_ramp_landing_1"
+  ],
+  "newRoutes": [
+    "current_west_court_short_stone_stair",
+    "current_west_court_open_winch_incline",
+    "current_west_court_overlook_1",
+    "current_west_court_overlook_2"
+  ],
+  "newMeshes": [
+    "current_west_court_escarpment_masonry",
+    "current_west_court_escarpment_limestone",
+    "current_west_court_escarpment_stair",
+    "current_west_court_escarpment_parapet",
+    "current_west_court_escarpment_gold",
+    "current_west_court_escarpment_gate_stone",
+    "current_west_court_escarpment_gate_slate",
+    "current_west_court_escarpment_banner"
+  ],
+  "stepCount": 220,
+  "climbM": 44,
+  "footEstimatedM": 78.14,
+  "roofless": true,
+  "solidRetaining": true,
+  "protectedParcelOverlapExpected": 0,
+  "earlyTopJoinX": -110.5,
+  "flatRunToExistingForecourt": true,
+  "caveats": [
+    "Stage only: real Blender floor/obstacle/streets and visual QA outstanding",
+    "Cargo incline requires unimplemented winch; 30 degrees unsuitable for unassisted carts",
+    "Does not repair other distant walls, castle, city zoning or NPC paths"
+  ]
+}

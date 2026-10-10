@@ -1,0 +1,23 @@
+{
+  "status": "LOCAL_PASS",
+  "oldRoadTotalM": 523.37,
+  "newStairsLengthM": 141.53,
+  "newCargoLengthM": 148.43,
+  "removedOldRampMeshCount": 5,
+  "allOtherRoutesPreserved": true,
+  "solidStoneBase": true,
+  "roofless": true,
+  "routesChecked": 6,
+  "oldObstaclesChecked": 4,
+  "floorProbes": 1146,
+  "newRouteMissingFloor": [],
+  "legacyFloorDiscrepancies": [],
+  "bodyHeadRays": 2292,
+  "newRouteObstructions": [],
+  "oldRouteNewObstructions": [],
+  "limitations": [
+    "Static point/ray QA not a cart swept collision, NPC navigation, load support engineering or actual winch drive",
+    "Castle east ramp upper landing_1 is retained as existing castle public spur",
+    "Current view must be inspected at ground and bird-eye level before promotion"
+  ]
+}

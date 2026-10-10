@@ -1,0 +1,101 @@
+[
+  {
+    "mesh": "upper_city_ground",
+    "polyFaces": 3065,
+    "areaM2": 328568.1,
+    "boundaryM": 8991.6,
+    "holes": null,
+    "parts": 7,
+    "bbox": [
+      -250,
+      420,
+      620,
+      1360
+    ],
+    "domainArea": 328743.3,
+    "missingSqM": 149.1,
+    "missingLarge": [
+      {
+        "area": 141.4,
+        "bounds": [
+          590,
+          837,
+          612,
+          845
+        ],
+        "centroid": [
+          601,
+          841
+        ]
+      },
+      {
+        "area": 7.7,
+        "bounds": [
+          184,
+          1271,
+          190,
+          1274
+        ],
+        "centroid": [
+          188,
+          1273
+        ]
+      }
+    ]
+  },
+  {
+    "mesh": "western_ascent_market_ascent_restored_ground",
+    "polyFaces": 243,
+    "areaM2": 32072.8,
+    "boundaryM": 1100.2,
+    "holes": 0,
+    "parts": 1,
+    "bbox": [
+      -661,
+      89,
+      -167,
+      213
+    ]
+  },
+  {
+    "mesh": "western_ascent_noble_service_restored_civic_ground",
+    "polyFaces": 163,
+    "areaM2": 8958.0,
+    "boundaryM": 644.3,
+    "holes": null,
+    "parts": 2,
+    "bbox": [
+      -894,
+      399,
+      -709,
+      763
+    ]
+  },
+  {
+    "mesh": "west_noble_wall_stairs_support",
+    "faces": 458,
+    "zFaceVariety": {
+      "2": 26,
+      "3": 430,
+      "4": 2
+    }
+  },
+  {
+    "mesh": "west_lower_wall_stairs_support",
+    "faces": 362,
+    "zFaceVariety": {
+      "2": 22,
+      "3": 338,
+      "4": 2
+    }
+  },
+  {
+    "mesh": "civic_royal_ramp_terrace_support",
+    "faces": 453,
+    "zFaceVariety": {
+      "3": 370,
+      "2": 80,
+      "4": 3
+    }
+  }
+]
