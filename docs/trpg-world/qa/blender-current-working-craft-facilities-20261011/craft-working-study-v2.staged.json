@@ -1,0 +1,54 @@
+{
+  "status": "PENDING_LOCAL_3D_QA",
+  "purpose": "Functional craft district: visible work, manufacturing, goods and discoveries instead of empty housing grid",
+  "addedHalls": [
+    {
+      "name": "guild_foundry",
+      "center": [
+        -369,
+        160
+      ],
+      "footprintM": [
+        66,
+        12
+      ]
+    },
+    {
+      "name": "wheelwright",
+      "center": [
+        -436,
+        130
+      ]
+    },
+    {
+      "name": "dyehouse",
+      "center": [
+        -346,
+        114
+      ]
+    }
+  ],
+  "newRoutes": [
+    "current_craft_foundry_public_loading",
+    "current_craft_factory_east_loading",
+    "current_craft_wheelwright_market_gate",
+    "current_craft_dyehouse_water_delivery"
+  ],
+  "newMaterialBatches": [
+    "current_craft_active_ashlar",
+    "current_craft_active_wood",
+    "current_craft_active_terracotta",
+    "current_craft_active_slate",
+    "current_craft_active_iron",
+    "current_craft_active_copper",
+    "current_craft_active_furnace",
+    "current_craft_active_water"
+  ],
+  "groundFloorZ": 14,
+  "sourceParcelOverlap": 0,
+  "caveats": [
+    "Unaccepted until real-player capsule, cart/load, dynamic furnace/craft NPC testing",
+    "This does not finish the entire empty 32072m2 artisan district",
+    "Nearby repetitive housing remains a separate urban-design task"
+  ]
+}
