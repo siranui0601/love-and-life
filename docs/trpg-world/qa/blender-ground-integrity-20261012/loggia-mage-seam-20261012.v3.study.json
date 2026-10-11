@@ -1,0 +1,96 @@
+{
+  "status": "PROVISIONAL_VISUAL_AND_ACCESS_QA",
+  "sourcePlanSHA256": "721cfffa38b5ed0ada94fe09b083cc6e6f33d0622cf23f461b32c85b5608bb7c",
+  "removedMeshNames": [
+    "wall_gallery_civic_wall_gallery_rest_3_10_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_10_roof",
+    "wall_gallery_civic_wall_gallery_rest_3_10_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_10_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_11_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_11_roof",
+    "wall_gallery_civic_wall_gallery_rest_3_11_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_11_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_12_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_12_roof",
+    "wall_gallery_civic_wall_gallery_rest_3_12_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_12_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_13_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_13_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_13_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_14_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_14_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_14_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_15_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_15_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_15_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_16_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_16_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_16_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_17_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_17_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_17_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_8_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_8_roof",
+    "wall_gallery_civic_wall_gallery_rest_3_8_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_8_wall_1",
+    "wall_gallery_civic_wall_gallery_rest_3_9_floor",
+    "wall_gallery_civic_wall_gallery_rest_3_9_roof",
+    "wall_gallery_civic_wall_gallery_rest_3_9_wall_-1",
+    "wall_gallery_civic_wall_gallery_rest_3_9_wall_1",
+    "wall_gallery_loggia_support_643.4526315789474_-3.6",
+    "wall_gallery_loggia_support_643.4526315789474_3.6",
+    "wall_gallery_loggia_support_653.4526315789474_-3.6",
+    "wall_gallery_loggia_support_653.4526315789474_3.6"
+  ],
+  "changedMeshNames": [
+    "wall_gallery_rest_3_end",
+    "wall_gallery_rest_3_bench"
+  ],
+  "beforeLookoutLength": 36,
+  "afterLookoutLength": 16,
+  "observatoryAnchor": [
+    599.5,
+    799.6,
+    77.5
+  ],
+  "retainingSeamLengthM": 151.6,
+  "lowGroundApronAreaM2": 4804.72,
+  "lowGroundNativeOverlapAreaM2": 124.32,
+  "newMeshes": [
+    [
+      "repair_loggia_castle_wall_cantilever_20261012",
+      12,
+      10
+    ],
+    [
+      "repair_loggia_fortified_gallery_coping_20261012",
+      8,
+      6
+    ],
+    [
+      "repair_mage_low_terrace_seam_retaining_20261012",
+      664,
+      498
+    ],
+    [
+      "repair_mage_low_terrace_parapet_20261012",
+      664,
+      498
+    ],
+    [
+      "repair_mage_low_terrace_buttress_20261012",
+      64,
+      48
+    ],
+    [
+      "repair_mage_restored_low_ground_apron_20261012",
+      87,
+      29
+    ]
+  ],
+  "limitations": [
+    "Mage 151m perimeter patch may need low-ground infill; not full citywide wall coverage",
+    "Lookout reduced due absence of support footprint; preserve original route start",
+    "Actor clearance and all new mesh intersection QA pending"
+  ]
+}
