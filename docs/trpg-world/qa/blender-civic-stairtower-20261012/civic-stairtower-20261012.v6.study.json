@@ -1,0 +1,67 @@
+{
+  "status": "VISUAL_AND_ROAD_QA_REQUIRED",
+  "basePlanSha256": "65806d8948a16a8be3f9a0405b20fb8c7b5485c7c68b6bf83b4a9035998b4a81",
+  "removed": [
+    "current_civic_royal_hoist_masonry",
+    "current_civic_royal_hoist_iron",
+    "current_civic_royal_hoist_platform",
+    "current_royal_hoist_architecture_pale_ashlar",
+    "current_royal_hoist_architecture_roof_slate",
+    "current_royal_hoist_architecture_brass",
+    "current_royal_freight_hoist_animated_cabin",
+    "current_royal_freight_hoist_counterweight",
+    "current_civic_upper_short_support",
+    "current_civic_upper_short_rail"
+  ],
+  "originalRoutePreserved": "current_civic_upper_short_stair_east",
+  "newAccessRoute": "repair_civic_stairtower_middle_secondary_access",
+  "newMeshes": [
+    [
+      "repair_civic_gate_stair_bastion_masonry",
+      2344,
+      1698
+    ],
+    [
+      "repair_civic_gate_stair_bastion_bands",
+      888,
+      606
+    ],
+    [
+      "repair_civic_gate_stair_bastion_lancets",
+      236,
+      59
+    ],
+    [
+      "repair_civic_gate_stair_bastion_roof",
+      202,
+      62
+    ],
+    [
+      "repair_civic_gate_stair_access_bridges",
+      216,
+      162
+    ],
+    [
+      "repair_civic_gate_stair_interior_balustrade",
+      344,
+      86
+    ],
+    [
+      "repair_civic_stairtower_mid_access_road",
+      24,
+      18
+    ]
+  ],
+  "portalGaps": {
+    "upper_north_entry": 3,
+    "upper_west_exit": 3,
+    "lower_southwest": 2,
+    "lower_east": 2
+  },
+  "footing": "Engineered stone buttress anchored to civic_foot_ground, upper gallery wall; missing natural low terrace ground NOT filled",
+  "limitations": [
+    "No real freight elevator until implemented",
+    "Actor capsule clearance and glass/window overlap not yet validated",
+    "The tower sits in a major natural terrain void; cantilever and approach must pass viewpoint inspections"
+  ]
+}
