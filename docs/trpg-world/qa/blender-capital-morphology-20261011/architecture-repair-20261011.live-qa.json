@@ -1,0 +1,134 @@
+{
+  "status": "LOCAL_PASS",
+  "meshProblems": [],
+  "checks": [
+    {
+      "category": "obsolete",
+      "prefix": "wall_gallery_north_old_trench_fill_",
+      "remaining": 0,
+      "removedExpected": 286
+    },
+    {
+      "category": "obsolete",
+      "prefix": "wall_gallery_north_court_wall_stairs_",
+      "remaining": 0,
+      "removedExpected": 283
+    },
+    {
+      "category": "obsolete",
+      "prefix": "mage_quarter_mage_wall_short_stairs_floor_",
+      "remaining": 0,
+      "removedExpected": 362
+    },
+    {
+      "category": "obsolete",
+      "prefix": "mage_quarter_mage_wall_short_stairs_parapet_",
+      "remaining": 0,
+      "removedExpected": 362
+    },
+    {
+      "category": "roofFacadeConnection",
+      "zone": "lower",
+      "matched": 198747,
+      "total": 198747,
+      "rate": 1.0
+    },
+    {
+      "category": "roofFacadeConnection",
+      "zone": "ajin",
+      "matched": 16635,
+      "total": 16635,
+      "rate": 1.0
+    },
+    {
+      "category": "roofFacadeConnection",
+      "zone": "market",
+      "matched": 15963,
+      "total": 15963,
+      "rate": 1.0
+    },
+    {
+      "category": "roofFacadeConnection",
+      "zone": "quay",
+      "matched": 8346,
+      "total": 8346,
+      "rate": 1.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        312,
+        660
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        284,
+        663
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        335,
+        661
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        336,
+        666
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        310,
+        638
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        285,
+        635
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "charterFoundation",
+      "xy": [
+        310,
+        650
+      ],
+      "hit": true,
+      "z": 112.0
+    },
+    {
+      "category": "royalMasonryCastleGroundBase",
+      "total": 24,
+      "supported": 24,
+      "unsupported": 0
+    }
+  ],
+  "roadsChecked": 1231,
+  "remainingPreviousRouteFailures": 14,
+  "limitations": [
+    "Visual morphology acceptance separate from local mesh QA",
+    "No player capsule or NPC/cart navigation",
+    "Not all remaining old wall stairs repaired"
+  ]
+}
