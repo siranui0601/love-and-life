@@ -1,0 +1,29 @@
+{
+  "status": "STAGED_ONLY_VISUAL_QA_REQUIRED",
+  "originalSha256": "de3a932ffcbc73b8366a9d8fa6585cdc8128a4753c7ab462874f115d9a9baa4a",
+  "removed": {
+    "wall_gallery_civic_wall_gallery_stairs_": 1741,
+    "mage_quarter_mage_wall_freight_abutment_": 89
+  },
+  "preservedRoutes": 1231,
+  "newMeshFaces": {
+    "repair_civic_gallery_continuous_open_stairs": 2706,
+    "repair_civic_gallery_open_parapet": 1310,
+    "repair_mage_freight_open_arcade": 369,
+    "repair_royal_cliff_tapered_revetment": 798,
+    "repair_royal_cliff_course_buttresses": 1980
+  },
+  "castleEdgeSupportedM": 995.4,
+  "castleGateCuts": 42,
+  "castleGroundBaseCount": {
+    "156": 70,
+    "112": 63
+  },
+  "caveats": [
+    "No road/navmesh acceptance",
+    "Freight incline 56m rise/73m run NOT certified for carts",
+    "West long stairs unchanged",
+    "Royal castle architectural body unchanged",
+    "Castle masonry gate openings must be visually verified"
+  ]
+}

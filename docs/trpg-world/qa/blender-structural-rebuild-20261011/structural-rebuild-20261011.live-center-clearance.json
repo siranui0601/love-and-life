@@ -1,0 +1,10 @@
+{
+  "status": "CLEAR",
+  "samples": 40926,
+  "countNear": 0,
+  "byRoute": {},
+  "nearExamples": [],
+  "limitations": [
+    "Static nearest surface only, no swept actor capsule or collision BVH physics"
+  ]
+}
