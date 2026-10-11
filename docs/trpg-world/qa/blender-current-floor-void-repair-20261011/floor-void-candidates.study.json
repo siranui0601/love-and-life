@@ -1,0 +1,44 @@
+{
+  "status": "AWAITING_BLENDER_QA",
+  "originalPlanSha256": "ece8e347053606e77a37a62992366b7e2865bb48674ce735dc409acdacedbee1",
+  "originalBlend": "capital-parcel-review.blend",
+  "routes": 1229,
+  "patches": [
+    {
+      "mesh": "mage_east_ground",
+      "z": 70,
+      "oldVertices": 9227,
+      "oldFaces": 2326,
+      "newFaces": 248,
+      "areaSqm": 998.11,
+      "safeCandidateSqm": 998.18,
+      "polygons": 4,
+      "newVertices": 9971,
+      "routeCount": 1229
+    },
+    {
+      "mesh": "civic_foot_ground",
+      "z": 42,
+      "oldVertices": 13011,
+      "oldFaces": 3607,
+      "newFaces": 409,
+      "areaSqm": 6422.12,
+      "safeCandidateSqm": 6422.22,
+      "polygons": 6,
+      "newVertices": 14238,
+      "routeCount": 1229
+    },
+    {
+      "mesh": "low_city_ground",
+      "z": 14,
+      "oldVertices": 20730,
+      "oldFaces": 5600,
+      "newFaces": 276,
+      "areaSqm": 2611.76,
+      "safeCandidateSqm": 2612.03,
+      "polygons": 5,
+      "newVertices": 21558,
+      "routeCount": 1229
+    }
+  ]
+}
