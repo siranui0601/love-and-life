@@ -1,0 +1,7 @@
+{
+  "rockNonManifoldEdges": 0,
+  "scanPoints": 4734,
+  "walkwayHits": [],
+  "status": "PASS",
+  "limitations": "Static surface samples only; not complete capsule collision or visual acceptance"
+}
