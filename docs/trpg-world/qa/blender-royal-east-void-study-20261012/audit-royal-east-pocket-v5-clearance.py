@@ -4,7 +4,7 @@ from mathutils.bvhtree import BVHTree
 root=pathlib.Path(r'C:\Users\inaba\Documents\TRPG-Capital-Blender\current')
 p=json.loads((root/'royal-east-pocket-20261012.v5.staged.plan.json').read_text('utf8'))
 meta=p['royalEastAscentSeam20261012']
-names=[a[0]for a in p['royalEastAscentSeam20261012']['newMeshes'] if 'apron' not in a[0]] + ['repair_royal_east_pocket_graduated_bedrock_20261012','repair_royal_east_pocket_retaining_terrace_courses_20261012']
+names=[a[0]for a in p['royalEastAscentSeam20261012']['newMeshes'] if 'apron' not in a[0]] + ['repair_royal_east_pocket_graduated_bedrock_20261012','repair_royal_east_pocket_retaining_terrace_courses_20261012','repair_royal_east_pocket_terrace_rim_anchors_20261012']
 v=[];f=[];src=[]
 for name in names:
  ob=bpy.data.objects.get(name)
