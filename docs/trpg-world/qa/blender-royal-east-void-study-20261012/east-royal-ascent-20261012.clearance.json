@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "tested": 3645,
+  "collisions": 0,
+  "examples": [],
+  "newMeshCount": 3,
+  "untouchedRoutes": true,
+  "limitations": "Discrete 3-point shoulder and body-height static nearest-point scan, NOT player capsule runtime"
+}

@@ -1,0 +1,55 @@
+{
+  "lowLinkNativeOverlap": 1267.22,
+  "rockLowToeFailures": [],
+  "rimAlignment": [
+    {
+      "y": 982,
+      "topZ": 154,
+      "toCastleXY": 55.1,
+      "toForecourtXY": 19.4
+    },
+    {
+      "y": 994,
+      "topZ": 160,
+      "toCastleXY": 42.1,
+      "toForecourtXY": 31.0
+    },
+    {
+      "y": 1006,
+      "topZ": 175,
+      "toCastleXY": 29.7,
+      "toForecourtXY": 41.8
+    },
+    {
+      "y": 1018,
+      "topZ": 184,
+      "toCastleXY": 17.4,
+      "toForecourtXY": 52.7
+    },
+    {
+      "y": 1030,
+      "topZ": 195,
+      "toCastleXY": 5.7,
+      "toForecourtXY": 62.8
+    },
+    {
+      "y": 1042,
+      "topZ": 201,
+      "toCastleXY": 3.2,
+      "toForecourtXY": 64.2
+    },
+    {
+      "y": 1054,
+      "topZ": 204,
+      "toCastleXY": 1.3,
+      "toForecourtXY": 68.7
+    },
+    {
+      "y": 1065,
+      "topZ": 201,
+      "toCastleXY": 2.8,
+      "toForecourtXY": 74.7
+    }
+  ],
+  "faceConnections": []
+}
