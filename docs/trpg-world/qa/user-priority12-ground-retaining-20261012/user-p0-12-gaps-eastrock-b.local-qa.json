@@ -1,0 +1,141 @@
+{
+  "status": "PASS",
+  "floorSpots": [
+    {
+      "tag": "F01",
+      "height": 14,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 352.42,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F02",
+      "height": 42,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 189.24,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F03",
+      "height": 14,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 352.42,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F04W01",
+      "height": 112,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 1603.91,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F05",
+      "height": 156,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 264.71,
+      "connectedIslands": 1,
+      "boundaryEdges": 6
+    },
+    {
+      "tag": "F06",
+      "height": 112,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 249.83,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F07",
+      "height": 112,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 52.07,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F08",
+      "height": 14,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 126.87,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "F09",
+      "height": 14,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 253.74,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "W02_BASE",
+      "height": 14,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 1514.44,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    },
+    {
+      "tag": "W03_TOE",
+      "height": 14,
+      "samples": 5,
+      "rayFailures": [],
+      "nativeOverlapArea": 186.89,
+      "connectedIslands": 1,
+      "boundaryEdges": 50
+    }
+  ],
+  "wallSpots": [
+    {
+      "tag": "W01",
+      "nearMetres": 0.5,
+      "closedNonManifoldEdges": 0,
+      "boundaryEdges": 0,
+      "faceCount": 66
+    },
+    {
+      "tag": "W02",
+      "nearMetres": 0.04,
+      "closedNonManifoldEdges": 0,
+      "boundaryEdges": 0,
+      "faceCount": 82
+    },
+    {
+      "tag": "W03",
+      "nearMetres": 0.79,
+      "closedNonManifoldEdges": 0,
+      "boundaryEdges": 0,
+      "faceCount": 90
+    },
+    {
+      "tag": "W04",
+      "nearMetres": 0.03,
+      "closedNonManifoldEdges": 0,
+      "boundaryEdges": 0,
+      "faceCount": 82
+    }
+  ],
+  "wallFoundationSamplesVerifiedExternally": 82,
+  "wallCapsuleProbes": 1422,
+  "wallBlockCandidates": 0,
+  "affectedRoutes": {},
+  "blockExamples": [],
+  "routeRegistryUnchanged": true,
+  "limitations": "Discrete sampled nearest-surface road clearance, not NPC capsule continuous collision; inspect visual acceptability separately"
+}

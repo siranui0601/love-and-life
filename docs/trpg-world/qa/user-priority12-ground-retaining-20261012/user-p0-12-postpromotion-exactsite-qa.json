@@ -1,0 +1,104 @@
+{
+  "status": "PASS",
+  "siteCount": 12,
+  "userGroundSites": 9,
+  "userWallSites": 4,
+  "floorResults": [
+    {
+      "site": "F01",
+      "grade": 14,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 352.42
+    },
+    {
+      "site": "F02",
+      "grade": 42,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 189.24
+    },
+    {
+      "site": "F03",
+      "grade": 14,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 352.42
+    },
+    {
+      "site": "F04W01",
+      "grade": 112,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 1603.91
+    },
+    {
+      "site": "F05",
+      "grade": 156,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 264.71
+    },
+    {
+      "site": "F06",
+      "grade": 112,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 249.83
+    },
+    {
+      "site": "F07",
+      "grade": 112,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 52.07
+    },
+    {
+      "site": "F08",
+      "grade": 14,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 126.87
+    },
+    {
+      "site": "F09",
+      "grade": 14,
+      "pts": 17,
+      "failed": [],
+      "sourceOverlapArea": 253.74
+    }
+  ],
+  "wallResults": [
+    {
+      "site": "W01",
+      "distM": 0.5,
+      "solid": true,
+      "insideVerticalExtent": true
+    },
+    {
+      "site": "W02",
+      "distM": 0.036,
+      "solid": true,
+      "insideVerticalExtent": true
+    },
+    {
+      "site": "W03",
+      "distM": 0.785,
+      "solid": true,
+      "insideVerticalExtent": true
+    },
+    {
+      "site": "W04",
+      "distM": 0.033,
+      "solid": true,
+      "insideVerticalExtent": true
+    }
+  ],
+  "sourceRoutesUnchanged": true,
+  "sourceMeshesUnchanged": true,
+  "limitations": [
+    "User cursor Z may represent viewpoint not grade; nearby tier sets ground altitude",
+    "No game-engine physics or player capsule validation",
+    "Visual inspection remains required"
+  ]
+}
