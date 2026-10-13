@@ -1,0 +1,35 @@
+{
+  "status": "LOCAL_PASS",
+  "originalRoadsUnchanged": true,
+  "royalProcessionalCenterline": "royal_processional_throne_entry_current",
+  "hallFaces": 22,
+  "testedColliderMeshNames": [
+    "b101_eastern_royal_offices_block",
+    "b101_eastern_royal_offices_face_pier_0",
+    "b101_eastern_royal_offices_window_bay_0",
+    "b101_principal_throne_hall_block",
+    "b101_royal_gate_right_shaft",
+    "current_royal_accent",
+    "current_royal_cornice",
+    "current_royal_masonry"
+  ],
+  "obstaclesCount": 8,
+  "obstacleFaces": 1082,
+  "casts": 1420,
+  "rayCollisions": 0,
+  "floorSources": [
+    "castle_ground",
+    "b101_royal_ceremony_court",
+    "b104_castle_outer_ground_extension",
+    "current_royal_floor"
+  ],
+  "floorSamples": 710,
+  "unsupported": 0,
+  "failures": [],
+  "floorFailures": [],
+  "importantLimitations": [
+    "No stairs to roof, NPC duty cycle, throne room interiors beyond basic geometry",
+    "Ray casting centerline and shoulders, not continuous player capsule nor true game collision flags",
+    "Exterior castle ring accessibility/door service and cart routes still pending"
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "status": "ANOMALIES_REQUIRE_TRIAGE",
+  "scenario": "entire city road center and side support probes",
+  "timestamp": "2026-10-10",
+  "routesVisited": 1222,
+  "routeLengthKm": 196.08,
+  "candidatesTested": 4714,
+  "candidateMeshFaces": 125475,
+  "surfaceRays": 174685,
+  "totalFailureRays": 14,
+  "uniqueRecordedFailures": 14,
+  "failureExamples": [
+    {
+      "route": "court_wall_stairs",
+      "kind": "stairs",
+      "x": 101.16,
+      "y": 769.8,
+      "z": 138.64,
+      "width": 4,
+      "nearestFloorZ": 139.23,
+      "lateral": -0.75,
+      "nearMesh": "court_wall_stairs_treads"
+    },
+    {
+      "route": "civic_foot_contour_1_retained_1",
+      "kind": "contour",
+      "x": -593.16,
+      "y": 520.39,
+      "z": 42.0,
+      "width": 7,
+      "nearestFloorZ": 43.44,
+      "lateral": 0.75,
+      "nearMesh": "distributed_access_stair_tread_2_6"
+    },
+    {
+      "route": "civic_foot_contour_1_retained_1",
+      "kind": "contour",
+      "x": -591.21,
+      "y": 519.95,
+      "z": 42.0,
+      "width": 7,
+      "nearestFloorZ": 42.73,
+      "lateral": 0.75,
+      "nearMesh": "b116_noble_east_wall_stair_mitered_stone_step_lattice"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 557.48,
+      "z": 74.48,
+      "width": 10,
+      "nearestFloorZ": 75.56,
+      "lateral": 0.0,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 557.48,
+      "z": 74.48,
+      "width": 10,
+      "nearestFloorZ": 75.56,
+      "lateral": -0.75,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 557.48,
+      "z": 74.48,
+      "width": 10,
+      "nearestFloorZ": 75.56,
+      "lateral": 0.75,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 559.83,
+      "z": 76.83,
+      "width": 10,
+      "nearestFloorZ": 78.21,
+      "lateral": 0.0,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 559.83,
+      "z": 76.83,
+      "width": 10,
+      "nearestFloorZ": 78.21,
+      "lateral": -0.75,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 559.83,
+      "z": 76.83,
+      "width": 10,
+      "nearestFloorZ": 78.21,
+      "lateral": 0.75,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 560.61,
+      "z": 77.61,
+      "width": 10,
+      "nearestFloorZ": 78.21,
+      "lateral": 0.0,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 560.61,
+      "z": 77.61,
+      "width": 10,
+      "nearestFloorZ": 78.21,
+      "lateral": -0.75,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -560.0,
+      "y": 560.61,
+      "z": 77.61,
+      "width": 10,
+      "nearestFloorZ": 78.21,
+      "lateral": 0.75,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -559.99,
+      "y": 561.39,
+      "z": 78.0,
+      "width": 10,
+      "nearestFloorZ": 79.37,
+      "lateral": 0.0,
+      "nearMesh": "noble_west_contour_1"
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "kind": "steep_ramp",
+      "x": -559.99,
+      "y": 561.39,
+      "z": 78.0,
+      "width": 10,
+      "nearestFloorZ": 79.37,
+      "lateral": -0.75,
+      "nearMesh": "noble_west_contour_1"
+    }
+  ],
+  "failCountsByKind": {
+    "stairs": 1,
+    "contour": 2,
+    "steep_ramp": 11
+  },
+  "topFailRoutes": [
+    {
+      "id": "noble_east_winch_incline",
+      "failCount": 11,
+      "rayTotal": 255
+    },
+    {
+      "id": "civic_foot_contour_1_retained_1",
+      "failCount": 2,
+      "rayTotal": 849
+    },
+    {
+      "id": "court_wall_stairs",
+      "failCount": 1,
+      "rayTotal": 858
+    }
+  ],
+  "spatialClusters": [
+    {
+      "gridX": -560,
+      "gridY": 560,
+      "z": 75,
+      "failRayCount": 6
+    },
+    {
+      "gridX": -560,
+      "gridY": 560,
+      "z": 80,
+      "failRayCount": 5
+    },
+    {
+      "gridX": -600,
+      "gridY": 520,
+      "z": 40,
+      "failRayCount": 2
+    },
+    {
+      "gridX": 100,
+      "gridY": 760,
+      "z": 140,
+      "failRayCount": 1
+    }
+  ],
+  "sampleFailureCapped": false,
+  "seconds": 1.8,
+  "limitations": [
+    "Detection scope includes route centrelines with narrow shoulder probes, not full route area",
+    "Unmodeled special-purpose walkability surfaces not matching mesh name patterns may cause false positives",
+    "No NPC navigation, swept capsule, jumping, stairs comfort or cart movement simulation",
+    "Result not a certification of route safety"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "status": "PENDING_BLENDER_QA",
+  "meshName": "civic_foot_ground",
+  "patchAreaM2": 164.782,
+  "addedFaces": 103,
+  "residualM2": 0.0,
+  "holeBoundingBox": [
+    663.872,
+    597.114,
+    686.376,
+    616.577
+  ],
+  "originalGroundVertices": 12702,
+  "originalGroundFaces": 3504,
+  "preservedRoutes": 1204,
+  "note": "Repair ground mesh itself; not a floating cover"
+}

@@ -1,0 +1,38 @@
+{
+  "passCore": true,
+  "base": "design-b107",
+  "new": "design-b111",
+  "canonicalIdsPreserved": true,
+  "canonicalCount": 2,
+  "routeCountPreserved": true,
+  "routeCount": 1184,
+  "removedPlots": 295,
+  "scopedNewMeshes": 206,
+  "buildingRoadTested": 772,
+  "buildingRoadConflicts": [],
+  "conflictCount": 0,
+  "plazaAreas": [
+    [
+      "south_arrival",
+      9794
+    ],
+    [
+      "western_commons",
+      8645
+    ],
+    [
+      "ajin_craft",
+      10716
+    ],
+    [
+      "river_works",
+      10736
+    ]
+  ],
+  "limitations": [
+    "Approximate footprints only",
+    "No existing building or player capsule collisions",
+    "No pedestrian route through interiors, NPCs, quests or economy implementation",
+    "Must inspect screenshots for repetitive props and inauthentic world texture"
+  ]
+}

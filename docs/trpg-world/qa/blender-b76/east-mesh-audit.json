@@ -1,0 +1,42 @@
+{
+  "status": "LOCAL_PROBE_PASS",
+  "routeCount": 25,
+  "bodyHeadProbeCount": 4218,
+  "blockedProbeCount": 0,
+  "floorSamples": 2109,
+  "unsupportedSamples": 0,
+  "hits": [],
+  "floorFailures": [],
+  "routes": [
+    "craft_block_forge_entry",
+    "craft_block_rear_loading",
+    "craft_block_work_loop",
+    "craft_front_public_-1",
+    "east_gate_market",
+    "east_quay_gate",
+    "east_work_cargo",
+    "east_work_court_link",
+    "east_work_entry_commission_rooms",
+    "east_work_entry_east_store",
+    "east_work_entry_material_hall",
+    "east_work_entry_repair_hall",
+    "east_work_entry_stock_house",
+    "east_work_entry_workers_frontage",
+    "east_work_life",
+    "interior_life_design-b52_low_city_514",
+    "low_city_contour_1",
+    "low_city_contour_13",
+    "low_city_contour_13_frontage_east_quay_gate",
+    "low_city_contour_3",
+    "low_city_lane_172",
+    "low_city_lane_174",
+    "low_city_lane_175",
+    "low_city_lane_5",
+    "mage_civic_ramp"
+  ],
+  "limitations": [
+    "Finite torso/head rays and sampled support only",
+    "No swept capsule, cart turning envelope or manual player traversal",
+    "No distant vista, NPC or event validation"
+  ]
+}

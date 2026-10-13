@@ -19,6 +19,7 @@ try{
  for(const hour of ['7','12','18','12'])await page.locator('#hour').selectOption(hour);
  const after=await page.locator('#route-options').innerText();if(before!==after)throw new Error('Repeated state rendering changed route metrics');
  await page.screenshot({path:path.join(output,'urban-form.png')});await page.locator('#topology-debug').click();await page.screenshot({path:path.join(output,'topology.png')});await page.locator('#urban-form').click();
+ await page.locator('#street-structure').click();await page.screenshot({path:path.join(output,'street-blocks.png')});await page.locator('#urban-form').click();
  await page.locator('#view-3d').click();await page.waitForFunction(()=>!!window.__capitalAudit,{timeout:30000});
  await page.evaluate(()=>window.__capitalAudit.pauseRealTime());
  const invalidGround=await page.evaluate(async()=>{const {CAPITAL}=await import('/capital-review/capital-data.js');const names=new Set(['core-ground',...CAPITAL.negativeSpaces.map(s=>s.id)]);return BABYLON.Engine.Instances[0].scenes[0].meshes.filter(m=>names.has(m.name)).filter(m=>{const n=m.getVerticesData('normal');return !n||n.some(v=>!Number.isFinite(v))||n.filter((_,i)=>i%3===1).reduce((a,b)=>a+b,0)<=0;}).map(m=>m.name);});
@@ -28,6 +29,9 @@ try{
  if(badRoadVertices.length)throw Error('Street ribbon diverges from physical cross slope: '+badRoadVertices.join(','));report.roadSurfacesMatch=true;
  await page.screenshot({path:path.join(output,'overview.png')});
  for(const [name,angle]of [['south',Math.PI/2],['west',Math.PI],['east',0]]){await page.evaluate(a=>window.__capitalAudit.overview(a),angle);await page.screenshot({path:path.join(output,'overview-'+name+'.png')});}
+ await page.locator('#structure-only').click();
+ for(const [name,angle]of [['south',Math.PI/2],['west',Math.PI]]){await page.evaluate(a=>window.__capitalAudit.overview(a),angle);await page.screenshot({path:path.join(output,'structure-'+name+'.png')});}
+ await page.locator('#structure-only').click();
  await page.locator('#route-from').selectOption('west_gate');await page.locator('#route-to').selectOption('market');await page.locator('#walk-route').click();
  const clockStart=await page.evaluate(()=>window.__capitalAudit.snapshot());let clockEnd;for(let i=0;i<10;i++)clockEnd=await page.evaluate(()=>window.__capitalAudit.frame(.1));report.lowFpsDistanceM=clockEnd.travelledM-clockStart.travelledM;if(Math.abs(report.lowFpsDistanceM-1.4)>.001)throw Error('10 FPS walking speed drift');
  const guidedBefore=await page.evaluate(()=>window.__capitalAudit.advance(5));await page.locator('#route-to').selectOption('castle');

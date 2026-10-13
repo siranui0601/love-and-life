@@ -1,0 +1,11 @@
+{
+  "status": "PRESERVATION_PASS",
+  "canonicalPlotsChecked": [
+    "LOC_CAP_ORPHANAGE",
+    "LOC_CAP_LOWER_INN"
+  ],
+  "baselineRoutesChecked": 669,
+  "routeCount": 1127,
+  "failures": [],
+  "limitations": "Preservation only; does not certify discovery value, NPC schedules or transport gameplay."
+}

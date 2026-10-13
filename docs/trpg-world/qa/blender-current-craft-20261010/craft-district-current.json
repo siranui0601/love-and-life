@@ -1,0 +1,214 @@
+﻿{
+    "status":  "LOCAL_3D_PASS_URBAN_DESIGN_INCOMPLETE",
+    "site":  "western_ascent_market_ascent_restored_ground",
+    "oldPatchAreaM2":  32072.83,
+    "newRoadIds":  [
+                       "current_craft_west_spine",
+                       "current_craft_east_spine",
+                       "current_craft_west_yard_lane",
+                       "current_craft_midway_cutthrough",
+                       "current_craft_east_garden_path",
+                       "current_craft_access_caravan_wheelwright",
+                       "current_craft_access_stonecutters_yard",
+                       "current_craft_access_craft_guild_hall",
+                       "current_craft_access_forgehall",
+                       "current_craft_access_dyeing_drying_yard",
+                       "current_craft_access_herbal_common",
+                       "current_craft_streetfront_01_shop_path",
+                       "current_craft_streetfront_02_shop_path",
+                       "current_craft_streetfront_03_shop_path",
+                       "current_craft_streetfront_04_shop_path",
+                       "current_craft_streetfront_05_shop_path",
+                       "current_craft_streetfront_06_shop_path"
+                   ],
+    "newRoadLengthM":  694.21,
+    "newFacilityNames":  [
+                             "caravan_wheelwright",
+                             "stonecutters_yard",
+                             "craft_guild_hall",
+                             "forgehall",
+                             "dyeing_drying_yard",
+                             "herbal_common"
+                         ],
+    "facilitySites":  [
+                          {
+                              "id":  "caravan_wheelwright",
+                              "center":  [
+                                             -585,
+                                             110
+                                         ],
+                              "size":  [
+                                           32,
+                                           17
+                                       ],
+                              "role":  "wagon and timber repairs, accessible cart yard",
+                              "officialCanonical":  false,
+                              "access":  "north"
+                          },
+                          {
+                              "id":  "stonecutters_yard",
+                              "center":  [
+                                             -545,
+                                             165
+                                         ],
+                              "size":  [
+                                           31,
+                                           17
+                                       ],
+                              "role":  "stonecutters and repair supply for upper walls",
+                              "officialCanonical":  false,
+                              "access":  "south"
+                          },
+                          {
+                              "id":  "craft_guild_hall",
+                              "center":  [
+                                             -505,
+                                             150
+                                         ],
+                              "size":  [
+                                           28,
+                                           15
+                                       ],
+                              "role":  "craft charter office and roofed guild courtyard",
+                              "officialCanonical":  false,
+                              "access":  "south"
+                          },
+                          {
+                              "id":  "forgehall",
+                              "center":  [
+                                             -383,
+                                             117
+                                         ],
+                              "size":  [
+                                           31,
+                                           16
+                                       ],
+                              "role":  "craft smithy and working forge",
+                              "officialCanonical":  false,
+                              "access":  "north"
+                          },
+                          {
+                              "id":  "dyeing_drying_yard",
+                              "center":  [
+                                             -350,
+                                             130
+                                         ],
+                              "size":  [
+                                           20,
+                                           10
+                                       ],
+                              "role":  "dyeing and dry-rack courtyard",
+                              "officialCanonical":  false,
+                              "access":  "north"
+                          },
+                          {
+                              "id":  "herbal_common",
+                              "center":  [
+                                             -265,
+                                             148
+                                         ],
+                              "size":  [
+                                           20,
+                                           11
+                                       ],
+                              "role":  "public herb garden and shade courtyard",
+                              "officialCanonical":  false,
+                              "access":  "north"
+                          }
+                      ],
+    "shopfronts":  [
+                       {
+                           "name":  "current_craft_streetfront_01",
+                           "center":  [
+                                          -323,
+                                          165
+                                      ],
+                           "width":  10.3,
+                           "depth":  8.6,
+                           "frontage":  "south",
+                           "distanceRoadM":  13.6
+                       },
+                       {
+                           "name":  "current_craft_streetfront_02",
+                           "center":  [
+                                          -414,
+                                          154
+                                      ],
+                           "width":  10.3,
+                           "depth":  7.0,
+                           "frontage":  "south",
+                           "distanceRoadM":  14.47
+                       },
+                       {
+                           "name":  "current_craft_streetfront_03",
+                           "center":  [
+                                          -596,
+                                          154
+                                      ],
+                           "width":  11.6,
+                           "depth":  7.8,
+                           "frontage":  "south",
+                           "distanceRoadM":  15.72
+                       },
+                       {
+                           "name":  "current_craft_streetfront_04",
+                           "center":  [
+                                          -583,
+                                          187
+                                      ],
+                           "width":  9.0,
+                           "depth":  8.6,
+                           "frontage":  "south",
+                           "distanceRoadM":  17.12
+                       },
+                       {
+                           "name":  "current_craft_streetfront_05",
+                           "center":  [
+                                          -453,
+                                          132
+                                      ],
+                           "width":  9.0,
+                           "depth":  7.8,
+                           "frontage":  "north",
+                           "distanceRoadM":  16.57
+                       },
+                       {
+                           "name":  "current_craft_streetfront_06",
+                           "center":  [
+                                          -531,
+                                          110
+                                      ],
+                           "width":  11.6,
+                           "depth":  8.6,
+                           "frontage":  "north",
+                           "distanceRoadM":  17.46
+                       }
+                   ],
+    "newMeshNames":  [
+                         "current_craft_road_limestone",
+                         "current_craft_courtyard_stone",
+                         "current_craft_ashlar",
+                         "current_craft_slate_roof",
+                         "current_craft_terracotta_roof",
+                         "current_craft_dark_window",
+                         "current_craft_limestone_trim",
+                         "current_craft_wood",
+                         "current_craft_industrial_iron",
+                         "current_craft_gold",
+                         "current_craft_dye_basin",
+                         "current_craft_garden_grass",
+                         "current_craft_planter_stone",
+                         "current_craft_herbs_green"
+                     ],
+    "meshBatches":  14,
+    "createdGeometryElements":  174,
+    "oldRoutesPreserved":  true,
+    "parcelOverlapCount":  0,
+    "unfinished":  [
+                       "Architectural interiors require actual access and furnishing",
+                       "Caravan cargo path game simulation not available",
+                       "No canonical sheet facility or NPC count modified",
+                       "Connection to nearby external eastern street remains to be designed",
+                       "Current roof and yard footprint vs all 3D legacy collision must pass"
+                   ]
+}

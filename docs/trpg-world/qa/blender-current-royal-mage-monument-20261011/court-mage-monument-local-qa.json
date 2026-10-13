@@ -1,0 +1,21 @@
+{
+  "status": "LOCAL_PASS",
+  "meshesAdded": 8,
+  "routesAdded": 3,
+  "legacyRoutesPreserved": true,
+  "existingMeshCollisionCandidates": 127,
+  "nearbyExistingRoads": 11,
+  "newPathFloorProbes": 219,
+  "newPathFloorFailures": [],
+  "newPathBodyHeadRays": 876,
+  "newPathBlockers": [],
+  "oldStreetVsNewGeometryRays": 3330,
+  "oldStreetBlockers": [],
+  "limitations": [
+    "Street center and +/-0.7m probes, not continuous swept humanoid capsule",
+    "New buildings have modeled main doors; their room plan, windows and stairs await navigation mesh",
+    "Arch windows are facade treatments, NOT fully bored gameplay apertures",
+    "No player or NPC access to elevated observatory platforms yet",
+    "Not a citywide architectural or narrative acceptance"
+  ]
+}

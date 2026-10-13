@@ -1,0 +1,40 @@
+{
+  "status": "STAGED_NEEDS_VISUAL_AND_TRAFFIC_QA",
+  "sourcePlanSHA256": "174deb5bb99a425f1fb502694310b6ef3023f5c40bb960615555dfabaaddf260",
+  "boundaryM": 251.25,
+  "buttresses": 8,
+  "lowGroundApronM2": 6638.1,
+  "overlapWithNativeZ112M2": 274.6,
+  "material": "limestone and solid coursed stone",
+  "wallTopZ": 156,
+  "wallBaseZ": 112,
+  "place": "western cliff edge below royal castle, X -108..-7, Y 992..1168",
+  "newMeshes": [
+    [
+      "repair_royal_forecourt_west_solid_retaining_20261012",
+      1512,
+      1134
+    ],
+    [
+      "repair_royal_forecourt_west_coping_20261012",
+      1512,
+      1134
+    ],
+    [
+      "repair_royal_forecourt_west_tapered_buttresses_20261012",
+      64,
+      48
+    ],
+    [
+      "repair_royal_forecourt_west_lower_ground_apron_20261012",
+      1035,
+      345
+    ]
+  ],
+  "notResolved": [
+    "204m castle west stair opening (intentional, must not be sealed)",
+    "Other forecourt cliff openings to survey independently",
+    "Whole city capsule physics",
+    "Castle palace detail and architecture"
+  ]
+}

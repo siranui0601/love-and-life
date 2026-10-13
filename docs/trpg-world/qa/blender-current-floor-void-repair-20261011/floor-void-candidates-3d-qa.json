@@ -1,0 +1,33 @@
+{
+  "status": "LOCAL_PASS",
+  "scopedNewGroundFaces": 933,
+  "newFloorAreaM2": 10031.99,
+  "baselineRoadFailureRays": 14,
+  "stagedRoadFailureRays": 14,
+  "meshReports": [
+    {
+      "mesh": "mage_east_ground",
+      "faces": 248,
+      "badNormals": 0,
+      "unsupported": 0
+    },
+    {
+      "mesh": "civic_foot_ground",
+      "faces": 409,
+      "badNormals": 0,
+      "unsupported": 0
+    },
+    {
+      "mesh": "low_city_ground",
+      "faces": 276,
+      "badNormals": 0,
+      "unsupported": 0
+    }
+  ],
+  "failures": [],
+  "limitations": [
+    "No continuous capsule/NPC/cart simulation",
+    "No full edge retaining wall or human-eye art signoff",
+    "Tests do not certify unrelated city stairs"
+  ]
+}

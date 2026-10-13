@@ -1,0 +1,12 @@
+{
+  "status": "PASS_LOCAL_ARCHITECTURE",
+  "routeCount": 30,
+  "probeCount": 16242,
+  "obstructions": 0,
+  "examples": [],
+  "limitations": [
+    "Only geometry added in B100/B101",
+    "No existing buildings, railings or character capsule sweep",
+    "No actual gameplay traversal or cargo test"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "status": "FAIL",
+  "routes": [
+    "west_noble_wall_stairs",
+    "west_noble_wall_stairs_landing_0",
+    "west_noble_wall_stairs_landing_1",
+    "noble_east_wall_stair"
+  ],
+  "supportMeshCount": 7,
+  "samples": {
+    "west_noble_wall_stairs": 798,
+    "west_noble_wall_stairs_landing_0": 120,
+    "west_noble_wall_stairs_landing_1": 72,
+    "noble_east_wall_stair": 843
+  },
+  "supported": {
+    "west_noble_wall_stairs": 798,
+    "west_noble_wall_stairs_landing_0": 120,
+    "west_noble_wall_stairs_landing_1": 72,
+    "noble_east_wall_stair": 841
+  },
+  "unsupported": 2,
+  "examples": [
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -572.28,
+        514.62,
+        42.0
+      ],
+      "down": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.62,
+        588.83,
+        77.68
+      ],
+      "down": 78.09
+    }
+  ],
+  "limitations": [
+    "Only route/ground support meshes included",
+    "No swept actor capsule",
+    "All buildings/railings not included"
+  ]
+}

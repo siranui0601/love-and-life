@@ -1,0 +1,11 @@
+{
+  "wallNames": [
+    "b107_noble_west_retaining_reconstruction",
+    "noble_west_retaining"
+  ],
+  "regions": "noble-west/east urban incline facing lower city",
+  "counterforts": 22,
+  "coursePieces": 126,
+  "testedCorridorBufferM": 6.5,
+  "status": "visual WIP awaiting 3D regression QA"
+}

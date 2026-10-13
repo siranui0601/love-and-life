@@ -1,0 +1,52 @@
+{
+  "status": "FAIL",
+  "routeCount": 12,
+  "bodyHeadProbeCount": 7308,
+  "blockedProbeCount": 0,
+  "floorSamples": 3654,
+  "unsupportedSamples": 2,
+  "hits": [],
+  "floorFailures": [
+    {
+      "route": "castle_east_ramp",
+      "at": [
+        310.8935232489349,
+        1234.8298575632987,
+        195.83333333333334
+      ],
+      "support": [
+        310.8935241699219,
+        1234.829833984375,
+        196.34666442871094
+      ]
+    },
+    {
+      "route": "north_court_wall_stairs",
+      "at": [
+        184.9381108673209,
+        1274.401197405789,
+        112
+      ],
+      "support": null
+    }
+  ],
+  "routes": [
+    "castle_east_ramp",
+    "civic_foot_contour_1",
+    "civic_royal_ramp",
+    "civic_royal_ramp_landing_1",
+    "forecourt_contour_1",
+    "low_city_contour_1",
+    "mage_civic_ramp",
+    "market_ascent",
+    "noble_service",
+    "north_court_wall_stairs",
+    "north_court_wall_stairs_landing_1",
+    "upper_city_contour_1"
+  ],
+  "limitations": [
+    "Finite torso/head rays and sampled support only",
+    "No swept capsule, cart turning envelope or manual player traversal",
+    "No distant vista, NPC or event validation"
+  ]
+}

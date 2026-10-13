@@ -1,0 +1,68 @@
+{
+  "status": "PASS",
+  "travelFrames": [
+    {
+      "frame": 1,
+      "zBottom": 41.99,
+      "zTop": 45.25,
+      "counterWeightZ": 0.0,
+      "winchAngle": 0.0
+    },
+    {
+      "frame": 61,
+      "zBottom": 76.99,
+      "zTop": 80.25,
+      "counterWeightZ": -33.0,
+      "winchAngle": 15.708
+    },
+    {
+      "frame": 121,
+      "zBottom": 111.99,
+      "zTop": 115.25,
+      "counterWeightZ": -66.0,
+      "winchAngle": 31.416
+    },
+    {
+      "frame": 181,
+      "zBottom": 76.99,
+      "zTop": 80.25,
+      "counterWeightZ": -33.0,
+      "winchAngle": 15.708
+    },
+    {
+      "frame": 241,
+      "zBottom": 41.99,
+      "zTop": 45.25,
+      "counterWeightZ": 0.0,
+      "winchAngle": 0.0
+    }
+  ],
+  "shaftColumnCornerClearanceM": 0.212,
+  "threeLevelStations": [
+    {
+      "frame": 1,
+      "dock": 42.12,
+      "hit": 42.255,
+      "ok": true
+    },
+    {
+      "frame": 121,
+      "dock": 112.12,
+      "hit": 112.255,
+      "ok": true
+    }
+  ],
+  "staticShaftSlotClear": true,
+  "staticShaftFloorSamples": 32,
+  "staticShaftFloorBlockers": [],
+  "hoistTravelExactly70m": true,
+  "nearbyRoadCount": 2,
+  "nearbyRoadRays": 546,
+  "nearbyRoadHits": 0,
+  "obstacleExamples": [],
+  "limitations": [
+    "Animation does not provide collision, NPC or cargo movement in the game runtime",
+    "No doors or safety interlocks",
+    "Physics and traffic simulation not performed"
+  ]
+}

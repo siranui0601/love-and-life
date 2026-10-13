@@ -1,0 +1,13 @@
+{
+  "status": "LOCAL_PASS",
+  "obstructionCount": 0,
+  "probeCount": 79794,
+  "affectedRoutes": [],
+  "hits": [],
+  "limitations": [
+    "Discrete single line ray not capsule",
+    "Parapet and shell limited to B107",
+    "Does not include existing buildings",
+    "No actor simulation"
+  ]
+}

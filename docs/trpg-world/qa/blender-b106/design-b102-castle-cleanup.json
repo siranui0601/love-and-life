@@ -1,0 +1,17 @@
+{
+  "base": "design-b101",
+  "status": "WIP_VISUAL_QA",
+  "removedOldCastleTowers": [
+    "Castle corner tower",
+    "Castle corner tower.001",
+    "Castle corner tower.002",
+    "Castle corner tower.003",
+    "Castle corner tower_roof",
+    "Castle corner tower_roof.001",
+    "Castle corner tower_roof.002",
+    "Castle corner tower_roof.003",
+    "Castle highest tower",
+    "Castle highest tower_roof"
+  ],
+  "removedFacadeQuads": 7469
+}

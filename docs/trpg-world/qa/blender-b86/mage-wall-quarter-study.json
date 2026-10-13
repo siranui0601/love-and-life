@@ -1,0 +1,908 @@
+{
+  "status": "REQUIRES_MESH_VISUAL_REVIEW",
+  "base": "B82",
+  "parentGitHEAD": "4373f25e213d37176a8e5cb756054625ac1efc6b",
+  "changedMeshes": [
+    "civic_foot_ground",
+    "civic_foot_retaining",
+    "interior_life_design-b52_low_city_493",
+    "interior_life_design-b52_low_city_496",
+    "interior_life_design-b52_low_city_503",
+    "interior_life_design-b53_low_city_768",
+    "low_city_contour_1",
+    "low_city_ground",
+    "low_city_lane_135",
+    "low_city_lane_20",
+    "mage_civic_ramp",
+    "mage_civic_ramp_graded_bench",
+    "mage_civic_ramp_landing_0",
+    "mage_civic_ramp_landing_1",
+    "mage_civic_ramp_outer_parapet",
+    "mage_civic_ramp_terrace_support",
+    "mage_east_ground",
+    "mage_east_retaining"
+  ],
+  "removedRoutes": [
+    "mage_civic_ramp",
+    "mage_civic_ramp_landing_0",
+    "mage_civic_ramp_landing_1",
+    "low_city_contour_1",
+    "low_city_lane_20",
+    "low_city_lane_135",
+    "interior_life_design-b52_low_city_493",
+    "interior_life_design-b52_low_city_496",
+    "interior_life_design-b52_low_city_503",
+    "interior_life_design-b53_low_city_768"
+  ],
+  "replacedParcelIds": [
+    "parcel_low_city_580_284_2",
+    "parcel_low_city_580_284_3",
+    "parcel_low_city_580_284_4",
+    "parcel_low_city_580_284_5",
+    "parcel_low_city_580_284_6",
+    "parcel_low_city_580_284_7",
+    "parcel_low_city_580_284_8",
+    "parcel_low_city_580_284_9",
+    "parcel_low_city_580_284_10",
+    "parcel_low_city_580_284_11",
+    "parcel_low_city_580_284_12",
+    "parcel_low_city_580_284_13",
+    "parcel_low_city_580_284_14",
+    "parcel_low_city_580_284_15",
+    "parcel_low_city_712_28_6",
+    "parcel_low_city_712_28_7",
+    "parcel_low_city_712_28_8",
+    "parcel_low_city_712_28_9",
+    "parcel_low_city_712_28_10",
+    "parcel_low_city_712_28_11",
+    "parcel_low_city_712_28_12",
+    "parcel_low_city_712_28_13",
+    "parcel_low_city_712_28_14",
+    "parcel_low_city_712_28_15",
+    "parcel_low_city_712_28_16",
+    "parcel_low_city_712_28_17",
+    "parcel_low_city_712_28_18",
+    "parcel_low_city_712_28_19",
+    "parcel_low_city_712_28_20",
+    "parcel_low_city_712_28_21",
+    "parcel_low_city_712_28_22",
+    "parcel_low_city_712_28_23",
+    "parcel_low_city_712_28_24",
+    "parcel_low_city_712_28_25",
+    "parcel_low_city_712_28_26",
+    "parcel_low_city_712_28_27",
+    "parcel_low_city_712_28_28",
+    "parcel_low_city_712_28_29",
+    "parcel_low_city_712_28_30",
+    "parcel_low_city_712_28_31",
+    "parcel_low_city_712_28_32",
+    "parcel_low_city_712_28_33",
+    "parcel_low_city_712_28_34",
+    "parcel_low_city_712_28_35",
+    "parcel_low_city_712_28_36",
+    "parcel_low_city_712_28_37",
+    "parcel_low_city_712_28_38",
+    "parcel_low_city_712_28_39",
+    "parcel_low_city_712_28_40",
+    "parcel_low_city_712_28_41",
+    "parcel_low_city_712_28_42",
+    "parcel_low_city_712_28_43",
+    "parcel_low_city_712_28_44",
+    "parcel_low_city_712_28_45",
+    "parcel_low_city_712_28_46",
+    "parcel_low_city_712_28_47",
+    "parcel_low_city_712_28_48",
+    "parcel_low_city_712_28_49",
+    "parcel_low_city_712_28_50",
+    "parcel_low_city_712_30_1",
+    "parcel_low_city_712_30_2",
+    "parcel_low_city_712_47_0",
+    "parcel_low_city_712_47_1",
+    "parcel_low_city_712_47_2",
+    "parcel_low_city_712_47_3",
+    "parcel_low_city_712_47_4",
+    "parcel_low_city_712_47_5",
+    "parcel_low_city_712_47_6",
+    "parcel_low_city_712_47_7",
+    "parcel_low_city_712_47_8",
+    "parcel_low_city_712_47_9",
+    "parcel_low_city_712_47_10",
+    "parcel_low_city_712_47_11",
+    "parcel_low_city_712_47_12",
+    "parcel_low_city_712_47_13",
+    "parcel_low_city_712_47_14",
+    "parcel_low_city_712_47_15",
+    "parcel_low_city_808_0_0",
+    "parcel_low_city_808_0_1",
+    "parcel_low_city_808_0_2",
+    "parcel_low_city_808_0_3",
+    "parcel_low_city_808_0_4",
+    "parcel_low_city_808_0_5",
+    "parcel_low_city_808_0_6",
+    "parcel_low_city_808_0_7",
+    "parcel_low_city_808_0_8",
+    "parcel_low_city_829_1_0",
+    "parcel_low_city_829_2_0",
+    "parcel_low_city_850_0_2",
+    "parcel_low_city_850_0_3",
+    "parcel_low_city_853_0_0",
+    "parcel_low_city_853_0_1",
+    "parcel_low_city_853_0_2",
+    "parcel_low_city_853_0_3",
+    "parcel_low_city_855_10_0",
+    "parcel_low_city_855_11_1",
+    "parcel_low_city_855_11_2",
+    "parcel_low_city_855_11_3",
+    "parcel_low_city_855_11_4",
+    "parcel_low_city_855_12_0",
+    "parcel_low_city_860_0_0",
+    "parcel_low_city_860_0_1",
+    "parcel_low_city_860_0_2",
+    "parcel_low_city_860_0_3",
+    "parcel_low_city_860_0_4",
+    "parcel_low_city_860_1_2",
+    "parcel_low_city_860_1_3",
+    "parcel_low_city_860_1_4",
+    "parcel_low_city_860_1_5",
+    "parcel_low_city_860_1_6",
+    "parcel_low_city_860_1_7",
+    "parcel_low_city_860_3_4",
+    "parcel_low_city_860_4_0",
+    "parcel_low_city_860_4_1",
+    "parcel_low_city_860_4_2",
+    "parcel_low_city_860_4_3",
+    "parcel_low_city_864_0_0",
+    "parcel_low_city_864_0_1",
+    "parcel_low_city_864_0_2",
+    "parcel_low_city_864_0_3",
+    "parcel_low_city_864_0_4",
+    "parcel_low_city_864_0_5",
+    "parcel_low_city_864_0_6",
+    "parcel_low_city_864_1_2",
+    "parcel_low_city_864_2_2",
+    "parcel_low_city_864_2_3",
+    "parcel_low_city_864_2_4",
+    "parcel_low_city_864_2_5",
+    "parcel_low_city_864_2_6",
+    "parcel_low_city_872_10_0",
+    "parcel_low_city_872_10_1",
+    "parcel_low_city_872_10_2",
+    "parcel_low_city_872_10_4",
+    "parcel_low_city_872_11_2",
+    "parcel_low_city_872_11_3",
+    "parcel_low_city_872_12_2",
+    "parcel_low_city_872_12_3",
+    "parcel_low_city_872_13_0",
+    "parcel_low_city_872_13_1",
+    "parcel_low_city_872_13_2",
+    "parcel_low_city_872_13_3",
+    "parcel_low_city_873_0_0",
+    "parcel_low_city_873_0_1",
+    "parcel_low_city_873_0_2",
+    "parcel_low_city_873_0_3",
+    "parcel_low_city_873_0_4",
+    "parcel_low_city_873_0_5",
+    "parcel_low_city_873_0_6",
+    "parcel_low_city_873_1_2",
+    "parcel_low_city_873_1_3",
+    "parcel_low_city_873_2_2",
+    "parcel_low_city_873_2_3",
+    "parcel_low_city_873_2_4",
+    "parcel_low_city_873_2_5",
+    "parcel_low_city_873_2_6",
+    "parcel_low_city_896_0_1",
+    "parcel_low_city_896_0_2",
+    "parcel_low_city_896_0_3",
+    "parcel_low_city_896_0_4",
+    "parcel_low_city_896_0_5",
+    "parcel_low_city_896_0_6",
+    "parcel_low_city_896_0_7",
+    "parcel_low_city_896_0_8",
+    "parcel_low_city_896_0_9",
+    "parcel_low_city_896_1_2",
+    "parcel_low_city_896_3_0",
+    "parcel_civic_foot_45_61_2",
+    "parcel_civic_foot_45_62_0",
+    "parcel_civic_foot_45_63_0",
+    "parcel_mage_east_16_22_0",
+    "parcel_mage_east_16_22_1",
+    "parcel_mage_east_17_0_0"
+  ],
+  "restoredGroundAreaM2": 16077.40622428612,
+  "newRoutes": [
+    {
+      "id": "mage_wall_freight",
+      "width": 10,
+      "kind": "cart_ramp",
+      "z0": 14,
+      "z1": 70,
+      "lengthM": 1233.9276732950595,
+      "grade": 0.045383535203857246,
+      "maxLocalGrade": 0.05165274902673719
+    },
+    {
+      "id": "mage_wall_short_stairs",
+      "width": 4,
+      "kind": "stairs",
+      "z0": 14,
+      "z1": 70,
+      "lengthM": 150.28359857283164,
+      "grade": 0.3726288199896999,
+      "landingCount": 20,
+      "landingLengthM": 2,
+      "gateTag": "G_SOCIAL_STATUS",
+      "gateStatus": "Runtime pending"
+    },
+    {
+      "id": "mage_wall_lower_entry",
+      "width": 6,
+      "kind": "landing",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 15.10708245060056,
+      "grade": 0
+    },
+    {
+      "id": "mage_wall_freight_lower_entry",
+      "width": 10,
+      "kind": "landing",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 14,
+      "grade": 0
+    },
+    {
+      "id": "mage_wall_upper_entry",
+      "width": 4,
+      "kind": "landing",
+      "z0": 70,
+      "z1": 70,
+      "lengthM": 30.615389449089577,
+      "grade": 0
+    },
+    {
+      "id": "low_city_contour_1_retained_0",
+      "width": 7,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 3697.2212002829806,
+      "grade": 0
+    },
+    {
+      "id": "low_city_contour_1_retained_1",
+      "width": 7,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 551.2157747577959,
+      "grade": 0
+    },
+    {
+      "id": "low_city_contour_1_retained_2",
+      "width": 7,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 11743.411835916588,
+      "grade": 0
+    },
+    {
+      "id": "low_city_lane_20_retained_0",
+      "width": 6,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 282.06793629498287,
+      "grade": 0
+    },
+    {
+      "id": "low_city_lane_135_retained_0",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 30.977282292263773,
+      "grade": 0
+    },
+    {
+      "id": "low_city_lane_135_retained_1",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 33.841961856019644,
+      "grade": 0
+    },
+    {
+      "id": "interior_life_design-b52_low_city_493_retained_0",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 63.74702110207337,
+      "grade": 0
+    },
+    {
+      "id": "interior_life_design-b52_low_city_496_retained_0",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 46.31140507366443,
+      "grade": 0
+    },
+    {
+      "id": "mage_lower_quarter_perimeter",
+      "width": 6,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 550,
+      "grade": 0
+    },
+    {
+      "id": "mage_lower_quarter_cargo",
+      "width": 6,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 185.27692569068708,
+      "grade": 0
+    },
+    {
+      "id": "mage_lower_quarter_life",
+      "width": 3.5,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 211.24937810560445,
+      "grade": 0
+    },
+    {
+      "id": "mage_lower_quarter_cross",
+      "width": 3.5,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 50,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_repair_house",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 12,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_canteen",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 8,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_receiving_store",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 12,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_sorting_hall",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 12,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_daily_stall_south0",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 13,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_daily_stall_south1",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 18,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_daily_stall_south2",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 17,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_daily_stall_north0",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 10,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_daily_stall_north1",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 10,
+      "grade": 0
+    },
+    {
+      "id": "mage_quarter_entry_daily_stall_north2",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 10,
+      "grade": 0
+    }
+  ],
+  "buildings": [
+    {
+      "id": "repair_house",
+      "x": 1350,
+      "y": 235,
+      "w": 20,
+      "d": 56,
+      "h": 8,
+      "face": "east",
+      "door": 16,
+      "role": "repair and household supplies",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1360,
+              207
+            ],
+            [
+              1360,
+              263
+            ],
+            [
+              1340,
+              263
+            ],
+            [
+              1340,
+              207
+            ],
+            [
+              1360,
+              207
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "canteen",
+      "x": 1390,
+      "y": 289,
+      "w": 48,
+      "d": 16,
+      "h": 8,
+      "face": "south",
+      "door": 20,
+      "role": "food and shared tables",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1414,
+              281
+            ],
+            [
+              1414,
+              297
+            ],
+            [
+              1366,
+              297
+            ],
+            [
+              1366,
+              281
+            ],
+            [
+              1414,
+              281
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "receiving_store",
+      "x": 1440,
+      "y": 236,
+      "w": 20,
+      "d": 56,
+      "h": 8,
+      "face": "west",
+      "door": 8,
+      "role": "receiving and dry storage",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1450,
+              208
+            ],
+            [
+              1450,
+              264
+            ],
+            [
+              1430,
+              264
+            ],
+            [
+              1430,
+              208
+            ],
+            [
+              1450,
+              208
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "sorting_hall",
+      "x": 1390,
+      "y": 180,
+      "w": 40,
+      "d": 16,
+      "h": 5,
+      "face": "east",
+      "door": 10,
+      "role": "open sorting and returns",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1410,
+              172
+            ],
+            [
+              1410,
+              188
+            ],
+            [
+              1370,
+              188
+            ],
+            [
+              1370,
+              172
+            ],
+            [
+              1410,
+              172
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "daily_stall_south0",
+      "x": 1378,
+      "y": 215,
+      "w": 12,
+      "d": 8,
+      "h": 4,
+      "face": "north",
+      "door": 9,
+      "role": "daily market and household trade",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1384,
+              211
+            ],
+            [
+              1384,
+              219
+            ],
+            [
+              1372,
+              219
+            ],
+            [
+              1372,
+              211
+            ],
+            [
+              1384,
+              211
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "daily_stall_south1",
+      "x": 1393,
+      "y": 215,
+      "w": 12,
+      "d": 8,
+      "h": 4,
+      "face": "north",
+      "door": 9,
+      "role": "daily market and household trade",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1399,
+              211
+            ],
+            [
+              1399,
+              219
+            ],
+            [
+              1387,
+              219
+            ],
+            [
+              1387,
+              211
+            ],
+            [
+              1399,
+              211
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "daily_stall_south2",
+      "x": 1408,
+      "y": 215,
+      "w": 12,
+      "d": 8,
+      "h": 4,
+      "face": "north",
+      "door": 9,
+      "role": "daily market and household trade",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1414,
+              211
+            ],
+            [
+              1414,
+              219
+            ],
+            [
+              1402,
+              219
+            ],
+            [
+              1402,
+              211
+            ],
+            [
+              1414,
+              211
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "daily_stall_north0",
+      "x": 1378,
+      "y": 247,
+      "w": 12,
+      "d": 8,
+      "h": 4,
+      "face": "south",
+      "door": 9,
+      "role": "daily market and household trade",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1384,
+              243
+            ],
+            [
+              1384,
+              251
+            ],
+            [
+              1372,
+              251
+            ],
+            [
+              1372,
+              243
+            ],
+            [
+              1384,
+              243
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "daily_stall_north1",
+      "x": 1393,
+      "y": 247,
+      "w": 12,
+      "d": 8,
+      "h": 4,
+      "face": "south",
+      "door": 9,
+      "role": "daily market and household trade",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1399,
+              243
+            ],
+            [
+              1399,
+              251
+            ],
+            [
+              1387,
+              251
+            ],
+            [
+              1387,
+              243
+            ],
+            [
+              1399,
+              243
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "daily_stall_north2",
+      "x": 1408,
+      "y": 247,
+      "w": 12,
+      "d": 8,
+      "h": 4,
+      "face": "south",
+      "door": 9,
+      "role": "daily market and household trade",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1414,
+              243
+            ],
+            [
+              1414,
+              251
+            ],
+            [
+              1402,
+              251
+            ],
+            [
+              1402,
+              243
+            ],
+            [
+              1414,
+              243
+            ]
+          ]
+        ]
+      }
+    }
+  ],
+  "siteGeometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          1465,
+          165
+        ],
+        [
+          1465,
+          305
+        ],
+        [
+          1330,
+          305
+        ],
+        [
+          1330,
+          165
+        ],
+        [
+          1465,
+          165
+        ]
+      ]
+    ]
+  },
+  "freightLengthM": 1233.9276732950595,
+  "freightGrade": 0.045383535203857246,
+  "stairLengthM": 150.28359857283164,
+  "sources": [
+    "\u738b\u90fd A1:N35: shops/market, T06 logistics, T09/T14 repairs; read 2026-10-09",
+    "B75 handoff and supplied research PDF"
+  ],
+  "pending": [
+    "Actual mesh traversal",
+    "Remaining districts and large supports",
+    "Social gate and NPC/event runtime",
+    "Carriageway turning envelope and lighting"
+  ],
+  "detailNote": "Full sampled route geometry retained in Windows plan.json and reproducible with author script",
+  "addedMeshCount": 2464,
+  "addedMeshExamples": [
+    "mage_quarter_restored_low_ground",
+    "mage_quarter_quarter_courts",
+    "mage_quarter_mage_wall_freight_continuous_floor",
+    "mage_quarter_mage_wall_short_stairs_floor_0",
+    "mage_quarter_mage_wall_short_stairs_floor_1",
+    "mage_quarter_mage_wall_short_stairs_floor_2",
+    "mage_quarter_mage_wall_short_stairs_floor_3",
+    "mage_quarter_mage_wall_short_stairs_floor_4",
+    "mage_quarter_mage_wall_short_stairs_floor_5",
+    "mage_quarter_mage_wall_short_stairs_floor_6",
+    "mage_quarter_mage_wall_short_stairs_floor_7",
+    "mage_quarter_mage_wall_short_stairs_floor_8",
+    "mage_quarter_mage_wall_short_stairs_floor_9",
+    "mage_quarter_mage_wall_short_stairs_floor_10",
+    "mage_quarter_mage_wall_short_stairs_floor_11",
+    "mage_quarter_mage_wall_short_stairs_floor_12",
+    "mage_quarter_mage_wall_short_stairs_floor_13",
+    "mage_quarter_mage_wall_short_stairs_floor_14",
+    "mage_quarter_mage_wall_short_stairs_floor_15",
+    "mage_quarter_mage_wall_short_stairs_floor_16"
+  ]
+}

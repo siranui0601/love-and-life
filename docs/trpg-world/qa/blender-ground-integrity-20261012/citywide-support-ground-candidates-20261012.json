@@ -1,0 +1,8 @@
+{
+  "scope": "support/abutment/pier meshes, plan native ground at matching elevation",
+  "candidates": [],
+  "limitations": [
+    "These are flags, NOT confirmed unsupported; a pier can be founded against a vertical rock wall or bridge support",
+    "Checks only meshes ending _ground, not all retaining or structural foundations"
+  ]
+}

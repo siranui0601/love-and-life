@@ -1,0 +1,89 @@
+{
+  "status": "MEASURED_NOT_ACCEPTED",
+  "sites": [
+    {
+      "site": "garden_watchtower",
+      "eye": [
+        960,
+        1164,
+        33.86
+      ],
+      "riverSamples": 16,
+      "visibleRiverSamples": 0,
+      "visibleRiverTargets": [],
+      "market": {
+        "visible": false,
+        "firstObstacle": "civic_royal_ramp_terrace_support",
+        "distanceM": 1547.8302858060529
+      },
+      "castle": {
+        "target": [
+          330.9620361328125,
+          1085.179443359375,
+          303.1538391113281
+        ],
+        "visible": true,
+        "firstObstacle": "Castle highest tower",
+        "distanceM": 688.7819642225552
+      },
+      "mageTower": {
+        "target": [
+          1050,
+          650,
+          160.46153259277344
+        ],
+        "visible": false,
+        "firstObstacle": "mage_east building walls",
+        "distanceM": 536.9580507285345
+      },
+      "riverBlockers": [
+        "civic_royal_ramp_terrace_support",
+        "mage_east_retaining"
+      ]
+    },
+    {
+      "site": "mage_river_watchtower",
+      "eye": [
+        1117,
+        433.5,
+        107.86
+      ],
+      "riverSamples": 16,
+      "visibleRiverSamples": 0,
+      "visibleRiverTargets": [],
+      "market": {
+        "visible": false,
+        "firstObstacle": "market roofs",
+        "distanceM": 1220.7435122318898
+      },
+      "castle": {
+        "target": [
+          330.9620361328125,
+          1085.179443359375,
+          303.1538391113281
+        ],
+        "visible": true,
+        "firstObstacle": "Castle highest tower",
+        "distanceM": 1039.5583027631255
+      },
+      "mageTower": {
+        "target": [
+          1050,
+          650,
+          160.46153259277344
+        ],
+        "visible": true,
+        "firstObstacle": "Proposed mage tower",
+        "distanceM": 232.65461771170183
+      },
+      "riverBlockers": [
+        "lower building walls",
+        "lower roofs",
+        "market building walls",
+        "market roofs",
+        "quay building walls"
+      ]
+    }
+  ],
+  "limitations": "Point rays from real deck eye height; no field-of-view, silhouette quality, player controller or whole-landmark visibility certification."
+}

@@ -1,0 +1,393 @@
+{
+  "status": "REQUIRES_MESH_VISUAL_REVIEW",
+  "base": "B88",
+  "parentGitHEAD": "1d80ff3ec83f5cb98c8c9e0bd95600a5798a4bd8",
+  "changedMeshes": [
+    "civic_foot_contour_1",
+    "civic_foot_ground",
+    "civic_foot_retaining",
+    "low_city_ground",
+    "market_ascent",
+    "market_ascent_graded_bench",
+    "market_ascent_landing_0",
+    "market_ascent_landing_1",
+    "market_ascent_outer_parapet",
+    "market_ascent_terrace_support",
+    "noble_service",
+    "noble_service_graded_bench",
+    "noble_service_landing_0",
+    "noble_service_landing_1",
+    "noble_service_outer_parapet",
+    "noble_service_terrace_support",
+    "noble_west_ground",
+    "noble_west_retaining",
+    "wall_gallery_abutment_market_ascent_107",
+    "wall_gallery_abutment_market_ascent_108",
+    "wall_gallery_abutment_market_ascent_109",
+    "wall_gallery_abutment_market_ascent_110",
+    "wall_gallery_abutment_market_ascent_111",
+    "wall_gallery_abutment_market_ascent_112",
+    "wall_gallery_abutment_market_ascent_113",
+    "wall_gallery_abutment_market_ascent_114",
+    "wall_gallery_abutment_market_ascent_115",
+    "wall_gallery_abutment_market_ascent_195",
+    "wall_gallery_abutment_market_ascent_196",
+    "wall_gallery_abutment_market_ascent_197",
+    "wall_gallery_abutment_market_ascent_198",
+    "wall_gallery_abutment_market_ascent_199",
+    "wall_gallery_abutment_market_ascent_200",
+    "wall_gallery_abutment_market_ascent_201",
+    "wall_gallery_abutment_market_ascent_202",
+    "wall_gallery_abutment_noble_service_223",
+    "wall_gallery_abutment_noble_service_224",
+    "wall_gallery_abutment_noble_service_225",
+    "wall_gallery_abutment_noble_service_226",
+    "wall_gallery_abutment_noble_service_227",
+    "wall_gallery_abutment_noble_service_228",
+    "wall_gallery_abutment_noble_service_232",
+    "wall_gallery_abutment_noble_service_233",
+    "wall_gallery_abutment_noble_service_234",
+    "wall_gallery_abutment_noble_service_235",
+    "wall_gallery_abutment_noble_service_236",
+    "wall_gallery_abutment_noble_service_237",
+    "wall_gallery_abutment_noble_service_238",
+    "wall_gallery_abutment_noble_service_239",
+    "wall_gallery_abutment_noble_service_240",
+    "wall_gallery_abutment_noble_service_271",
+    "wall_gallery_abutment_noble_service_272",
+    "wall_gallery_abutment_noble_service_273",
+    "wall_gallery_abutment_noble_service_274",
+    "wall_gallery_abutment_noble_service_275",
+    "wall_gallery_abutment_noble_service_276"
+  ],
+  "replacedParcelIds": [
+    "parcel_low_city_237_0_5",
+    "parcel_low_city_237_0_6",
+    "parcel_low_city_237_0_7",
+    "parcel_low_city_302_15_17",
+    "parcel_low_city_302_15_18",
+    "parcel_low_city_302_15_19",
+    "parcel_low_city_302_15_20",
+    "parcel_low_city_302_15_21",
+    "parcel_low_city_302_15_22",
+    "parcel_low_city_302_15_23",
+    "parcel_low_city_302_15_24",
+    "parcel_low_city_302_15_25",
+    "parcel_low_city_302_16_0",
+    "parcel_civic_foot_3_2_3",
+    "parcel_civic_foot_12_0_0",
+    "parcel_civic_foot_13_29_0",
+    "parcel_civic_foot_13_29_1",
+    "parcel_civic_foot_19_49_0",
+    "parcel_civic_foot_19_50_0",
+    "parcel_civic_foot_19_50_1",
+    "parcel_noble_west_1_52_1"
+  ],
+  "newRoutes": [
+    {
+      "id": "market_ascent_short",
+      "width": 10,
+      "kind": "steep_ramp",
+      "z0": 14,
+      "z1": 42,
+      "lengthM": 42,
+      "grade": 0.6666666666666666,
+      "maxLocalGrade": 1,
+      "movementStatus": "Steep movement proposal; traction/controller pending"
+    },
+    {
+      "id": "market_ascent_short_lower",
+      "width": 10,
+      "kind": "landing",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 59,
+      "grade": 0
+    },
+    {
+      "id": "market_ascent_short_upper",
+      "width": 10,
+      "kind": "landing",
+      "z0": 42,
+      "z1": 42,
+      "lengthM": 20.856193622824037,
+      "grade": 0
+    },
+    {
+      "id": "noble_service_short",
+      "width": 10,
+      "kind": "steep_ramp",
+      "z0": 42,
+      "z1": 78,
+      "lengthM": 52,
+      "grade": 0.6923076923076923,
+      "maxLocalGrade": 1,
+      "movementStatus": "Steep movement proposal; traction/controller pending"
+    },
+    {
+      "id": "noble_service_short_upper",
+      "width": 10,
+      "kind": "landing",
+      "z0": 78,
+      "z1": 78,
+      "lengthM": 16.023187932870293,
+      "grade": 0
+    },
+    {
+      "id": "civic_foot_contour_1_retained_0",
+      "width": 7,
+      "kind": "contour",
+      "z0": 42,
+      "z1": 42,
+      "lengthM": 4216.777298201799,
+      "grade": 0
+    },
+    {
+      "id": "civic_foot_contour_1_retained_1",
+      "width": 7,
+      "kind": "contour",
+      "z0": 42,
+      "z1": 42,
+      "lengthM": 564.646154187292,
+      "grade": 0
+    },
+    {
+      "id": "civic_noble_entrance_detour",
+      "width": 7,
+      "kind": "life",
+      "z0": 42,
+      "z1": 42,
+      "lengthM": 31.3901041186964,
+      "grade": 0
+    },
+    {
+      "id": "noble_service_short_lower",
+      "width": 10,
+      "kind": "landing",
+      "z0": 42,
+      "z1": 42,
+      "lengthM": 6.664938740531758,
+      "grade": 0
+    },
+    {
+      "id": "market_arrival_court_link",
+      "width": 6,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 67,
+      "grade": 0
+    },
+    {
+      "id": "market_arrival_stall_north0_entry",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 27,
+      "grade": 0
+    },
+    {
+      "id": "market_arrival_stall_north1_entry",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 27,
+      "grade": 0
+    },
+    {
+      "id": "market_arrival_stall_south0_entry",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 7,
+      "grade": 0
+    },
+    {
+      "id": "market_arrival_stall_south1_entry",
+      "width": 4,
+      "kind": "life",
+      "z0": 14,
+      "z1": 14,
+      "lengthM": 7,
+      "grade": 0
+    }
+  ],
+  "ascents": [
+    {
+      "id": "market_ascent",
+      "beforeM": 588.5266260848184,
+      "afterM": 42,
+      "riseM": 28,
+      "lowerM": 59,
+      "upperM": 20.856193622824037,
+      "wall": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -750,
+              280
+            ],
+            [
+              -480,
+              160
+            ],
+            [
+              0,
+              200
+            ],
+            [
+              500,
+              260
+            ],
+            [
+              780,
+              600
+            ],
+            [
+              500,
+              1150
+            ],
+            [
+              -400,
+              1200
+            ],
+            [
+              -950,
+              900
+            ],
+            [
+              -750,
+              280
+            ]
+          ]
+        ]
+      },
+      "z0": 14
+    },
+    {
+      "id": "noble_service",
+      "beforeM": 566.5769230935019,
+      "afterM": 52,
+      "riseM": 36,
+      "lowerM": 6.664938740531758,
+      "upperM": 16.023187932870293,
+      "wall": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -850,
+              600
+            ],
+            [
+              -400,
+              500
+            ],
+            [
+              -100,
+              700
+            ],
+            [
+              -250,
+              1200
+            ],
+            [
+              -700,
+              1100
+            ],
+            [
+              -850,
+              600
+            ]
+          ]
+        ]
+      },
+      "z0": 42
+    }
+  ],
+  "restoredAreasM2": {
+    "market_ascent": 32072.826091820305,
+    "noble_service": 23824.5821650975
+  },
+  "marketArrivalCourt": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -419,
+          76
+        ],
+        [
+          -419,
+          126
+        ],
+        [
+          -465,
+          126
+        ],
+        [
+          -465,
+          76
+        ],
+        [
+          -419,
+          76
+        ]
+      ]
+    ]
+  },
+  "marketStalls": [
+    {
+      "id": "market_arrival_stall_north0",
+      "x": -452,
+      "y": 119,
+      "sign": -1
+    },
+    {
+      "id": "market_arrival_stall_north1",
+      "x": -432,
+      "y": 119,
+      "sign": -1
+    },
+    {
+      "id": "market_arrival_stall_south0",
+      "x": -452,
+      "y": 81,
+      "sign": 1
+    },
+    {
+      "id": "market_arrival_stall_south1",
+      "x": -432,
+      "y": 81,
+      "sign": 1
+    }
+  ],
+  "pending": [
+    "Actual mesh and viewpoint review",
+    "Steep haulage/controller runtime",
+    "Remaining civic ascent and district life"
+  ],
+  "addedMeshCount": 271,
+  "addedMeshExamples": [
+    "western_ascent_market_ascent_restored_ground",
+    "western_ascent_noble_service_restored_civic_ground",
+    "western_ascent_noble_service_restored_low_ground",
+    "western_ascent_market_ascent_short_continuous_floor",
+    "western_ascent_market_ascent_short_lower_continuous_floor",
+    "western_ascent_market_ascent_short_upper_continuous_floor",
+    "western_ascent_noble_service_short_continuous_floor",
+    "western_ascent_noble_service_short_upper_continuous_floor",
+    "western_ascent_civic_foot_contour_1_retained_0_continuous_floor",
+    "western_ascent_civic_foot_contour_1_retained_1_continuous_floor",
+    "western_ascent_civic_noble_entrance_detour_continuous_floor",
+    "western_ascent_noble_service_short_lower_continuous_floor",
+    "western_ascent_market_arrival_court_link_continuous_floor",
+    "western_ascent_market_arrival_stall_north0_entry_continuous_floor",
+    "western_ascent_market_arrival_stall_north1_entry_continuous_floor"
+  ],
+  "geometryNote": "Full geometry remains in Windows design-b94 plan.json and is reproducible with author script"
+}

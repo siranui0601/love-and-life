@@ -1,0 +1,7 @@
+{
+  "status": "PROBE_PASS",
+  "probeCount": 253440,
+  "blockedProbeCount": 0,
+  "examples": [],
+  "limitations": "Torso rays at centre, +/-0.3m and road edges minus0.4m. Not a swept capsule/cart, headroom, floor support or gameplay certification."
+}

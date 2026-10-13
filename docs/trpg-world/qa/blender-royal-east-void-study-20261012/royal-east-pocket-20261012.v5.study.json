@@ -1,0 +1,165 @@
+{
+  "status": "V5_UNDER_REVIEW",
+  "pilotSHA256": "019f9197f20f70b462de41f68f329020b9d9ed8f223d9a6fa4458e1fa2e56473",
+  "newMeshes": [
+    [
+      "repair_royal_east_pocket_low_grade_link_20261012",
+      28,
+      14
+    ],
+    [
+      "repair_royal_east_pocket_graduated_bedrock_20261012",
+      96,
+      147
+    ],
+    [
+      "repair_royal_east_pocket_retaining_terrace_courses_20261012",
+      112,
+      84
+    ],
+    [
+      "repair_royal_east_pocket_terrace_rim_anchors_20261012",
+      56,
+      42
+    ],
+    [
+      "repair_royal_east_pocket_rim_underfloor_20261012",
+      28,
+      14
+    ]
+  ],
+  "rows": [
+    [
+      982,
+      421,
+      154,
+      468
+    ],
+    [
+      994,
+      415,
+      160,
+      471
+    ],
+    [
+      1006,
+      410,
+      175,
+      473
+    ],
+    [
+      1018,
+      405,
+      184,
+      473
+    ],
+    [
+      1030,
+      401,
+      195,
+      473
+    ],
+    [
+      1042,
+      411,
+      201,
+      473
+    ],
+    [
+      1054,
+      422,
+      204,
+      475
+    ],
+    [
+      1065,
+      437,
+      201,
+      478
+    ]
+  ],
+  "assumptions": [
+    "Rock cap graduated towards native castle at Z204 and town at Z112",
+    "All meshes are visual and static; game collision not yet validated",
+    "Do not promote without comparing white-hole screen pixels before/after"
+  ],
+  "studyBaseSHA256": "989701db506d13b8b509d7ec160f45e71e7a3e5c401ce6c4d583f389b9a15ff6",
+  "designNotes": [
+    "Faceted bedrock with two irregular retained limestone courses",
+    "Do not accept until perspective renders are visibly better"
+  ],
+  "connections": [
+    {
+      "which": "court",
+      "at": [
+        437.12,
+        971.25,
+        156
+      ],
+      "gapM": 19.37
+    },
+    {
+      "which": "court",
+      "at": [
+        440.81,
+        976.79,
+        156
+      ],
+      "gapM": 31.02
+    },
+    {
+      "which": "court",
+      "at": [
+        444.81,
+        982.79,
+        156
+      ],
+      "gapM": 41.84
+    },
+    {
+      "which": "royal",
+      "at": [
+        393.62,
+        1031.13,
+        204
+      ],
+      "gapM": 17.38
+    },
+    {
+      "which": "royal",
+      "at": [
+        397.27,
+        1034.3,
+        204
+      ],
+      "gapM": 5.69
+    },
+    {
+      "which": "royal",
+      "at": [
+        408.92,
+        1044.4,
+        204
+      ],
+      "gapM": 3.17
+    },
+    {
+      "which": "royal",
+      "at": [
+        421.14,
+        1054.99,
+        204
+      ],
+      "gapM": 1.31
+    },
+    {
+      "which": "royal",
+      "at": [
+        435.15,
+        1067.13,
+        204
+      ],
+      "gapM": 2.82
+    }
+  ]
+}

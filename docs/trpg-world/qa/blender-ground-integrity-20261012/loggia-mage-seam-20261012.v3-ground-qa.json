@@ -1,0 +1,15 @@
+{
+  "footCount": 83,
+  "footsOnGround": 83,
+  "maxFootGapM": 0.0,
+  "galleryRootInsideTerrace": true,
+  "galleryRootGroundDistanceM": 0.0,
+  "galleryRouteEnd": [
+    634.4526315789474,
+    799.5999999999999,
+    97.99999999999994
+  ],
+  "galleryMeters": 16.0,
+  "lowApronAreaM2": 4804.7194243440235,
+  "caveat": "Mathematical XY ground overlap only; does not guarantee all terrain or NPC navigation clearance"
+}

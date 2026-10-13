@@ -1,0 +1,175 @@
+{
+  "status": "completed",
+  "method": "Partial eye-height visual review; not full route completion",
+  "sections": [
+    {
+      "id": "castle-approach",
+      "from": "market",
+      "to": "castle",
+      "position": [
+        22.512039430780703,
+        22.009299796707275
+      ],
+      "heightM": 135.63440650647237,
+      "travelledM": 659.1790321085118,
+      "simSeconds": 470.84216579084864,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 10,
+      "routeDistanceM": 1318.358064214376,
+      "agentCount": 34
+    },
+    {
+      "id": "lower-backstreets",
+      "name": "街路前面が連続する下層路地",
+      "from": "lowland_66_a",
+      "to": "lowland_102_a",
+      "position": [
+        22.11182109782968,
+        20.90562148654109
+      ],
+      "heightM": 14.28,
+      "travelledM": 163.7385073950648,
+      "simSeconds": 116.95607671085969,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 1,
+      "routeDistanceM": 327.4770147904071,
+      "agentCount": 34
+    },
+    {
+      "id": "terrace-stairs",
+      "name": "段丘を横断する石段",
+      "from": "fabric_6_44",
+      "to": "fabric_5_39",
+      "position": [
+        22.653296719226628,
+        21.565838495681476
+      ],
+      "heightM": 46.28,
+      "travelledM": 104.8939098272576,
+      "simSeconds": 74.92422130539994,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 2,
+      "routeDistanceM": 209.78781965511982,
+      "agentCount": 34
+    },
+    {
+      "id": "courtyard-lower",
+      "name": "路地から入る共同庭 · lower",
+      "from": "court_plot_bank_walk_-1_3__bank_walk_-1_4:survey:286:1:-1:1_street_0",
+      "to": "court_plot_bank_walk_-1_3__bank_walk_-1_4:survey:286:1:-1:1_inner_1",
+      "position": [
+        21.726561217884118,
+        21.015535478829843
+      ],
+      "heightM": 14.28,
+      "travelledM": 13.177625851544914,
+      "simSeconds": 9.412589893971834,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 2,
+      "routeDistanceM": 26.355251703121134,
+      "agentCount": 34
+    },
+    {
+      "id": "courtyard-ajin",
+      "name": "路地から入る共同庭 · ajin",
+      "from": "court_plot_ajin_north__news_bridge_south:survey:30:1:-1:1_street_0",
+      "to": "court_plot_ajin_north__news_bridge_south:survey:30:1:-1:1_inner_1",
+      "position": [
+        23.02550672882504,
+        20.891968229181288
+      ],
+      "heightM": 14.28,
+      "travelledM": 14.87196134559648,
+      "simSeconds": 10.622829532555613,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 2,
+      "routeDistanceM": 29.743922691155717,
+      "agentCount": 34
+    },
+    {
+      "id": "courtyard-quay",
+      "name": "路地から入る共同庭 · quay",
+      "from": "court_plot_news_bridge_north__newspaper:survey:31:1:-1:1_street_0",
+      "to": "court_plot_news_bridge_north__newspaper:survey:31:1:-1:1_inner_1",
+      "position": [
+        22.89168903964172,
+        21.103769053939857
+      ],
+      "heightM": 14.28,
+      "travelledM": 14.528631969019816,
+      "simSeconds": 10.37759426359771,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 2,
+      "routeDistanceM": 29.057263938073586,
+      "agentCount": 34
+    },
+    {
+      "id": "gate-west",
+      "from": "world_R06",
+      "to": "west_gate",
+      "nearGateM": 35,
+      "position": [
+        21.101538702677335,
+        21.54835465974282
+      ],
+      "heightM": 46.28,
+      "travelledM": 1864.3809491897853,
+      "simSeconds": 1331.7006779926767,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 5,
+      "routeDistanceM": 1899.380949189747,
+      "agentCount": 34
+    },
+    {
+      "id": "gate-south",
+      "from": "world_R12",
+      "to": "south_gate",
+      "nearGateM": 35,
+      "position": [
+        22.3414972211422,
+        20.058468795867128
+      ],
+      "heightM": 14.28,
+      "travelledM": 889.3936686043623,
+      "simSeconds": 635.2811918618803,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 2,
+      "routeDistanceM": 924.3936686066324,
+      "agentCount": 34
+    },
+    {
+      "id": "gate-east",
+      "from": "world_R13",
+      "to": "east_gate",
+      "nearGateM": 35,
+      "position": [
+        23.987234317653986,
+        21.54851988701815
+      ],
+      "heightM": 98.28131286755985,
+      "travelledM": 1319.0702292010233,
+      "simSeconds": 942.1930208600344,
+      "blocked": null,
+      "complete": false,
+      "guideIndex": 2,
+      "routeDistanceM": 1354.070229204048,
+      "agentCount": 34
+    }
+  ],
+  "meshes": {
+    "meshes": 6610,
+    "vertices": 1933157
+  },
+  "floatingTowers": [],
+  "errors": [],
+  "sourceCommit": "81672adf24b319084099524dc31af5b1d75e51e4",
+  "visualAcceptance": "failed: castle approach terrain/road boundary and terrace stair enclosure still need correction"
+}

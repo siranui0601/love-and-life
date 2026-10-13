@@ -1,0 +1,38 @@
+﻿{
+    "status":  "LOCAL_PASS_STRUCTURAL_QA_ONLY",
+    "upperGroundAddedM2":  175.09,
+    "upperGroundFacesAdded":  150,
+    "upperGroundResidualM2":  0.06,
+    "patches":  [
+                    {
+                        "areaM2":  163.42,
+                        "faces":  120,
+                        "centroid":  [
+                                         601,
+                                         841
+                                     ]
+                    },
+                    {
+                        "areaM2":  11.67,
+                        "faces":  30,
+                        "centroid":  [
+                                         188,
+                                         1273
+                                     ]
+                    }
+                ],
+    "civicPatchBoundaryM":  644.32,
+    "civicRestoredWallLengthM":  170.93,
+    "civicRestoredWallPiers":  8,
+    "civicSkippedSubedges":  176,
+    "changedMeshNames":  [
+                             "upper_city_ground",
+                             "current_civic_restored_exposed_cliff_support"
+                         ],
+    "routesPreserved":  1187,
+    "limitations":  [
+                        "No full actor capsule yet",
+                        "Wall cover excludes existing walls and active crossings",
+                        "Need near-camera structural check"
+                    ]
+}

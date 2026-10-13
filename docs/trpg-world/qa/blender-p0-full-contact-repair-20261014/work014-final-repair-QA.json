@@ -1,0 +1,93 @@
+{
+  "status": "LOCAL_STRUCTURAL_PASS_NOT_CITYWIDE_ACCEPTANCE",
+  "siteResults": [
+    {
+      "site": "F01",
+      "areaM2": 12995.355516050013,
+      "actualMeshRays": 3247,
+      "missing": 0
+    },
+    {
+      "site": "F02",
+      "areaM2": 3436.6789818499983,
+      "actualMeshRays": 857,
+      "missing": 0
+    },
+    {
+      "site": "F03",
+      "areaM2": 4871.380721525002,
+      "actualMeshRays": 1220,
+      "missing": 0
+    },
+    {
+      "site": "F04W01",
+      "areaM2": 5521.595416444999,
+      "actualMeshRays": 1381,
+      "missing": 0
+    },
+    {
+      "site": "F05",
+      "areaM2": 8291.769008459996,
+      "actualMeshRays": 2071,
+      "missing": 0
+    },
+    {
+      "site": "F06",
+      "areaM2": 4927.847671170001,
+      "actualMeshRays": 1223,
+      "missing": 0
+    },
+    {
+      "site": "F07",
+      "areaM2": 1622.0156208649987,
+      "actualMeshRays": 403,
+      "missing": 0
+    },
+    {
+      "site": "F08",
+      "areaM2": 5761.001933475004,
+      "actualMeshRays": 1444,
+      "missing": 0
+    },
+    {
+      "site": "F09",
+      "areaM2": 42159.51318276997,
+      "actualMeshRays": 10535,
+      "missing": 0
+    }
+  ],
+  "wallBaseResults": [
+    {
+      "site": "W01",
+      "baseAreaM2": 86.39932621500019,
+      "unsupportedM2": 0.0
+    },
+    {
+      "site": "W03",
+      "baseAreaM2": 114.65486597752414,
+      "unsupportedM2": 0.0
+    },
+    {
+      "site": "W04",
+      "baseAreaM2": 103.83840933000042,
+      "unsupportedM2": 0.0
+    }
+  ],
+  "newClosedMeshes": 26,
+  "removedObsoletePatches": [
+    "repair_user_p0_F01_ground_20261012",
+    "repair_user_p0_F02_ground_20261012",
+    "repair_user_p0_F03_ground_20261012",
+    "repair_user_p0_F04W01_ground_20261012",
+    "repair_user_p0_F05_ground_20261012",
+    "repair_user_p0_F06_ground_20261012",
+    "repair_user_p0_F07_ground_20261012",
+    "repair_user_p0_F08_ground_20261012",
+    "repair_user_p0_F09_ground_20261012",
+    "repair_user_p0_W02_BASE_ground_20261012",
+    "repair_user_p0_W02_retaining_20261012"
+  ],
+  "routesUnchanged": true,
+  "scenePlanMeshAgreement": true,
+  "remainingStaticRouteAnomalies": 14
+}

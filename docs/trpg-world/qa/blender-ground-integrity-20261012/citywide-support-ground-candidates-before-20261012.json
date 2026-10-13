@@ -1,0 +1,61 @@
+{
+  "scope": "support/abutment/pier meshes, plan native ground at matching elevation",
+  "candidates": [
+    {
+      "name": "wall_gallery_loggia_support_643.4526315789474_3.6",
+      "spanZ": 56.0,
+      "baseZ": 42,
+      "nearestFloorZ": 42,
+      "floorGapZ": 0,
+      "minXYFloorGapM": 66.38,
+      "maxXYFloorGapM": 67.78,
+      "baseXY": [
+        643.45,
+        803.2
+      ]
+    },
+    {
+      "name": "wall_gallery_loggia_support_643.4526315789474_-3.6",
+      "spanZ": 56.0,
+      "baseZ": 42,
+      "nearestFloorZ": 42,
+      "floorGapZ": 0,
+      "minXYFloorGapM": 62.33,
+      "maxXYFloorGapM": 63.71,
+      "baseXY": [
+        643.45,
+        796.0
+      ]
+    },
+    {
+      "name": "wall_gallery_loggia_support_653.4526315789474_3.6",
+      "spanZ": 56.0,
+      "baseZ": 42,
+      "nearestFloorZ": 42,
+      "floorGapZ": 0,
+      "minXYFloorGapM": 58.69,
+      "maxXYFloorGapM": 60.1,
+      "baseXY": [
+        653.45,
+        803.2
+      ]
+    },
+    {
+      "name": "wall_gallery_loggia_support_653.4526315789474_-3.6",
+      "spanZ": 56.0,
+      "baseZ": 42,
+      "nearestFloorZ": 42,
+      "floorGapZ": 0,
+      "minXYFloorGapM": 54.06,
+      "maxXYFloorGapM": 55.46,
+      "baseXY": [
+        653.45,
+        796.0
+      ]
+    }
+  ],
+  "limitations": [
+    "These are flags, NOT confirmed unsupported; a pier can be founded against a vertical rock wall or bridge support",
+    "Checks only meshes ending _ground, not all retaining or structural foundations"
+  ]
+}

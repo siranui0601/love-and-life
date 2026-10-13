@@ -1,0 +1,19 @@
+{
+  "status": "LOCAL_PASS",
+  "routesAdded": 4,
+  "materialBatchesAdded": 8,
+  "existingRoutesPreserved": true,
+  "preservedRoadsChecked": 11,
+  "legacySolidMeshed": 35,
+  "floorRays": 180,
+  "missingFloor": [],
+  "newStreetBodyHeadRays": 720,
+  "newStreetBlockers": [],
+  "previousStreetBodyHeadRays": 2370,
+  "existingStreetBlockers": [],
+  "limitations": [
+    "No continuous player capsule, cart wheelbase / turning-radius simulation",
+    "Static furnace and workshop machines; no fires, NPCs, inventory, sound or smoke systems",
+    "This is only a manufacturing-district pilot and does not complete city exploration"
+  ]
+}

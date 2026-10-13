@@ -1,0 +1,1 @@
+{"status":"REQUIRES_3D_REVIEW","routeId":"LOC_CAP_ORPHANAGE_backlane","lengthM":62.30108217350887,"connectedStreet":"low_city_lane_258","removedParcels":["parcel_low_city_268_9_2"],"canonicalPlotUnchanged":true,"limitations":["No NPC schedules or event logic implemented","Rear path is public circulation, not access to noble precincts"]}

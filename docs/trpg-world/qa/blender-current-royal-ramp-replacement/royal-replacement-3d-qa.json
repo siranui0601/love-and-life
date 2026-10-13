@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "oldRampRemoved": true,
+  "oldRampLengthM": 1170.3,
+  "newStairLengthM": 251.8,
+  "floorTests": 1467,
+  "unsupported": 0,
+  "personRays": 2934,
+  "personCollisions": 0,
+  "existingMeshCandidates": 283,
+  "nearbyRoads": 3,
+  "nearbyNewStructureRays": 684,
+  "nearbyNewStructureCollisions": 0,
+  "floorExamples": [],
+  "personExamples": [],
+  "neighborExamples": [],
+  "limitations": [
+    "Hoist structural model only, not a working motor/gameplay transport",
+    "Discrete rays not true swept player/cargo capsule",
+    "Historic city facades aggregate excluded",
+    "All city retaining wall gaps and all access routes not audited"
+  ]
+}

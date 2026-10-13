@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "warehouseFootprint": [
+    701,
+    698,
+    719,
+    712
+  ],
+  "parcelOverlapM2": 0,
+  "insideCivicDomain": true,
+  "blockedExistingRoads": [],
+  "plannedAccessM": 22.8,
+  "roadEndpointOffsetM": 0.37,
+  "accessParcelOverlapM2": 0.0,
+  "plannedRoadID": "current_civic_customs_road"
+}

@@ -1,0 +1,26 @@
+{
+  "status": "STAGED_PENDING_3D_QA",
+  "originalPlanSha256": "8114062719033129e80913ae7e63806e082ecc3813750571fe1c03d7cd1e6904",
+  "removed": {
+    "wall_gallery_north_old_trench_fill_": 286,
+    "wall_gallery_north_court_wall_stairs_": 283,
+    "mage_quarter_mage_wall_short_stairs_floor_": 362,
+    "mage_quarter_mage_wall_short_stairs_parapet_": 362
+  },
+  "added": [
+    [
+      "current_north_gallery_stair_unified_stone_treads",
+      1698
+    ],
+    [
+      "current_mage_wall_stair_unified_stone_treads",
+      2172
+    ],
+    [
+      "current_mage_wall_stair_continuous_cliff_parapet",
+      2172
+    ]
+  ],
+  "preservedRoutes": 1229,
+  "note": "Removed orphan old trench fill; consolidated two stepped floors and replaced fragile per-step mage wall parapets with continuous stone facade; all player routes remain unchanged"
+}

@@ -1,0 +1,209 @@
+{
+  "status": "FAIL",
+  "routeIds": [
+    "noble_east_wall_stair",
+    "noble_east_winch_incline"
+  ],
+  "bodyHeadProbeCount": 1890,
+  "blockedProbeCount": 0,
+  "floorSamples": 945,
+  "unsupportedSamples": 15,
+  "hits": [],
+  "floorFailures": [
+    {
+      "route": "noble_east_winch_incline",
+      "at": [
+        -554.6727694605776,
+        513.3165989573864,
+        42.0
+      ],
+      "support": null,
+      "object": null
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "at": [
+        -563.4133634022957,
+        512.295806350634,
+        42.0
+      ],
+      "support": null,
+      "object": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -582.0,
+        521.4,
+        42.0
+      ],
+      "support": null,
+      "object": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -591.187197625607,
+        519.2580014839954,
+        42.0
+      ],
+      "support": null,
+      "object": null
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -607.9278466221805,
+        551.3260693124645,
+        59.20353982300885
+      ],
+      "support": [
+        -607.9278564453125,
+        551.3260498046875,
+        59.75
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_115"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -608.1048377726229,
+        551.6092551531725,
+        59.36283185840708
+      ],
+      "support": [
+        -608.1048583984375,
+        551.6092529296875,
+        60.13999938964844
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_115"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -608.2818289230655,
+        551.8924409938808,
+        59.522123893805315
+      ],
+      "support": [
+        -608.2817993164062,
+        551.8924560546875,
+        60.13999938964844
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_115"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -608.4588200735077,
+        552.1756268345881,
+        59.68141592920354
+      ],
+      "support": [
+        -608.4588012695312,
+        552.1755981445312,
+        60.13999938964844
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_115"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -608.835129587927,
+        551.2234197252847,
+        60.0
+      ],
+      "support": [
+        -608.8351440429688,
+        551.2234497070312,
+        59.53140640258789
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_111"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -582.1543362831856,
+        587.4608849557525,
+        77.04424778761062
+      ],
+      "support": [
+        -582.1543579101562,
+        587.4608764648438,
+        77.75
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_229"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.941946902655,
+        587.7440707964599,
+        77.20353982300885
+      ],
+      "support": [
+        -581.9419555664062,
+        587.7440795898438,
+        77.75
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_229"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.7295575221236,
+        588.0272566371684,
+        77.36283185840708
+      ],
+      "support": [
+        -581.7295532226562,
+        588.0272827148438,
+        78.13999938964844
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_229"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.5171681415931,
+        588.3104424778759,
+        77.52212389380531
+      ],
+      "support": [
+        -581.5171508789062,
+        588.3104248046875,
+        78.13999938964844
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_229"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.3047787610617,
+        588.5936283185844,
+        77.68141592920354
+      ],
+      "support": [
+        -581.3047485351562,
+        588.5936279296875,
+        78.13999938964844
+      ],
+      "object": "distributed_access_noble_east_wall_stair_deck_229"
+    },
+    {
+      "route": "noble_east_wall_stair",
+      "at": [
+        -581.1655590546658,
+        591.1241478144576,
+        78.0
+      ],
+      "support": null,
+      "object": null
+    }
+  ],
+  "limitations": [
+    "Discrete ray probe only; no swept capsule",
+    "Not a goods-cart clearance test",
+    "Requires visual and guided-walking inspection in the game runtime"
+  ]
+}

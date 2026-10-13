@@ -1,0 +1,13 @@
+{
+  "status": "LOCAL_PASS",
+  "routesSampled": 55,
+  "rays": 9480,
+  "obstructionCount": 0,
+  "examples": [],
+  "limitations": [
+    "Only B111 additions, no pre-existing obstacles",
+    "Ray not swept capsule",
+    "No actual character walk or foot traffic",
+    "No interactive storefronts"
+  ]
+}

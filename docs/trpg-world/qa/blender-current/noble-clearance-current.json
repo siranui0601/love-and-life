@@ -1,0 +1,18 @@
+{
+  "status": "LOCAL_PASS",
+  "routes": [
+    "west_noble_wall_stairs",
+    "noble_east_wall_stair"
+  ],
+  "rays": 3204,
+  "candidateMeshCount": 32,
+  "collisions": 0,
+  "byObject": [],
+  "examples": [],
+  "limitations": [
+    "Render-only 420064-face district facade mesh not included",
+    "No real game actor capsule",
+    "Old stair tread overlapping other paths not sampled as obstacles",
+    "Vertical and lateral full swept movement not modeled"
+  ]
+}

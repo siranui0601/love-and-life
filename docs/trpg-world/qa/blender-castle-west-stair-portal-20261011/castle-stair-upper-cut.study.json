@@ -1,0 +1,23 @@
+{
+  "status": "PENDING_BLENDER_QA",
+  "groundObject": "b104_castle_outer_ground_extension",
+  "sourceGroundFaces": 438,
+  "sourceGroundVertices": 1314,
+  "route": "castle_wall_stairs",
+  "openCutAreaSqM": 38.291,
+  "openedAlongRouteZ": [
+    200.8,
+    203.62
+  ],
+  "routeWidthM": 4,
+  "originalFacesTouched": 34,
+  "untouchedOriginalFaces": 404,
+  "replacementGroundFaces": 0,
+  "newGroundVertices": 0,
+  "protectOtherRoutes": true,
+  "caveats": [
+    "Stair surface is a separate intact Blender mesh",
+    "Newly exposed cut lips need fall-edge guard evaluation",
+    "Other 14 citywide anomalies require separate inspection"
+  ]
+}

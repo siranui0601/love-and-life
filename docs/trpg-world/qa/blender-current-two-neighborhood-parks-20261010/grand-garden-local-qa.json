@@ -1,0 +1,27 @@
+{
+  "status": "LOCAL_PASS",
+  "paths": [
+    "current_lower_green_west_north",
+    "current_lower_green_west_east",
+    "current_upper_garden_west_gate",
+    "current_upper_garden_north_gate",
+    "current_upper_garden_overlook",
+    "current_upper_garden_great_walk",
+    "current_upper_garden_south_gate",
+    "current_upper_garden_east_court",
+    "current_upper_garden_record_branch",
+    "current_upper_garden_eastern_prospect"
+  ],
+  "allExistingRoutesPreserved": true,
+  "scope": "two park districts; garden paths and nearby static old streets",
+  "floorSamples": 1512,
+  "floorFailures": [],
+  "rays": 3024,
+  "obstacleCollisions": [],
+  "parkMeshes": 13,
+  "caveats": [
+    "NPC/pathfinding not operational",
+    "No continuous player capsule or full-city traffic simulation",
+    "Need eye-level visual review before accept"
+  ]
+}

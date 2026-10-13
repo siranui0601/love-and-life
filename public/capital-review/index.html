@@ -28,7 +28,7 @@
       </div>
       <section id="map-panel" class="viewport" role="tabpanel" aria-labelledby="view-map">
         <svg id="capital-map" viewBox="0 0 1100 900" xmlns="http://www.w3.org/2000/svg" role="group" aria-label="王都の地区・街路・河川・施設を示す地図。ドラッグで移動、ホイールで拡大。"></svg>
-        <div class="map-modes"><button id="urban-form" aria-pressed="true">Urban Form View</button><button id="topology-debug" aria-pressed="false">Topology / Debug View</button></div><p id="map-mode-note" class="map-mode-note"></p>
+        <div class="map-modes"><button id="urban-form" aria-pressed="true">Urban Form View</button><button id="street-structure" aria-pressed="false">地盤・街路・街区</button><button id="topology-debug" aria-pressed="false">Topology / Debug View</button></div><p id="map-mode-note" class="map-mode-note"></p>
         <div class="map-tools"><button id="zoom-in" aria-label="地図を拡大">＋</button><button id="zoom-out" aria-label="地図を縮小">−</button><button id="reset-map">中核市街</button><button id="envelope-map">活動圏</button></div>
         <div class="north">N<span>↑</span></div>
         <div class="map-caption"><span id="map-scale"></span><span>南西原点 · x 東 / y 北 · km</span></div>
@@ -36,7 +36,7 @@
       <section id="scene-panel" class="viewport" role="tabpanel" aria-labelledby="view-3d" hidden>
         <canvas id="greybox" tabindex="0" aria-label="王都の3D greybox。歩行開始後はWASDまたは矢印キーで移動、ドラッグで方向を変えます。"></canvas>
         <p id="scene-loading" class="scene-message" role="status">3D表示を準備しています…</p>
-        <div class="scene-tools"><button id="walk-start">選択地点から歩く</button><button id="walk-route">選択経路を通して歩く</button><label class="review-rate">経路レビュー速度<select id="review-speed" aria-label="経路レビュー速度"><option value="1">実時間 1×</option><option value="8">早送り 8×</option><option value="32">検証 32×</option></select></label><button id="walk-stop">俯瞰に戻る</button><button id="focus-castle">王城を見る</button></div>
+        <div class="scene-tools"><button id="structure-only" aria-pressed="false">地盤・街路・城壁だけを見る</button><button id="walk-start">選択地点から歩く</button><button id="walk-route">選択経路を通して歩く</button><label class="review-rate">経路レビュー速度<select id="review-speed" aria-label="経路レビュー速度"><option value="1">実時間 1×</option><option value="8">早送り 8×</option><option value="32">検証 32×</option></select></label><button id="walk-stop">俯瞰に戻る</button><button id="focus-castle">王城を見る</button></div>
         <div class="walk-pad" aria-label="タッチ歩行操作"><button data-walk="ArrowUp" aria-label="前へ">↑</button><div><button data-walk="ArrowLeft" aria-label="左へ">←</button><button data-walk="ArrowDown" aria-label="後ろへ">↓</button><button data-walk="ArrowRight" aria-label="右へ">→</button></div></div>
         <div class="telemetry" id="telemetry" aria-live="off">俯瞰：ドラッグで回転 / ホイールで拡大</div>
       </section>

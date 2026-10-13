@@ -1,0 +1,644 @@
+{
+  "summary": {
+    "originalFirstHitAnomalies": 14,
+    "multilayerSupportCount": 12,
+    "noCloseSupportCount": 2,
+    "overheadCandidateRays": 14,
+    "grouped": {
+      "civic_foot_contour_1_retained_1": {
+        "failureRays": 2,
+        "confirmedNearbySurface": 0,
+        "possibleLowHeadroom": 2
+      },
+      "court_wall_stairs": {
+        "failureRays": 1,
+        "confirmedNearbySurface": 1,
+        "possibleLowHeadroom": 1
+      },
+      "noble_east_winch_incline": {
+        "failureRays": 11,
+        "confirmedNearbySurface": 11,
+        "possibleLowHeadroom": 11
+      }
+    },
+    "notes": [
+      "First-hit floor misses can be due to an upper stair or contour surface, not a floor hole",
+      "Overhead surface intersection is only a candidate physical blockage; verify thickness, side access and NPC capsule",
+      "A route is not safe merely because a separate supporting surface exists at nominal height"
+    ]
+  },
+  "details": [
+    {
+      "route": "court_wall_stairs",
+      "lateral": -0.75,
+      "probe": [
+        101.91,
+        769.88,
+        138.64
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 138.906,
+        "delta": 0.266,
+        "source": "court_wall_stairs_treads",
+        "normalZ": 1.0
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 139.232,
+          "delta": 0.592,
+          "source": "court_wall_stairs_treads",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 139.232,
+          "delta": 0.592,
+          "source": "court_wall_stairs_treads",
+          "normalZ": 1.0
+        },
+        {
+          "z": 138.906,
+          "delta": 0.266,
+          "source": "court_wall_stairs_treads",
+          "normalZ": 1.0
+        },
+        {
+          "z": 138.816,
+          "delta": 0.176,
+          "source": "court_wall_stairs",
+          "normalZ": 0.98
+        }
+      ]
+    },
+    {
+      "route": "civic_foot_contour_1_retained_1",
+      "lateral": 0.75,
+      "probe": [
+        -593.0,
+        521.12,
+        42.0
+      ],
+      "hasNearbyDeck": false,
+      "nearbySurface": null,
+      "lowHeadroomCandidates": [
+        {
+          "z": 43.44,
+          "delta": 1.44,
+          "source": "distributed_access_stair_tread_2_6",
+          "normalZ": 1.0
+        },
+        {
+          "z": 43.364,
+          "delta": 1.364,
+          "source": "b116_noble_east_wall_stair_mitered_stone_step_lattice",
+          "normalZ": 1.0
+        },
+        {
+          "z": 43.19,
+          "delta": 1.19,
+          "source": "distributed_access_stair_tread_2_6",
+          "normalZ": -1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 43.44,
+          "delta": 1.44,
+          "source": "distributed_access_stair_tread_2_6",
+          "normalZ": 1.0
+        },
+        {
+          "z": 43.364,
+          "delta": 1.364,
+          "source": "b116_noble_east_wall_stair_mitered_stone_step_lattice",
+          "normalZ": 1.0
+        },
+        {
+          "z": 43.19,
+          "delta": 1.19,
+          "source": "distributed_access_stair_tread_2_6",
+          "normalZ": -1.0
+        },
+        {
+          "z": 42.15,
+          "delta": 0.15,
+          "source": "western_ascent_civic_foot_contour_1_retained_1_continuous_floor",
+          "normalZ": -1.0
+        },
+        {
+          "z": 42.114,
+          "delta": 0.114,
+          "source": "b116_noble_east_wall_stair_mitered_stone_step_lattice",
+          "normalZ": -1.0
+        }
+      ]
+    },
+    {
+      "route": "civic_foot_contour_1_retained_1",
+      "lateral": 0.75,
+      "probe": [
+        -591.05,
+        520.68,
+        42.0
+      ],
+      "hasNearbyDeck": false,
+      "nearbySurface": null,
+      "lowHeadroomCandidates": [
+        {
+          "z": 42.727,
+          "delta": 0.727,
+          "source": "b116_noble_east_wall_stair_mitered_stone_step_lattice",
+          "normalZ": 1.0
+        },
+        {
+          "z": 42.64,
+          "delta": 0.64,
+          "source": "distributed_access_stair_tread_2_2",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 42.727,
+          "delta": 0.727,
+          "source": "b116_noble_east_wall_stair_mitered_stone_step_lattice",
+          "normalZ": 1.0
+        },
+        {
+          "z": 42.64,
+          "delta": 0.64,
+          "source": "distributed_access_stair_tread_2_2",
+          "normalZ": 1.0
+        },
+        {
+          "z": 42.39,
+          "delta": 0.39,
+          "source": "distributed_access_stair_tread_2_2",
+          "normalZ": -1.0
+        },
+        {
+          "z": 42.15,
+          "delta": 0.15,
+          "source": "western_ascent_civic_foot_contour_1_retained_1_continuous_floor",
+          "normalZ": -1.0
+        },
+        {
+          "z": 41.477,
+          "delta": -0.523,
+          "source": "b116_noble_east_wall_stair_mitered_stone_step_lattice",
+          "normalZ": -1.0
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.0,
+      "probe": [
+        -560.0,
+        557.48,
+        74.48
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 74.6,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 75.564,
+          "delta": 1.084,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 75.564,
+          "delta": 1.084,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        },
+        {
+          "z": 74.6,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": -0.75,
+      "probe": [
+        -559.25,
+        557.48,
+        74.48
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 74.6,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 75.564,
+          "delta": 1.084,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 75.564,
+          "delta": 1.084,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        },
+        {
+          "z": 74.6,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.75,
+      "probe": [
+        -560.75,
+        557.48,
+        74.48
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 74.6,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 75.564,
+          "delta": 1.084,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 75.564,
+          "delta": 1.084,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        },
+        {
+          "z": 74.6,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.0,
+      "probe": [
+        -560.0,
+        559.83,
+        76.83
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 76.95,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 78.212,
+          "delta": 1.382,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 78.212,
+          "delta": 1.382,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 76.95,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        },
+        {
+          "z": 75.564,
+          "delta": -1.266,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": -0.75,
+      "probe": [
+        -559.25,
+        559.83,
+        76.83
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 76.95,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 78.212,
+          "delta": 1.382,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 78.212,
+          "delta": 1.382,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 76.95,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        },
+        {
+          "z": 75.564,
+          "delta": -1.266,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.75,
+      "probe": [
+        -560.75,
+        559.83,
+        76.83
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 76.95,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 78.212,
+          "delta": 1.382,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 78.212,
+          "delta": 1.382,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 76.95,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        },
+        {
+          "z": 75.564,
+          "delta": -1.266,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.0,
+      "probe": [
+        -560.0,
+        560.61,
+        77.61
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 77.761,
+        "delta": 0.151,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 78.212,
+          "delta": 0.602,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 78.212,
+          "delta": 0.602,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 77.761,
+          "delta": 0.151,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": -0.75,
+      "probe": [
+        -559.25,
+        560.61,
+        77.61
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 77.767,
+        "delta": 0.157,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 78.212,
+          "delta": 0.602,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 78.212,
+          "delta": 0.602,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 77.767,
+          "delta": 0.157,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.75,
+      "probe": [
+        -560.75,
+        560.61,
+        77.61
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 77.752,
+        "delta": 0.142,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 0.71
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 78.212,
+          "delta": 0.602,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 78.212,
+          "delta": 0.602,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 77.752,
+          "delta": 0.142,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 0.71
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": 0.0,
+      "probe": [
+        -559.99,
+        561.39,
+        78.0
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 78.12,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 1.0
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 79.372,
+          "delta": 1.372,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 79.372,
+          "delta": 1.372,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 78.222,
+          "delta": 0.222,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        },
+        {
+          "z": 78.12,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 1.0
+        }
+      ]
+    },
+    {
+      "route": "noble_east_winch_incline",
+      "lateral": -0.75,
+      "probe": [
+        -559.24,
+        561.37,
+        78.0
+      ],
+      "hasNearbyDeck": true,
+      "nearbySurface": {
+        "z": 78.12,
+        "delta": 0.12,
+        "source": "distributed_access_freight_continuous_deck",
+        "normalZ": 1.0
+      },
+      "lowHeadroomCandidates": [
+        {
+          "z": 79.372,
+          "delta": 1.372,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        }
+      ],
+      "allLayers": [
+        {
+          "z": 79.372,
+          "delta": 1.372,
+          "source": "noble_west_contour_1",
+          "normalZ": 1.0
+        },
+        {
+          "z": 78.222,
+          "delta": 0.222,
+          "source": "noble_west_contour_1",
+          "normalZ": -1.0
+        },
+        {
+          "z": 78.12,
+          "delta": 0.12,
+          "source": "distributed_access_freight_continuous_deck",
+          "normalZ": 1.0
+        }
+      ]
+    }
+  ]
+}

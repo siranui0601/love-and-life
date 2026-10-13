@@ -1,0 +1,72 @@
+{
+  "status": "FAIL",
+  "routeCount": 41,
+  "bodyHeadProbeCount": 14088,
+  "blockedProbeCount": 0,
+  "floorSamples": 7044,
+  "unsupportedSamples": 1,
+  "hits": [],
+  "floorFailures": [
+    {
+      "route": "castle_east_ramp",
+      "at": [
+        310.8935232489349,
+        1234.8298575632987,
+        195.83333333333334
+      ],
+      "support": [
+        310.8935241699219,
+        1234.829833984375,
+        196.34666442871094
+      ]
+    }
+  ],
+  "routes": [
+    "castle_east_ramp",
+    "civic_foot_contour_1",
+    "civic_royal_ramp",
+    "civic_royal_ramp_landing_1",
+    "civic_wall_gallery_lower",
+    "civic_wall_gallery_mid_exit",
+    "civic_wall_gallery_rest_0",
+    "civic_wall_gallery_rest_1",
+    "civic_wall_gallery_rest_2",
+    "civic_wall_gallery_rest_3",
+    "civic_wall_gallery_stairs",
+    "civic_wall_gallery_upper",
+    "craft_block_forge_entry",
+    "craft_block_work_loop",
+    "craft_front_public_-1",
+    "east_gate_market",
+    "east_quay_gate",
+    "east_work_cargo",
+    "east_work_court_link",
+    "east_work_entry_commission_rooms",
+    "east_work_entry_east_store",
+    "east_work_entry_material_hall",
+    "east_work_entry_repair_hall",
+    "east_work_entry_stock_house",
+    "east_work_entry_workers_frontage",
+    "east_work_life",
+    "east_work_material_court_entry",
+    "forecourt_contour_1",
+    "interior_life_design-b52_low_city_514",
+    "low_city_contour_1",
+    "low_city_contour_13",
+    "low_city_contour_3",
+    "low_city_lane_172",
+    "low_city_lane_175",
+    "low_city_lane_5",
+    "mage_civic_ramp",
+    "market_ascent",
+    "noble_service",
+    "north_court_wall_stairs",
+    "north_court_wall_stairs_landing_1",
+    "upper_city_contour_1"
+  ],
+  "limitations": [
+    "Finite torso/head rays and sampled support only",
+    "No swept capsule, cart turning envelope or manual player traversal",
+    "No distant vista, NPC or event validation"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "status": "LOCAL_PASS",
+  "wallRoadRaySamples": 4704,
+  "wallIntersections": 0,
+  "sampledRouteCount": 18,
+  "wallHitExamples": [],
+  "upperGroundPatchSamples": 150,
+  "upperPatchFailedFloor": 0,
+  "upperPatchExamples": [],
+  "wallFaces": 288,
+  "floorFaces": 3215,
+  "caveats": [
+    "Only added wall, not all prior structures",
+    "No continuous swept player collision",
+    "Paving/wall visual integration and actual access need human review"
+  ]
+}

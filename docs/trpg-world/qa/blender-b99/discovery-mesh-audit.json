@@ -1,0 +1,16 @@
+{
+  "status": "LOCAL_PASS",
+  "bodyHeadProbeCount": 2346,
+  "blockedProbeCount": 0,
+  "floorSamples": 1173,
+  "unsupportedSamples": 0,
+  "routeCount": 8,
+  "hits": [],
+  "floorFailures": [],
+  "limitations": [
+    "Discrete sampling, not swept capsule",
+    "Canopy posts and crowd placement are visual only",
+    "No manual player walk or real NPC traffic",
+    "Older B96 noble stair and cargo floor failures remain"
+  ]
+}

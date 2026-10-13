@@ -1,0 +1,41 @@
+{
+  "status": "PENDING_3D_QA",
+  "role": "Royal freight receiving, customs, evidence ledger",
+  "station": [
+    710,
+    705,
+    42
+  ],
+  "warehouseFootprint": [
+    701,
+    698,
+    719,
+    712
+  ],
+  "roofRidgeElevation": 56.2,
+  "warehouseEnterable": true,
+  "canonicalParcelIntersectionM2": 0,
+  "accessRoute": "current_civic_customs_road",
+  "routeLengthM": 22.764,
+  "newMeshes": [
+    "current_royal_customs_foundation",
+    "current_royal_customs_ashlar",
+    "current_royal_customs_lime_plaster",
+    "current_royal_customs_slate",
+    "current_royal_customs_timber",
+    "current_royal_customs_iron",
+    "current_royal_customs_brass",
+    "current_royal_customs_road"
+  ],
+  "narratives": [
+    "freight inspection table",
+    "customs records",
+    "sealed evidence chest",
+    "weighbridge"
+  ],
+  "caveats": [
+    "No building NPC interactions, game quest scripts or usable container hooks yet",
+    "No actual goods route to the hoist is proven on the wider street network",
+    "Structural / visual local QA required"
+  ]
+}

@@ -1,0 +1,771 @@
+{
+  "status": "MORPHOLOGY_PROPOSAL_NOT_ACCEPTED",
+  "source": "B75",
+  "blockId": "low_city_852",
+  "sourcePlanSHA256": "366c50a99c709bcf5a73bf9dc1fb1c5715dab82496af27e0bef8703a5135b93b",
+  "sourceGitHEAD": "398d991bbfa4f7447d4503faede4ff2e8ec5d0b8",
+  "buildings": [
+    {
+      "id": "repair_hall",
+      "x": 1286,
+      "y": -10,
+      "w": 15,
+      "d": 35,
+      "a": 20,
+      "h": 7,
+      "face": "east",
+      "door": 8,
+      "role": "cart and timber repair",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1284.937657852305,
+              -29.009771938695913
+            ],
+            [
+              1299.0330471640934,
+              -23.87946978881088
+            ],
+            [
+              1287.062342147695,
+              9.009771938695913
+            ],
+            [
+              1272.9669528359066,
+              3.87946978881088
+            ],
+            [
+              1284.937657852305,
+              -29.009771938695913
+            ]
+          ]
+        ]
+      },
+      "entry": {
+        "outside": [
+          1295.866772518252,
+          -6.408788495080478
+        ],
+        "door": [
+          1293.0476946558942,
+          -7.4348489250574845
+        ],
+        "inside": [
+          1291.1683094143225,
+          -8.118889211708822
+        ]
+      }
+    },
+    {
+      "id": "stock_house",
+      "x": 1335,
+      "y": -23,
+      "w": 31,
+      "d": 13,
+      "a": 29,
+      "h": 9,
+      "face": "north",
+      "door": 6,
+      "role": "dry materials and returned goods",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1324.5946570709405,
+              -36.1995772102243
+            ],
+            [
+              1351.7078679922618,
+              -21.17047898258785
+            ],
+            [
+              1345.4053429290595,
+              -9.800422789775702
+            ],
+            [
+              1318.2921320077382,
+              -24.829521017412155
+            ],
+            [
+              1324.5946570709405,
+              -36.1995772102243
+            ]
+          ]
+        ]
+      },
+      "entry": {
+        "outside": [
+          1330.3943086076597,
+          -14.69111278217574
+        ],
+        "door": [
+          1331.848737468399,
+          -17.31497190359393
+        ],
+        "inside": [
+          1332.8183567088915,
+          -19.06421131787272
+        ]
+      }
+    },
+    {
+      "id": "commission_rooms",
+      "x": 1318,
+      "y": 37,
+      "w": 29,
+      "d": 12,
+      "a": 20,
+      "h": 10,
+      "face": "south",
+      "door": 5,
+      "role": "orders and household repairs",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1306.4265778585582,
+              26.402552197062352
+            ],
+            [
+              1333.6776638613496,
+              36.321136353506745
+            ],
+            [
+              1329.5734221414418,
+              47.59744780293765
+            ],
+            [
+              1302.3223361386504,
+              37.678863646493255
+            ],
+            [
+              1306.4265778585582,
+              26.402552197062352
+            ]
+          ]
+        ]
+      },
+      "entry": {
+        "outside": [
+          1321.078181289931,
+          28.542766412926824
+        ],
+        "door": [
+          1320.052120859954,
+          31.36184427528455
+        ],
+        "inside": [
+          1319.3680805733027,
+          33.241229516856365
+        ]
+      }
+    },
+    {
+      "id": "material_hall",
+      "x": 1362,
+      "y": 25,
+      "w": 28,
+      "d": 12,
+      "a": 27,
+      "h": 5,
+      "face": "south",
+      "door": 22,
+      "role": "covered sorting and assembly",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1352.2498516598,
+              13.298093858516138
+            ],
+            [
+              1377.1980343370744,
+              26.00982785122345
+            ],
+            [
+              1371.7501483402,
+              36.70190614148386
+            ],
+            [
+              1346.8019656629256,
+              23.99017214877655
+            ],
+            [
+              1352.2498516598,
+              13.298093858516138
+            ]
+          ]
+        ]
+      },
+      "entry": {
+        "outside": [
+          1366.085914497656,
+          16.98094128230469
+        ],
+        "door": [
+          1364.7239429984372,
+          19.653960854869794
+        ],
+        "inside": [
+          1363.8159619989583,
+          21.435973903246527
+        ]
+      }
+    },
+    {
+      "id": "workers_frontage",
+      "x": 1393,
+      "y": 55,
+      "w": 30,
+      "d": 10,
+      "a": -12,
+      "h": 9,
+      "face": "south",
+      "door": 5,
+      "role": "small trade and rest frontage",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1377.288227534904,
+              53.22793735859736
+            ],
+            [
+              1406.6326555569183,
+              46.990586634064584
+            ],
+            [
+              1408.711772465096,
+              56.77206264140264
+            ],
+            [
+              1379.3673444430817,
+              63.009413365935416
+            ],
+            [
+              1377.288227534904,
+              53.22793735859736
+            ]
+          ]
+        ]
+      },
+      "entry": {
+        "outside": [
+          1391.336706473458,
+          47.174819194129554
+        ],
+        "door": [
+          1391.9604415459112,
+          50.10926199633097
+        ],
+        "inside": [
+          1392.3762649275468,
+          52.06555719779858
+        ]
+      }
+    },
+    {
+      "id": "east_store",
+      "x": 1440,
+      "y": 34,
+      "w": 28,
+      "d": 12,
+      "a": 28,
+      "h": 8,
+      "face": "north",
+      "door": 7,
+      "role": "gate-side unloading store",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1430.4555630766904,
+              22.129712563843967
+            ],
+            [
+              1455.1780956767402,
+              35.274916321848906
+            ],
+            [
+              1449.5444369233096,
+              45.87028743615603
+            ],
+            [
+              1424.8219043232598,
+              32.725083678151094
+            ],
+            [
+              1430.4555630766904,
+              22.129712563843967
+            ]
+          ]
+        ]
+      },
+      "entry": {
+        "outside": [
+          1435.774755934927,
+          41.94652833573034
+        ],
+        "door": [
+          1437.1831706232847,
+          39.297685557153564
+        ],
+        "inside": [
+          1438.1221137488565,
+          37.531790371435704
+        ]
+      }
+    }
+  ],
+  "yards": [
+    {
+      "id": "repair_court",
+      "purpose": "cart waiting and open-air repair",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1295,
+              -14
+            ],
+            [
+              1320,
+              -10
+            ],
+            [
+              1320,
+              12
+            ],
+            [
+              1295,
+              12
+            ],
+            [
+              1295,
+              -14
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "unloading_court",
+      "purpose": "unloading and inspection, no permanent crowd props",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1380,
+              8
+            ],
+            [
+              1396,
+              2
+            ],
+            [
+              1414,
+              20
+            ],
+            [
+              1398,
+              29
+            ],
+            [
+              1380,
+              8
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "rest_pocket",
+      "purpose": "small sheltered resting pocket off the working road",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1408,
+              48
+            ],
+            [
+              1422,
+              48
+            ],
+            [
+              1422,
+              58
+            ],
+            [
+              1408,
+              58
+            ],
+            [
+              1408,
+              48
+            ]
+          ]
+        ]
+      }
+    }
+  ],
+  "replacedParcelIds": [
+    "parcel_low_city_852_3_10",
+    "parcel_low_city_852_3_11",
+    "parcel_low_city_852_3_12",
+    "parcel_low_city_852_3_13",
+    "parcel_low_city_852_3_14",
+    "parcel_low_city_852_3_15",
+    "parcel_low_city_852_3_20",
+    "parcel_low_city_852_3_21",
+    "parcel_low_city_852_3_22",
+    "parcel_low_city_852_3_23",
+    "parcel_low_city_852_3_26",
+    "parcel_low_city_852_3_27",
+    "parcel_low_city_852_3_28",
+    "parcel_low_city_852_3_29",
+    "parcel_low_city_852_3_9",
+    "parcel_low_city_852_4_10",
+    "parcel_low_city_852_4_11",
+    "parcel_low_city_852_4_12",
+    "parcel_low_city_852_4_13",
+    "parcel_low_city_852_4_14",
+    "parcel_low_city_852_4_6",
+    "parcel_low_city_852_4_7",
+    "parcel_low_city_852_4_8",
+    "parcel_low_city_852_4_9",
+    "parcel_low_city_852_6_10",
+    "parcel_low_city_852_6_11",
+    "parcel_low_city_852_6_5",
+    "parcel_low_city_852_6_6",
+    "parcel_low_city_852_6_7",
+    "parcel_low_city_852_6_8"
+  ],
+  "formerParcelAreaM2": 3633.7951133386705,
+  "addedRoutes": [
+    {
+      "id": "east_work_cargo",
+      "points": [
+        [
+          1311.3668949851103,
+          -56.84455704780468
+        ],
+        [
+          1300,
+          -36
+        ],
+        [
+          1312,
+          -20
+        ],
+        [
+          1340,
+          -6
+        ],
+        [
+          1390,
+          24
+        ],
+        [
+          1436,
+          44
+        ],
+        [
+          1440.1630429576294,
+          63.86751662158856
+        ]
+      ],
+      "width": 6,
+      "role": "service-logistics",
+      "lengthM": 203.8156154712061
+    },
+    {
+      "id": "east_work_life",
+      "points": [
+        [
+          1279.6286006855134,
+          46.050179364759884
+        ],
+        [
+          1286,
+          28
+        ],
+        [
+          1295,
+          17
+        ],
+        [
+          1320,
+          20
+        ],
+        [
+          1368,
+          45
+        ],
+        [
+          1400,
+          40
+        ],
+        [
+          1436,
+          44
+        ]
+      ],
+      "width": 3.2,
+      "role": "optional-life",
+      "lengthM": 181.26374811585143
+    },
+    {
+      "id": "east_work_court_link",
+      "points": [
+        [
+          1320,
+          20
+        ],
+        [
+          1325,
+          7
+        ],
+        [
+          1340,
+          -6
+        ]
+      ],
+      "width": 3.5,
+      "role": "optional-life",
+      "lengthM": 33.77782151846333
+    },
+    {
+      "id": "east_work_entry_repair_hall",
+      "points": [
+        [
+          1312,
+          -20
+        ],
+        [
+          1295.866772518252,
+          -6.408788495080478
+        ],
+        [
+          1293.0476946558942,
+          -7.4348489250574845
+        ],
+        [
+          1291.1683094143225,
+          -8.118889211708822
+        ]
+      ],
+      "width": 4,
+      "role": "optional-life",
+      "lengthM": 26.09507191619133
+    },
+    {
+      "id": "east_work_entry_stock_house",
+      "points": [
+        [
+          1328.8390017732575,
+          -11.580499113371271
+        ],
+        [
+          1330.3943086076597,
+          -14.69111278217574
+        ],
+        [
+          1331.848737468399,
+          -17.31497190359393
+        ],
+        [
+          1332.8183567088915,
+          -19.06421131787272
+        ]
+      ],
+      "width": 4,
+      "role": "optional-life",
+      "lengthM": 8.477771807593488
+    },
+    {
+      "id": "east_work_entry_commission_rooms",
+      "points": [
+        [
+          1324.348053734214,
+          22.26461131990323
+        ],
+        [
+          1321.078181289931,
+          28.542766412926824
+        ],
+        [
+          1320.052120859954,
+          31.36184427528455
+        ],
+        [
+          1319.3680805733027,
+          33.241229516856365
+        ]
+      ],
+      "width": 4,
+      "role": "optional-life",
+      "lengthM": 12.078650801808188
+    },
+    {
+      "id": "east_work_entry_material_hall",
+      "points": [
+        [
+          1369.3194700492932,
+          11.591682029575928
+        ],
+        [
+          1366.085914497656,
+          16.98094128230469
+        ],
+        [
+          1364.7239429984372,
+          19.653960854869794
+        ],
+        [
+          1363.8159619989583,
+          21.435973903246527
+        ]
+      ],
+      "width": 4,
+      "role": "optional-life",
+      "lengthM": 11.284902290302204
+    },
+    {
+      "id": "east_work_entry_workers_frontage",
+      "points": [
+        [
+          1390.4488239826123,
+          41.492371252716836
+        ],
+        [
+          1391.336706473458,
+          47.174819194129554
+        ],
+        [
+          1391.9604415459112,
+          50.10926199633097
+        ],
+        [
+          1392.3762649275468,
+          52.06555719779858
+        ]
+      ],
+      "width": 4,
+      "role": "optional-life",
+      "lengthM": 10.751395476266257
+    },
+    {
+      "id": "east_work_entry_east_store",
+      "points": [
+        [
+          1435.0596938104839,
+          43.59117122194953
+        ],
+        [
+          1435.774755934927,
+          41.94652833573034
+        ],
+        [
+          1437.1831706232847,
+          39.297685557153564
+        ],
+        [
+          1438.1221137488565,
+          37.531790371435704
+        ]
+      ],
+      "width": 4,
+      "role": "optional-life",
+      "lengthM": 6.79336668448049
+    }
+  ],
+  "removedRoutes": [],
+  "canonicalFacilitiesPreserved": 2,
+  "reservedAreaM2": 5461.894616798843,
+  "buildingFootprintM2": 2247.9999999999905,
+  "oldMeshCount": 1614,
+  "newMeshCount": 1680,
+  "sources": [
+    "TRPG 王都 A1:N35, read 2026-10-08",
+    "TRPG 総合設計書 A110:H120, read 2026-10-08",
+    "Deep Research supplied PDF, pp8/11-15/22",
+    "B75 east-survey.json"
+  ],
+  "eventIntent": {
+    "T06": "Delivery delays can change stored goods and work activity; design hook only",
+    "T09_T14": "Repairs and disputed stock can connect to existing weapon supply; no replacement weapon shop",
+    "T11_T16_T17": "Ordinary streets remain available when work premises close; runtime conditions not implemented"
+  },
+  "pending": [
+    "Cart swept-volume and full manual walking validation",
+    "Roof egress, NPC schedules and incident runtime",
+    "Distant river/castle visibility not certified",
+    "Adjacent residual land and repetitive housing still need review"
+  ],
+  "cameras": [
+    {
+      "name": "East-work-context",
+      "position": [
+        1390,
+        -155,
+        160
+      ],
+      "target": [
+        1350,
+        12,
+        17
+      ],
+      "scale": 330
+    },
+    {
+      "name": "East-work-entry-eye",
+      "position": [
+        1285,
+        44,
+        15.9
+      ],
+      "target": [
+        1295,
+        17,
+        16.4
+      ]
+    },
+    {
+      "name": "East-work-court-eye",
+      "position": [
+        1320,
+        17,
+        15.9
+      ],
+      "target": [
+        1362,
+        25,
+        17
+      ]
+    },
+    {
+      "name": "East-work-cargo-eye",
+      "position": [
+        1300,
+        -36,
+        15.9
+      ],
+      "target": [
+        1340,
+        -6,
+        17
+      ]
+    }
+  ]
+}

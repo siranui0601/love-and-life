@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "activeBlend": "C:\\Users\\inaba\\Documents\\TRPG-Capital-Blender\\current\\capital-parcel-review.blend",
+  "oldRampMeshesStillThere": [],
+  "missingReplacementMeshes": [],
+  "pedestrianStairRouteLengthM": 251.8,
+  "routePoints": 366,
+  "hoistStatic": true,
+  "hoistGameplay": false
+}

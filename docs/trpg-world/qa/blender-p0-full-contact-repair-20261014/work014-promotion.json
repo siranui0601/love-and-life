@@ -1,0 +1,11 @@
+{
+  "status": "APPLIED_AND_REOPEN_VERIFIED_LOCAL_STRUCTURAL_PASS",
+  "backup": "C:\\Users\\inaba\\Documents\\TRPG-Capital-Blender\\current\\old\\20261014-p0-before-contact-repair",
+  "sourcePlanSHA256": "9d88fe0b86256bba751bde2867ced24ecb35122b6c2fcc4a8ef75cb3583532a3",
+  "blendSHA256": "ae42917b1e7439d6a67e0832c72db62c329946c34bc3023590cd06fd7e83a8e0",
+  "planSHA256": "28f1812cabec6486b855fac68ea8b5b0c5b508e9927dda7723168daf76388ff0",
+  "floorRays": 22381,
+  "floorMissing": 0,
+  "routeRays": 174749,
+  "remainingRouteAnomalies": 14
+}

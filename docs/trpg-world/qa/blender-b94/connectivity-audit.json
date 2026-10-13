@@ -1,0 +1,106 @@
+{
+  "status": "REQUIRES_3D_REVIEW",
+  "centrelineConnectivityPass": true,
+  "stairProfileChecks": [
+    {
+      "id": "court_west_ramp",
+      "maxRiserM": 0.16296296296297896,
+      "minTreadRunM": 1.8412058789436423,
+      "landingCount": 16,
+      "minLandingM": 2.499999999999967,
+      "pass": true
+    },
+    {
+      "id": "castle_east_ramp",
+      "maxRiserM": 0.16666666666668561,
+      "minTreadRunM": 1.4909185331730643,
+      "landingCount": 17,
+      "minLandingM": 2.456612732036654,
+      "pass": true
+    },
+    {
+      "id": "market_wall_stairs",
+      "maxRiserM": 0.1647058823529477,
+      "minTreadRunM": 0.726106333171824,
+      "landingCount": 11,
+      "minLandingM": 2.4996383828005353,
+      "pass": true
+    },
+    {
+      "id": "upper_wall_stairs",
+      "maxRiserM": 0.1690821256038646,
+      "minTreadRunM": 0.5030404384434067,
+      "landingCount": 24,
+      "minLandingM": 2.441851549577692,
+      "pass": true
+    },
+    {
+      "id": "court_wall_stairs",
+      "maxRiserM": 0.16296296296297896,
+      "minTreadRunM": 0.6920198459515496,
+      "landingCount": 16,
+      "minLandingM": 2.442877974645982,
+      "pass": true
+    },
+    {
+      "id": "castle_wall_stairs",
+      "maxRiserM": 0.16666666666668561,
+      "minTreadRunM": 0.4329783671676671,
+      "landingCount": 17,
+      "minLandingM": 2.4999999999999485,
+      "pass": true
+    },
+    {
+      "id": "west_lower_wall_stairs",
+      "maxRiserM": 0.1647058823529477,
+      "minTreadRunM": 0.8940817006336133,
+      "landingCount": 11,
+      "minLandingM": 2.4994181906426807,
+      "pass": true
+    },
+    {
+      "id": "west_noble_wall_stairs",
+      "maxRiserM": 0.1666666666666714,
+      "minTreadRunM": 0.6335204745054093,
+      "landingCount": 13,
+      "minLandingM": 2.4957284606209034,
+      "pass": true
+    },
+    {
+      "id": "civic_wall_gallery_stairs",
+      "maxRiserM": 0.1647058823529477,
+      "minTreadRunM": 0.2874561369700828,
+      "landingCount": 26,
+      "minLandingM": 2.0027681674147813,
+      "pass": true
+    },
+    {
+      "id": "north_court_wall_stairs",
+      "maxRiserM": 0.16541353383459523,
+      "minTreadRunM": 0.28422093283052613,
+      "landingCount": 17,
+      "minLandingM": 1.9999999999999174,
+      "pass": true
+    },
+    {
+      "id": "mage_wall_short_stairs",
+      "maxRiserM": 0.16374269005848419,
+      "minTreadRunM": 0.3049228028443609,
+      "landingCount": 20,
+      "minLandingM": 1.999999999999883,
+      "pass": true
+    }
+  ],
+  "routeCount": 1170,
+  "componentCount": 1,
+  "componentSizes": [
+    1170
+  ],
+  "disconnectedGroups": [],
+  "sameLevelIntersections": 2779,
+  "limitations": [
+    "Road centreline connectivity only; full-width collisions and ramp transitions require 3D checks.",
+    "No event state, social gate, NPC or canonical facility reachability certification."
+  ],
+  "gradeSeparatedCrossingCount": 1822
+}

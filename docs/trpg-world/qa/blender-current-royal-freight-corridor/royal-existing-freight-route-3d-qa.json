@@ -1,0 +1,33 @@
+{
+  "status": "LOCAL_PASS",
+  "routeLengthM": 198.7,
+  "pieces": [
+    88.36,
+    87.21,
+    22.76
+  ],
+  "start": [
+    610.57895,
+    650.0,
+    42.0
+  ],
+  "finish": [
+    710.0,
+    703.0,
+    42.0
+  ],
+  "bottomLevelM": 42,
+  "floorSources": 48,
+  "staticObstacleObjectsTested": 146,
+  "floorSamples": 591,
+  "floorFailures": [],
+  "personRays": 1182,
+  "personCollisions": [],
+  "routeReusesExistingRoads": true,
+  "caveats": [
+    "Actual Blender static mesh local rays and floor probes only; no cargo/cart capsule sweep",
+    "Visual-only facade aggregate meshes excluded",
+    "No working game behavior or NPC/vehicle physics",
+    "Unverified curb/turn radius limits for a physical freight cart"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "routes": [
+    "west_noble_wall_stairs",
+    "west_noble_wall_stairs_landing_0",
+    "west_noble_wall_stairs_landing_1",
+    "noble_east_wall_stair"
+  ],
+  "supportMeshCount": 8,
+  "samples": {
+    "west_noble_wall_stairs": 798,
+    "west_noble_wall_stairs_landing_0": 120,
+    "west_noble_wall_stairs_landing_1": 72,
+    "noble_east_wall_stair": 867
+  },
+  "supported": {
+    "west_noble_wall_stairs": 798,
+    "west_noble_wall_stairs_landing_0": 120,
+    "west_noble_wall_stairs_landing_1": 72,
+    "noble_east_wall_stair": 867
+  },
+  "unsupported": 0,
+  "examples": [],
+  "limitations": [
+    "Only route/ground support meshes included",
+    "No swept actor capsule",
+    "All buildings/railings not included"
+  ]
+}

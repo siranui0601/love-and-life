@@ -1,0 +1,115 @@
+{
+  "status": "PROPOSED_NOT_CANON",
+  "blockId": "low_city_852",
+  "position": [
+    1227.5702882263313,
+    -22.132840961817536,
+    14
+  ],
+  "origin": [
+    1222.7856343096878,
+    21.60623866839358,
+    14
+  ],
+  "axisX": [
+    -0.9940699915957072,
+    -0.10874213446916839
+  ],
+  "axisY": [
+    0.10874213446916839,
+    -0.9940699915957072
+  ],
+  "widthM": 80,
+  "depthM": 88,
+  "areaM2": 7039.999999999988,
+  "entryFrom": "low_city_contour_1",
+  "rearEntryFrom": "low_city_contour_1_frontage_east_quay_gate",
+  "streetSetbackM": 5.5,
+  "replacedParcelIds": [
+    "parcel_low_city_852_19_1",
+    "parcel_low_city_852_19_2",
+    "parcel_low_city_852_19_3",
+    "parcel_low_city_852_19_4",
+    "parcel_low_city_852_19_5",
+    "parcel_low_city_852_22_4",
+    "parcel_low_city_852_22_8",
+    "parcel_low_city_852_3_0",
+    "parcel_low_city_852_3_3",
+    "parcel_low_city_852_3_4",
+    "parcel_low_city_852_6_13",
+    "parcel_low_city_852_6_14",
+    "parcel_low_city_852_6_15",
+    "parcel_low_city_852_6_16"
+  ],
+  "removedRoutes": [],
+  "formerParcelAreaM2": 1630.8031450046808,
+  "canonSources": [
+    "総合設計書117: identifiable function/culture/history",
+    "王都21: T09/T14 weapon supply"
+  ],
+  "eventDesign": {
+    "T09": "local repair/commission versus depleted imported stock",
+    "T14": "quality inspection and disputed goods in same working court"
+  },
+  "pending": [
+    "No canonical weapon shop relocation",
+    "No named guild/institution or NPC added",
+    "NPC work schedules, production, prices and incident states still pending",
+    "Compound remains a morphology proposal, not final art"
+  ],
+  "cameras": [
+    {
+      "name": "Craft-block-frontage",
+      "position": [
+        1221.4807286960577,
+        33.535078567542065,
+        15.9
+      ],
+      "target": [
+        1226.9178354195162,
+        -16.168421012243293,
+        18
+      ]
+    },
+    {
+      "name": "Craft-block-context",
+      "position": [
+        1113.5918430478919,
+        100.1983244650904,
+        110
+      ],
+      "target": [
+        1227.5702882263313,
+        -22.132840961817536,
+        19
+      ],
+      "scale": 210
+    },
+    {
+      "name": "Craft-block-forge-eye",
+      "position": [
+        1249.5639609572793,
+        -11.679211936261005,
+        15.9
+      ],
+      "target": [
+        1258.9609502008905,
+        -5.621440633590787,
+        16
+      ]
+    },
+    {
+      "name": "Craft-block-cargo-eye",
+      "position": [
+        1226.0478983437629,
+        -8.215861079477637,
+        15.9
+      ],
+      "target": [
+        1206.1357169491023,
+        -28.501447886522065,
+        19
+      ]
+    }
+  ]
+}

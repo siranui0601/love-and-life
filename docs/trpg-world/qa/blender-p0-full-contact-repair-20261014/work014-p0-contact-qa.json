@@ -1,0 +1,9 @@
+{
+  "sourceSHA256": "a7a3cd72d4cfb8fc374da26528eafd33076fdc2d070eb81f008b6e4200daf973",
+  "canonicalSHA256": "9d88fe0b86256bba751bde2867ced24ecb35122b6c2fcc4a8ef75cb3583532a3",
+  "mesh": "repair_user_p0_W03_TOE_ground_20261012",
+  "unsupportedBeforeM2": 33.09656102942813,
+  "unsupportedAfterM2": 0.0,
+  "oldAreaM2": 578.7724702049999,
+  "newAreaM2": 638.1714672443093
+}

@@ -1,0 +1,21 @@
+{
+  "status": "PENDING_3D_QA",
+  "roofless": true,
+  "alongsideExistingStairs": true,
+  "flights": 5,
+  "grade": 0.6087,
+  "inclinationDegrees": 31.3,
+  "routeID": "current_civic_parallel_roofless_service_ramp",
+  "routeLengthM": 273.97,
+  "piers": 10,
+  "meshes": [
+    "current_civic_parallel_roofless_ramp_deck",
+    "current_civic_parallel_roofless_ramp_curb",
+    "current_civic_parallel_roofless_ramp_masonry"
+  ],
+  "freightNote": "Only winch-assisted steep cart service / manual guidance; real motor and physics not implemented",
+  "caveats": [
+    "Real turn geometry, collision and bridge supports require QA",
+    "This does not replace conventional 5-8% accessible ramps or lift"
+  ]
+}

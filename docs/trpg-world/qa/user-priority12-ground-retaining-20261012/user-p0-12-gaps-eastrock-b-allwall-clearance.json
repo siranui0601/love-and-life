@@ -1,0 +1,7 @@
+{
+  "candidateCount": 0,
+  "sampleCount": 12285,
+  "routeCount": 58,
+  "hits": [],
+  "limitations": "Discrete snapshots not swept capsule or navmesh; 0 candidates is not complete walkability"
+}

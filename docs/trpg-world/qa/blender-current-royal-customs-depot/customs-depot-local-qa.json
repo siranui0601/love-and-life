@@ -1,0 +1,18 @@
+{
+  "status": "LOCAL_PASS",
+  "sourceRoutesPreserved": true,
+  "parcelOverlap": 0,
+  "accessParcelOverlap": 0.0,
+  "floorSamples": 96,
+  "floorFails": [],
+  "accessRays": 192,
+  "accessCollisions": [],
+  "existingMeshesTested": 2,
+  "existingRoadRays": 114,
+  "existingRoadCollisions": [],
+  "caveats": [
+    "Real in-game AI/pathfinding not implemented",
+    "Warehouse equipment is only visual; no storage inventory/quests operational",
+    "Clearance is discrete rays, not swept capsule"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "status": "LOCAL_PASS",
+  "oldLengthM": 559.8110972073679,
+  "newStairLengthM": 99.563,
+  "newInclineLengthM": 99.99,
+  "oldRoadRoutesRemoved": 3,
+  "newRoutesAdded": 4,
+  "oldRoadsUnchanged": true,
+  "floorProbes": 1020,
+  "newRouteMissingFloor": [],
+  "existingRoadFloorAdvisory": [],
+  "bodyHeadRays": 2040,
+  "newRouteObstacles": [],
+  "existingStreetBlockedByNew": [],
+  "existingStreetExtraRays": 93,
+  "actualExistingObstacleMeshes": 6,
+  "notes": [
+    "Point/ray floor test, not full vehicle swept path or physically feasible 30 degree cart",
+    "Artistic acceptance and level-design interest require image review",
+    "Other citywide wall/floor holes and other ramps remain incomplete"
+  ]
+}

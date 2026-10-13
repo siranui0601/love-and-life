@@ -1,0 +1,353 @@
+{
+  "status": "V9_F05_ROCK_TAPER_PENDING_GEOMETRIC_AND_VISUAL_QA",
+  "sourcePlanSHA256": "3b7b809e170737e863a7406236fd22124f9861e4981b8802031a44927db7599a",
+  "uniqueSpots": 12,
+  "reportedGroundGaps": 9,
+  "reportedWallGaps": 4,
+  "floors": [
+    {
+      "tag": "F01",
+      "source": "low_city_ground",
+      "height": 14,
+      "nativeDistanceM": 32.77,
+      "areaM2": 1687.84,
+      "actualOverlapNativeM2": 352.42,
+      "meshName": "repair_user_p0_F01_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        -661.41,
+        1108.58
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F02",
+      "source": "civic_foot_ground",
+      "height": 42,
+      "nativeDistanceM": 17.92,
+      "areaM2": 995.21,
+      "actualOverlapNativeM2": 189.24,
+      "meshName": "repair_user_p0_F02_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        -800.95,
+        763.49
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F03",
+      "source": "low_city_ground",
+      "height": 14,
+      "nativeDistanceM": 29.56,
+      "areaM2": 1591.71,
+      "actualOverlapNativeM2": 352.42,
+      "meshName": "repair_user_p0_F03_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        -122.04,
+        189.83
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F04W01",
+      "source": "upper_city_ground",
+      "height": 112,
+      "nativeDistanceM": 20.8,
+      "areaM2": 4539.14,
+      "actualOverlapNativeM2": 1603.91,
+      "meshName": "repair_user_p0_F04W01_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        -148.0,
+        914.99
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F05",
+      "source": "forecourt_ground",
+      "height": 156,
+      "nativeDistanceM": 19.86,
+      "areaM2": 931.85,
+      "actualOverlapNativeM2": 264.71,
+      "meshName": "repair_user_p0_F05_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        338.59,
+        947.78
+      ],
+      "triangleCount": 4,
+      "design": "noncircular stone terrace stitched between forecourt and east escarpment"
+    },
+    {
+      "tag": "F06",
+      "source": "upper_city_ground",
+      "height": 112,
+      "nativeDistanceM": 20.1,
+      "areaM2": 1051.9,
+      "actualOverlapNativeM2": 249.83,
+      "meshName": "repair_user_p0_F06_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        439.34,
+        1140.0
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F07",
+      "source": "upper_city_ground",
+      "height": 112,
+      "nativeDistanceM": 1.22,
+      "areaM2": 90.52,
+      "actualOverlapNativeM2": 52.07,
+      "meshName": "repair_user_p0_F07_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        271.27,
+        1238.67
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F08",
+      "source": "low_city_ground",
+      "height": 14,
+      "nativeDistanceM": 2.91,
+      "areaM2": 306.18,
+      "actualOverlapNativeM2": 126.87,
+      "meshName": "repair_user_p0_F08_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        407.2,
+        1182.4
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "F09",
+      "source": "low_city_ground",
+      "height": 14,
+      "nativeDistanceM": 114.27,
+      "areaM2": 5128.84,
+      "actualOverlapNativeM2": 253.74,
+      "meshName": "repair_user_p0_F09_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        574.18,
+        1039.28
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "W02_BASE",
+      "source": "low_city_ground",
+      "height": 14,
+      "nativeDistanceM": 153.82,
+      "areaM2": 12547.1,
+      "actualOverlapNativeM2": 1514.44,
+      "meshName": "repair_user_p0_W02_BASE_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        705.39,
+        867.05
+      ],
+      "triangleCount": 48
+    },
+    {
+      "tag": "W03_TOE",
+      "source": "low_city_ground",
+      "height": 14,
+      "nativeDistanceM": 5.32,
+      "areaM2": 578.77,
+      "actualOverlapNativeM2": 186.89,
+      "meshName": "repair_user_p0_W03_TOE_ground_20261012",
+      "centerIsCovered": true,
+      "nearSource": [
+        332.92,
+        1246.06
+      ],
+      "triangleCount": 48
+    }
+  ],
+  "walls": [
+    {
+      "tag": "W01",
+      "source": "forecourt_ground",
+      "wallMeters": 48.0,
+      "minZ": 112,
+      "maxZ": 156,
+      "nearestNativeHighEdgeDistanceM": 13.7,
+      "meshNames": [
+        "repair_user_p0_W01_retaining_20261012",
+        "repair_user_p0_W01_wall_foot_20261012",
+        "repair_user_p0_W01_parapet_20261012"
+      ],
+      "positions": 17,
+      "start": [
+        -115.38,
+        890.01
+      ],
+      "end": [
+        -111.7,
+        937.87
+      ]
+    },
+    {
+      "tag": "W02",
+      "source": "upper_city_ground",
+      "wallMeters": 58.0,
+      "minZ": 14,
+      "maxZ": 112,
+      "nearestNativeHighEdgeDistanceM": 4.85,
+      "meshNames": [
+        "repair_user_p0_W02_retaining_20261012",
+        "repair_user_p0_W02_wall_foot_20261012",
+        "repair_user_p0_W02_parapet_20261012"
+      ],
+      "positions": 21,
+      "start": [
+        552.72,
+        905.81
+      ],
+      "end": [
+        570.25,
+        868.45
+      ]
+    },
+    {
+      "tag": "W03",
+      "source": "upper_city_ground",
+      "wallMeters": 64.0,
+      "minZ": 14,
+      "maxZ": 112,
+      "nearestNativeHighEdgeDistanceM": 0.11,
+      "meshNames": [
+        "repair_user_p0_W03_retaining_20261012",
+        "repair_user_p0_W03_wall_foot_20261012",
+        "repair_user_p0_W03_parapet_20261012"
+      ],
+      "positions": 23,
+      "start": [
+        329.64,
+        1241.88
+      ],
+      "end": [
+        380.07,
+        1205.65
+      ]
+    },
+    {
+      "tag": "W04",
+      "source": "mage_east_ground",
+      "wallMeters": 60.0,
+      "minZ": 14,
+      "maxZ": 70,
+      "nearestNativeHighEdgeDistanceM": 4.96,
+      "meshNames": [
+        "repair_user_p0_W04_retaining_20261012",
+        "repair_user_p0_W04_wall_foot_20261012",
+        "repair_user_p0_W04_parapet_20261012"
+      ],
+      "positions": 21,
+      "start": [
+        1148.27,
+        499.15
+      ],
+      "end": [
+        1205.13,
+        484.67
+      ]
+    }
+  ],
+  "protectedRoutes": 1232,
+  "warnings": [
+    "F09 is a long apron to reach native Z14 floor: inspect large visual footprint",
+    "W02 includes an extra Z14 native foundation apron because Z42 old ground is distant",
+    "User cursor Z can lie inside an empty space, not at grade",
+    "Before promotion, locally ray check floor and wall meshes, original roads, and visual before/after",
+    "Do not move onto palace or unrelated QA while any coordinate is unverified"
+  ],
+  "supportWedges": [
+    {
+      "tag": "F05",
+      "meshName": "repair_user_p0_F05_east_rock_taper_B",
+      "topZ": 156,
+      "toeZ": 110.4,
+      "anchorsNW": [
+        332.8,
+        942.5,
+        155.9
+      ],
+      "anchorsEast": [
+        420.5,
+        963,
+        112.35
+      ],
+      "supportStyle": "continuous earth-linked rock tapered from forecourt to existing east rock"
+    }
+  ],
+  "notes": "Supports are anchored at source grade by geometry overlap and taper to next grade; evaluate remaining exposed toes and renderer views",
+  "knownLimitations": [
+    "Static ground wall grounding is geometric; full game-engine collision not checked",
+    "Large full-footprint revetment supports need exterior visual/road checks before promotion",
+    "Must not reopen palace or unrelated task until all 12 specified gaps are verified"
+  ],
+  "reviewNotes": [
+    "F02 adjoining b107 noble-west retaining supports Z42, no new pillar required",
+    "F04 new continuous W01 retaining supports terrace boundary, no standalone column",
+    "F06 close to existing royal_cliff_tapered_revetment at Z112 (11.14m), no Z14 column",
+    "F05 a connected masonry wall stitches existing forecourt and east stair rock",
+    "Need verify F05 lower masonry connects into original Z112 base and roads remain clear",
+    "v8 F05 block only touched original terrain at upper edge, bottom lacked real Z112 rock contact",
+    "v9 F05 rock now extends to existing east v9 rock near x417.2, z112",
+    "No other P0 floors or walls modified"
+  ],
+  "wallBatterV8": [
+    {
+      "tag": "W01",
+      "dx": -14.5,
+      "dy": 1.05,
+      "target": [
+        -127.198,
+        914.99,
+        113.4
+      ],
+      "knotPeak": 8,
+      "knotCount": 17,
+      "upperCrestUnchanged": true,
+      "lowerFootMoved": true
+    },
+    {
+      "tag": "W02",
+      "dx": 10.5,
+      "dy": 0.93,
+      "target": [
+        552.002,
+        878.49,
+        75.1
+      ],
+      "knotPeak": 10,
+      "knotCount": 21,
+      "upperCrestUnchanged": true,
+      "lowerFootMoved": true
+    },
+    {
+      "tag": "W04",
+      "dx": -2.35,
+      "dy": -5.18,
+      "target": [
+        1175.8,
+        492.69,
+        30.3
+      ],
+      "knotPeak": 10,
+      "knotCount": 21,
+      "upperCrestUnchanged": true,
+      "lowerFootMoved": true
+    }
+  ],
+  "verificationReminder": "Closest 3D surface must intersect all four user wall coordinates to tolerance; no acceptance from nearby wall only"
+}
